@@ -39,18 +39,15 @@ jobs:
         fetch-depth: 0
         submodules: recursive
 
-    - uses: bpx-network/actions/git-ssh-to-https@main
+    - uses: ./.github/actions/git-ssh-to-https
 
     - name: Cleanup any leftovers that exist from previous runs
       run: bash build_scripts/clean-runner.sh || true
 
     - name: Set Env
-      uses: bpx-network/actions/setjobenv@main
+      uses: ./.github/actions/setjobenv
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - uses: bpx-network/actions/enforce-semver@main
-      if: env.FULL_RELEASE == 'true'
 
     # Create our own venv outside of the git directory JUST for getting the ACTUAL version so that install can't break it
     - name: Get version number
@@ -98,7 +95,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
         development: true
 
-    - uses: bpx-network/actions/activate-venv@main
+    - uses: ./.github/actions/activate-venv
 
     - name: Prepare GUI cache
       id: gui-ref

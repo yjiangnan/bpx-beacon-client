@@ -32,10 +32,10 @@ jobs:
         python-version: [3.8]
 
     steps:
-    - uses: bpx-network/actions/clean-workspace@main
+    - uses: ./.github/actions/clean-workspace
 
     - name: Add safe git directory
-      uses: bpx-network/actions/git-mark-workspace-safe@main
+      uses: ./.github/actions/git-mark-workspace-safe
 
     - name: Checkout Code
       uses: actions/checkout@v3
@@ -43,13 +43,13 @@ jobs:
         fetch-depth: 0
         submodules: recursive
 
-    - uses: bpx-network/actions/git-ssh-to-https@main
+    - uses: ./.github/actions/git-ssh-to-https
 
     - name: Cleanup any leftovers that exist from previous runs
       run: bash build_scripts/clean-runner.sh || true
 
     - name: Set Env
-      uses: bpx-network/actions/setjobenv@main
+      uses: ./.github/actions/setjobenv
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -99,7 +99,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
         development: true
 
-    - uses: bpx-network/actions/activate-venv@main
+    - uses: ./.github/actions/activate-venv
 
     - name: Prepare GUI cache
       id: gui-ref

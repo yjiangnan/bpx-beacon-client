@@ -42,7 +42,7 @@ jobs:
             bladebit-suffix: macos-arm64.tar.gz
 
     steps:
-      - uses: bpx-network/actions/clean-workspace@main
+      - uses: ./.github/actions/clean-workspace
 
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -50,13 +50,13 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - uses: bpx-network/actions/git-ssh-to-https@main
+      - uses: ./.github/actions/git-ssh-to-https
 
       - name: Cleanup any leftovers that exist from previous runs
         run: bash build_scripts/clean-runner.sh || true
 
       - name: Set Env
-        uses: bpx-network/actions/setjobenv@main
+        uses: ./.github/actions/setjobenv
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -70,7 +70,7 @@ jobs:
           deactivate
 
       - name: Setup Python environment
-        uses: bpx-network/actions/setup-python@main
+        uses: ./.github/actions/setup-python
         with:
           python-version: ${{ matrix.python-version }}
           force-pyenv: 'true'
@@ -115,7 +115,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           development: true
 
-      - uses: bpx-network/actions/activate-venv@main
+      - uses: ./.github/actions/activate-venv
 
       - name: Setup Node 16.x
         uses: actions/setup-node@v3

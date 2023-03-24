@@ -37,7 +37,7 @@ jobs:
         submodules: recursive
 
     - name: Set Env
-      uses: bpx-network/actions/setjobenv@main
+      uses: ./.github/actions/setjobenv
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -73,7 +73,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-pip-
 
-    - uses: bpx-network/actions/setup-python@main
+    - uses: ./.github/actions/setup-python
       name: Install Python ${{ matrix.python-version }}
       with:
         python-version: ${{ matrix.python-version }}
@@ -136,7 +136,7 @@ jobs:
       run: |
         .\Install.ps1 -d
 
-    - uses: bpx-network/actions/activate-venv@main
+    - uses: ./.github/actions/activate-venv
 
     - name: Prepare GUI cache
       id: gui-ref
