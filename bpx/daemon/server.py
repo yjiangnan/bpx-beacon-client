@@ -690,7 +690,6 @@ class WebSocketServer:
         r = request["r"]  # Threads
         f = request.get("f")  # Farmer pubkey
         p = request.get("p")  # Pool pubkey
-        c = request.get("c")  # Pool contract address
 
         command_args: List[str] = ["-n", str(n), "-d", d, "-r", str(r)]
 
@@ -700,9 +699,6 @@ class WebSocketServer:
         if p is not None:
             command_args.append("-p")
             command_args.append(str(p))
-        if c is not None:
-            command_args.append("-c")
-            command_args.append(str(c))
 
         return command_args
 
