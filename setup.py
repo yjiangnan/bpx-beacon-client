@@ -83,7 +83,6 @@ kwargs = dict(
     extras_require=dict(
         dev=dev_dependencies,
         upnp=upnp_dependencies,
-        legacy_keyring=legacy_keyring_dependencies,
     ),
     packages=[
         "build_scripts",
