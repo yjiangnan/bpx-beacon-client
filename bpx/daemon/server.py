@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any, AsyncIterator, Dict, List, Optional, Set, TextIO, Tuple
 
 from bpx import __version__
-from bpx.cmds.init_funcs import check_keys, chia_full_version_str, chia_init
+from bpx.cmds.init_funcs import check_keys, bpx_full_version_str, bpx_init
 from bpx.cmds.passphrase_funcs import default_passphrase, using_default_passphrase
 from bpx.daemon.keychain_server import KeychainServer, keychain_commands
 from bpx.daemon.windows_signal import kill
@@ -28,7 +28,7 @@ from bpx.plotting.util import add_plot_directory
 from bpx.server.server import ssl_context_for_root, ssl_context_for_server
 from bpx.ssl.create_ssl import get_mozilla_ca_crt
 from bpx.util.beta_metrics import BetaMetricsLogger
-from bpx.util.chia_logging import initialize_service_logging
+from bpx.util.bpx_logging import initialize_service_logging
 from bpx.util.config import load_config
 from bpx.util.errors import KeychainCurrentPassphraseIsInvalid
 from bpx.util.json_util import dict_to_json_str
@@ -45,13 +45,13 @@ try:
     from aiohttp import ClientSession, WSMsgType, web
     from aiohttp.web_ws import WebSocketResponse
 except ModuleNotFoundError:
-    print("Error: Make sure to run . ./activate from the project folder before starting Chia.")
+    print("Error: Make sure to run . ./activate from the project folder before starting BPX.")
     quit()
 
 
 log = logging.getLogger(__name__)
 
-service_plotter = "chia_plotter"
+service_plotter = "bpx_plotter"
 
 
 async def fetch(url: str):
@@ -84,19 +84,15 @@ class PlotEvent(str, Enum):
 # determine if application is a script file or frozen exe
 if getattr(sys, "frozen", False):
     name_map = {
-        "chia": "chia",
-        "chia_data_layer": "start_data_layer",
-        "chia_data_layer_http": "start_data_layer_http",
-        "chia_wallet": "start_wallet",
-        "chia_full_node": "start_full_node",
-        "chia_harvester": "start_harvester",
-        "chia_farmer": "start_farmer",
-        "chia_introducer": "start_introducer",
-        "chia_timelord": "start_timelord",
-        "chia_timelord_launcher": "timelord_launcher",
-        "chia_full_node_simulator": "start_simulator",
-        "chia_seeder": "start_seeder",
-        "chia_crawler": "start_crawler",
+        "bpx": "bpx",
+        "bpx_beacon": "start_beacon",
+        "bpx_harvester": "start_harvester",
+        "bpx_farmer": "start_farmer",
+        "bpx_introducer": "start_introducer",
+        "bpx_timelord": "start_timelord",
+        "bpx_timelord_launcher": "timelord_launcher",
+        "bpx_seeder": "start_seeder",
+        "bpx_crawler": "start_crawler",
     }
 
     def executable_for_service(service_name: str) -> str:
@@ -166,7 +162,7 @@ class WebSocketServer:
             self.log.warning(
                 (
                     "Deprecation Warning: Your version of SSL (%s) does not support TLS1.3. "
-                    "A future version of Chia will require TLS1.3."
+                    "A future version of BPX will require TLS1.3."
                 ),
                 ssl.OPENSSL_VERSION,
             )
@@ -843,11 +839,11 @@ class WebSocketServer:
 
     def _build_plotting_command_args(self, request: Any, ignoreCount: bool, index: int) -> List[str]:
         plotter: str = request.get("plotter", "chiapos")
-        command_args: List[str] = ["chia", "plotters", plotter]
+        command_args: List[str] = ["bpx", "plotters", plotter]
 
         if plotter == "bladebit":
             # plotter command must be either
-            # 'chia plotters bladebit ramplot' or 'chia plotters bladebit diskplot'
+            # 'bpx plotters bladebit ramplot' or 'bpx plotters bladebit diskplot'
             plot_type = request["plot_type"]
             assert plot_type == "diskplot" or plot_type == "ramplot"
             command_args.append(plot_type)
@@ -977,14 +973,6 @@ class WebSocketServer:
         exclude_final_dir = request.get("x", False)
         count = int(request.get("n", 1))
         queue = request.get("queue", "default")
-
-        if ("p" in request) and ("c" in request):
-            response = {
-                "success": False,
-                "service_name": service_name,
-                "error": "Choose one of pool_contract_address and pool_public_key",
-            }
-            return response
 
         ids: List[str] = []
         for k in range(count):
@@ -1156,7 +1144,7 @@ class WebSocketServer:
         if self.webserver is not None:
             self.webserver.close()
             await self.webserver.await_closed()
-        log.info("chia daemon exiting")
+        log.info("bpx daemon exiting")
 
     async def register_service(self, websocket: WebSocketResponse, request: Dict[str, Any]) -> Dict[str, Any]:
         self.log.info(f"Register service {request}")
@@ -1212,8 +1200,8 @@ def plotter_log_path(root_path: Path, id: str):
 
 
 def launch_plotter(root_path: Path, service_name: str, service_array: List[str], id: str):
-    # we need to pass on the possibly altered CHIA_ROOT
-    os.environ["CHIA_ROOT"] = str(root_path)
+    # we need to pass on the possibly altered BPX_ROOT
+    os.environ["BPX_ROOT"] = str(root_path)
     service_executable = executable_for_service(service_array[0])
 
     # Swap service name with name of executable
@@ -1258,12 +1246,12 @@ def launch_service(root_path: Path, service_command) -> Tuple[subprocess.Popen, 
     """
     Launch a child process.
     """
-    # set up CHIA_ROOT
+    # set up BPX_ROOT
     # invoke correct script
     # save away PID
 
-    # we need to pass on the possibly altered CHIA_ROOT
-    os.environ["CHIA_ROOT"] = str(root_path)
+    # we need to pass on the possibly altered BPX_ROOT
+    os.environ["BPX_ROOT"] = str(root_path)
 
     # Insert proper e
     service_array = service_command.split()
@@ -1275,7 +1263,7 @@ def launch_service(root_path: Path, service_command) -> Tuple[subprocess.Popen, 
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
-    log.debug(f"Launching service {service_array} with CHIA_ROOT: {os.environ['CHIA_ROOT']}")
+    log.debug(f"Launching service {service_array} with BPX_ROOT: {os.environ['BPX_ROOT']}")
 
     # CREATE_NEW_PROCESS_GROUP allows graceful shutdown on windows, by CTRL_BREAK_EVENT signal
     if sys.platform == "win32" or sys.platform == "cygwin":
@@ -1358,11 +1346,11 @@ def is_running(services: Dict[str, subprocess.Popen], service_name: str) -> bool
 
 
 async def async_run_daemon(root_path: Path, wait_for_unlock: bool = False) -> int:
-    # When wait_for_unlock is true, we want to skip the check_keys() call in chia_init
+    # When wait_for_unlock is true, we want to skip the check_keys() call in bpx_init
     # since it might be necessary to wait for the GUI to unlock the keyring first.
-    chia_init(root_path, should_check_keys=(not wait_for_unlock))
+    bpx_init(root_path, should_check_keys=(not wait_for_unlock))
     config = load_config(root_path, "config.yaml")
-    setproctitle("chia_daemon")
+    setproctitle("bpx_daemon")
     initialize_service_logging("daemon", config)
     crt_path = root_path / config["daemon_ssl"]["private_crt"]
     key_path = root_path / config["daemon_ssl"]["private_key"]
@@ -1382,7 +1370,7 @@ async def async_run_daemon(root_path: Path, wait_for_unlock: bool = False) -> in
     sys.stdout.flush()
     try:
         with Lockfile.create(daemon_launch_lock_path(root_path), timeout=1):
-            log.info(f"chia-blockchain version: {chia_full_version_str()}")
+            log.info(f"bpx-blockchain version: {bpx_full_version_str()}")
 
             beta_metrics: Optional[BetaMetricsLogger] = None
             if config.get("beta", {}).get("enabled", False):
