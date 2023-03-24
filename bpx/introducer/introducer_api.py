@@ -7,7 +7,7 @@ from bpx.protocols.introducer_protocol import RequestPeersIntroducer, RespondPee
 from bpx.protocols.protocol_message_types import ProtocolMessageTypes
 from bpx.rpc.rpc_server import StateChangedProtocol
 from bpx.server.outbound_message import Message, make_msg
-from bpx.server.ws_connection import WSChiaConnection
+from bpx.server.ws_connection import WsBpxConnection
 from bpx.types.peer_info import TimestampedPeerInfo
 from bpx.util.api_decorators import api_request
 from bpx.util.ints import uint64
@@ -26,7 +26,7 @@ class IntroducerAPI:
     async def request_peers_introducer(
         self,
         request: RequestPeersIntroducer,
-        peer: WSChiaConnection,
+        peer: WSBpxConnection,
     ) -> Optional[Message]:
         max_peers = self.introducer.max_peers_to_send
         if self.introducer.server is None or self.introducer.server.introducer_peers is None:
