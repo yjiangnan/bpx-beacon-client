@@ -73,9 +73,9 @@ dev_dependencies = [
 kwargs = dict(
     name="bpx-beacon-client",
     author="BPX Network",
-    author_email="hello@bpxcoin.cc",
+    author_email="hello@bpxchain.cc",
     description="BPX V3 network Beacon Client",
-    url="https://bpxcoin.cc/",
+    url="https:/bpxchain.cc/",
     license="Apache License",
     python_requires=">=3.7, <4",
     keywords="bpx blockchain node beacon",
