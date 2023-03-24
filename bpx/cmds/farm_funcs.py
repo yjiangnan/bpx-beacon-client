@@ -3,11 +3,9 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from bpx.cmds.cmds_util import get_any_service_client
-from bpx.cmds.units import units
 from bpx.consensus.block_record import BlockRecord
 from bpx.rpc.farmer_rpc_client import FarmerRpcClient
 from bpx.rpc.full_node_rpc_client import FullNodeRpcClient
-from bpx.rpc.wallet_rpc_client import WalletRpcClient
 from bpx.util.misc import format_bytes, format_minutes
 from bpx.util.network import is_localhost
 
@@ -54,14 +52,6 @@ async def get_average_block_time(rpc_port: Optional[int]) -> float:
     return SECONDS_PER_BLOCK
 
 
-async def get_wallets_stats(wallet_rpc_port: Optional[int]) -> Optional[Dict[str, Any]]:
-    async with get_any_service_client(WalletRpcClient, wallet_rpc_port, login_to_wallet=False) as node_config_fp:
-        wallet_client, _, _ = node_config_fp
-        if wallet_client is not None:
-            return await wallet_client.get_farmed_amount()
-    return None
-
-
 async def get_challenges(farmer_rpc_port: Optional[int]) -> Optional[List[Dict[str, Any]]]:
     async with get_any_service_client(FarmerRpcClient, farmer_rpc_port) as node_config_fp:
         farmer_client, _, _ = node_config_fp
@@ -90,21 +80,12 @@ async def challenges(farmer_rpc_port: Optional[int], limit: int) -> None:
 
 async def summary(
     rpc_port: Optional[int],
-    wallet_rpc_port: Optional[int],
     harvester_rpc_port: Optional[int],
     farmer_rpc_port: Optional[int],
 ) -> None:
     harvesters_summary = await get_harvesters_summary(farmer_rpc_port)
     blockchain_state = await get_blockchain_state(rpc_port)
     farmer_running = False if harvesters_summary is None else True  # harvesters uses farmer rpc too
-
-    wallet_not_ready: bool = False
-    amounts = None
-    try:
-        amounts = await get_wallets_stats(wallet_rpc_port)
-    except Exception:
-        wallet_not_ready = True
-    wallet_not_running: bool = True if amounts is None else False
 
     print("Farming status: ", end="")
     if blockchain_state is None:
@@ -117,12 +98,6 @@ async def summary(
         print("Not running")
     else:
         print("Farming")
-
-    if amounts is not None:
-        print(f"Total chia farmed: {amounts['farmed_amount'] / units['chia']}")
-        print(f"User transaction fees: {amounts['fee_amount'] / units['chia']}")
-        print(f"Block rewards: {(amounts['farmer_reward_amount'] + amounts['pool_reward_amount']) / units['chia']}")
-        print(f"Last height farmed: {amounts['last_height_farmed']}")
 
     class PlotStats:
         total_plot_size = 0
@@ -182,11 +157,3 @@ async def summary(
         print("Expected time to win: Never (no plots)")
     else:
         print("Expected time to win: " + format_minutes(minutes))
-
-    if amounts is None:
-        if wallet_not_running:
-            print("For details on farmed rewards and fees you should run 'chia start wallet' and 'chia wallet show'")
-        elif wallet_not_ready:
-            print("For details on farmed rewards and fees you should run 'chia wallet show'")
-    else:
-        print("Note: log into your key using 'chia wallet show' to see rewards for each key")

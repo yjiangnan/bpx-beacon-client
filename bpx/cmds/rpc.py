@@ -12,7 +12,7 @@ from bpx.util.config import load_config
 from bpx.util.default_root import DEFAULT_ROOT_PATH
 from bpx.util.ints import uint16
 
-services: List[str] = ["crawler", "farmer", "full_node", "harvester", "timelord", "wallet", "data_layer"]
+services: List[str] = ["crawler", "farmer", "beacon", "harvester", "timelord"]
 
 
 async def call_endpoint(service: str, endpoint: str, request: Dict[str, Any], config: Dict[str, Any]) -> Dict[str, Any]:

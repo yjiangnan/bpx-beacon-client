@@ -37,8 +37,8 @@ def configure(
                         ":".join(set_node_introducer.split(":")[:-1]),
                         set_node_introducer.split(":")[-1],
                     )
-                    config["full_node"]["introducer_peer"]["host"] = host
-                    config["full_node"]["introducer_peer"]["port"] = int(port)
+                    config["beacon"]["introducer_peer"]["host"] = host
+                    config["beacon"]["introducer_peer"]["port"] = int(port)
                     config["introducer"]["port"] = int(port)
                     print("Node introducer updated")
                     change_made = True
@@ -51,8 +51,8 @@ def configure(
                         ":".join(set_farmer_peer.split(":")[:-1]),
                         set_farmer_peer.split(":")[-1],
                     )
-                    config["full_node"]["farmer_peer"]["host"] = host
-                    config["full_node"]["farmer_peer"]["port"] = int(port)
+                    config["beacon"]["farmer_peer"]["host"] = host
+                    config["beacon"]["farmer_peer"]["port"] = int(port)
                     config["harvester"]["farmer_peer"]["host"] = host
                     config["harvester"]["farmer_peer"]["port"] = int(port)
                     print("Farmer peer updated, make sure your harvester has the proper cert installed")
@@ -60,12 +60,10 @@ def configure(
             except ValueError:
                 print("Farmer address must be in format [IP:Port]")
         if set_fullnode_port:
-            config["full_node"]["port"] = int(set_fullnode_port)
-            config["full_node"]["introducer_peer"]["port"] = int(set_fullnode_port)
+            config["beacon"]["port"] = int(set_fullnode_port)
+            config["beacon"]["introducer_peer"]["port"] = int(set_fullnode_port)
             config["farmer"]["full_node_peer"]["port"] = int(set_fullnode_port)
             config["timelord"]["full_node_peer"]["port"] = int(set_fullnode_port)
-            config["wallet"]["full_node_peer"]["port"] = int(set_fullnode_port)
-            config["wallet"]["introducer_peer"]["port"] = int(set_fullnode_port)
             config["introducer"]["port"] = int(set_fullnode_port)
             print("Default full node port updated")
             change_made = True
@@ -83,18 +81,18 @@ def configure(
             else:
                 print(f"Logging level not updated. Use one of: {levels}")
         if enable_upnp:
-            config["full_node"]["enable_upnp"] = str2bool(enable_upnp)
+            config["beacon"]["enable_upnp"] = str2bool(enable_upnp)
             if str2bool(enable_upnp):
                 print("uPnP enabled")
             else:
                 print("uPnP disabled")
             change_made = True
         if set_outbound_peer_count:
-            config["full_node"]["target_outbound_peer_count"] = int(set_outbound_peer_count)
+            config["beacon"]["target_outbound_peer_count"] = int(set_outbound_peer_count)
             print("Target outbound peer count updated")
             change_made = True
         if set_peer_count:
-            config["full_node"]["target_peer_count"] = int(set_peer_count)
+            config["beacon"]["target_peer_count"] = int(set_peer_count)
             print("Target peer count updated")
             change_made = True
         if testnet:
@@ -105,33 +103,24 @@ def configure(
                 testnet_dns_introducer = "dns-introducer-testnet10.chia.net"
                 bootstrap_peers = ["testnet10-node.chia.net"]
                 testnet = "testnet10"
-                config["full_node"]["port"] = int(testnet_port)
-                if config["full_node"]["introducer_peer"] is None:
-                    config["full_node"]["introducer_peer"] = {}
-                assert config["full_node"]["introducer_peer"] is not None  # mypy
-                if config["wallet"]["introducer_peer"] is None:
-                    config["wallet"]["introducer_peer"] = {}
-                assert config["wallet"]["introducer_peer"] is not None  # mypy
-                config["full_node"]["introducer_peer"]["port"] = int(testnet_port)
-                config["farmer"]["full_node_peer"]["port"] = int(testnet_port)
-                config["timelord"]["full_node_peer"]["port"] = int(testnet_port)
-                config["wallet"]["full_node_peer"]["port"] = int(testnet_port)
-                config["wallet"]["introducer_peer"]["port"] = int(testnet_port)
+                config["beacon"]["port"] = int(testnet_port)
+                if config["beacon"]["introducer_peer"] is None:
+                    config["beacon"]["introducer_peer"] = {}
+                assert config["beacon"]["introducer_peer"] is not None  # mypy
+                config["beacon"]["introducer_peer"]["port"] = int(testnet_port)
+                config["farmer"]["beacon_peer"]["port"] = int(testnet_port)
+                config["timelord"]["beacon_peer"]["port"] = int(testnet_port)
                 config["introducer"]["port"] = int(testnet_port)
-                config["full_node"]["introducer_peer"]["host"] = testnet_introducer
-                config["full_node"]["dns_servers"] = [testnet_dns_introducer]
-                config["wallet"]["introducer_peer"]["host"] = testnet_introducer
-                config["wallet"]["dns_servers"] = [testnet_dns_introducer]
+                config["beacon"]["introducer_peer"]["host"] = testnet_introducer
+                config["beacon"]["dns_servers"] = [testnet_dns_introducer]
                 config["selected_network"] = testnet
                 config["harvester"]["selected_network"] = testnet
-                config["pool"]["selected_network"] = testnet
                 config["farmer"]["selected_network"] = testnet
                 config["timelord"]["selected_network"] = testnet
-                config["full_node"]["selected_network"] = testnet
+                config["beacon"]["selected_network"] = testnet
                 config["ui"]["selected_network"] = testnet
                 config["introducer"]["selected_network"] = testnet
-                config["wallet"]["selected_network"] = testnet
-                config["data_layer"]["selected_network"] = testnet
+                config["execution"]["selected_network"] = testnet
 
                 if "seeder" in config:
                     config["seeder"]["port"] = int(testnet_port)
@@ -149,27 +138,21 @@ def configure(
                 mainnet_dns_introducer = "dns-introducer.chia.net"
                 bootstrap_peers = ["node.chia.net"]
                 net = "mainnet"
-                config["full_node"]["port"] = int(mainnet_port)
-                config["full_node"]["introducer_peer"]["port"] = int(mainnet_port)
-                config["farmer"]["full_node_peer"]["port"] = int(mainnet_port)
-                config["timelord"]["full_node_peer"]["port"] = int(mainnet_port)
-                config["wallet"]["full_node_peer"]["port"] = int(mainnet_port)
-                config["wallet"]["introducer_peer"]["port"] = int(mainnet_port)
+                config["beacon"]["port"] = int(mainnet_port)
+                config["beacon"]["introducer_peer"]["port"] = int(mainnet_port)
+                config["farmer"]["beacon_peer"]["port"] = int(mainnet_port)
+                config["timelord"]["beacon_peer"]["port"] = int(mainnet_port)
                 config["introducer"]["port"] = int(mainnet_port)
-                config["full_node"]["introducer_peer"]["host"] = mainnet_introducer
-                config["full_node"]["dns_servers"] = [mainnet_dns_introducer]
-                config["wallet"]["introducer_peer"]["host"] = mainnet_introducer
-                config["wallet"]["dns_servers"] = [mainnet_dns_introducer]
+                config["beacon"]["introducer_peer"]["host"] = mainnet_introducer
+                config["beacon"]["dns_servers"] = [mainnet_dns_introducer]
                 config["selected_network"] = net
                 config["harvester"]["selected_network"] = net
-                config["pool"]["selected_network"] = net
                 config["farmer"]["selected_network"] = net
                 config["timelord"]["selected_network"] = net
-                config["full_node"]["selected_network"] = net
+                config["beacon"]["selected_network"] = net
                 config["ui"]["selected_network"] = net
                 config["introducer"]["selected_network"] = net
-                config["wallet"]["selected_network"] = net
-                config["data_layer"]["selected_network"] = net
+                config["execution"]["selected_network"] = net
 
                 if "seeder" in config:
                     config["seeder"]["port"] = int(mainnet_port)
@@ -183,7 +166,7 @@ def configure(
                 print("Please choose True or False")
 
         if peer_connect_timeout:
-            config["full_node"]["peer_connect_timeout"] = int(peer_connect_timeout)
+            config["beacon"]["peer_connect_timeout"] = int(peer_connect_timeout)
             change_made = True
 
         if crawler_db_path is not None and "seeder" in config:
@@ -203,7 +186,7 @@ def configure(
             change_made = True
 
         if change_made:
-            print("Restart any running chia services for changes to take effect")
+            print("Restart any running bpx services for changes to take effect")
             save_config(root_path, "config.yaml", config)
 
 

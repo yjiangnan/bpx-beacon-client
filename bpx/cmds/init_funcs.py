@@ -14,7 +14,7 @@ from bpx.consensus.coinbase import create_puzzlehash_for_pk
 from bpx.ssl.create_ssl import create_all_ssl
 from bpx.util.bech32m import encode_puzzle_hash
 from bpx.util.config import (
-    create_default_chia_config,
+    create_default_bpx_config,
     initial_config_file,
     load_config,
     lock_and_load_config,
@@ -41,33 +41,12 @@ from bpx.wallet.derive_keys import (
 )
 
 
-def dict_add_new_default(updated: Dict[str, Any], default: Dict[str, Any], do_not_migrate_keys: Dict[str, Any]) -> None:
-    for k in do_not_migrate_keys:
-        if k in updated and do_not_migrate_keys[k] == "":
-            updated.pop(k)
-    for k, v in default.items():
-        ignore = False
-        if k in do_not_migrate_keys:
-            do_not_data = do_not_migrate_keys[k]
-            if isinstance(do_not_data, dict):
-                ignore = False
-            else:
-                ignore = True
-        if isinstance(v, dict) and k in updated and ignore is False:
-            # If there is an intermediate key with empty string value, do not migrate all descendants
-            if do_not_migrate_keys.get(k, None) == "":
-                do_not_migrate_keys[k] = v
-            dict_add_new_default(updated[k], default[k], do_not_migrate_keys.get(k, {}))
-        elif k not in updated or ignore is True:
-            updated[k] = v
-
-
 def check_keys(new_root: Path, keychain: Optional[Keychain] = None) -> None:
     if keychain is None:
         keychain = Keychain()
     all_sks = keychain.get_all_private_keys()
     if len(all_sks) == 0:
-        print("No keys are present in the keychain. Generate them with 'chia keys generate'")
+        print("No keys are present in the keychain. Generate them with 'bpx keys generate'")
         return None
 
     with lock_and_load_config(new_root, "config.yaml") as config:
@@ -165,45 +144,6 @@ def copy_files_rec(old_path: Path, new_path: Path) -> None:
             new_path_child = new_path / old_path_child.name
             copy_files_rec(old_path_child, new_path_child)
 
-
-def migrate_from(
-    old_root: Path,
-    new_root: Path,
-    manifest: List[str],
-    do_not_migrate_settings: List[str],
-) -> int:
-    """
-    Copy all the files in "manifest" to the new config directory.
-    """
-    if old_root == new_root:
-        print("same as new path, exiting")
-        return 1
-    if not old_root.is_dir():
-        print(f"{old_root} not found - this is ok if you did not install this version")
-        return 0
-    print(f"\n{old_root} found")
-    print(f"Copying files from {old_root} to {new_root}\n")
-
-    for f in manifest:
-        old_path = old_root / f
-        new_path = new_root / f
-        copy_files_rec(old_path, new_path)
-
-    # update config yaml with new keys
-
-    with lock_and_load_config(new_root, "config.yaml") as config:
-        config_str: str = initial_config_file("config.yaml")
-        default_config: Dict[str, Any] = yaml.safe_load(config_str)
-        flattened_keys = unflatten_properties({k: "" for k in do_not_migrate_settings})
-        dict_add_new_default(config, default_config, flattened_keys)
-
-        save_config(new_root, "config.yaml", config)
-
-    create_all_ssl(new_root)
-
-    return 1
-
-
 def copy_cert_files(cert_path: Path, new_path: Path) -> None:
     for old_path_child in cert_path.glob("*.crt"):
         new_path_child = new_path / old_path_child.name
@@ -221,7 +161,6 @@ def init(
     root_path: Path,
     fix_ssl_permissions: bool = False,
     testnet: bool = False,
-    v1_db: bool = False,
 ) -> Optional[int]:
     if create_certs is not None:
         if root_path.exists():
@@ -239,11 +178,10 @@ def init(
             print(f"** {root_path} does not exist. Executing core init **")
             # sanity check here to prevent infinite recursion
             if (
-                chia_init(
+                bpx_init(
                     root_path,
                     fix_ssl_permissions=fix_ssl_permissions,
                     testnet=testnet,
-                    v1_db=v1_db,
                 )
                 == 0
                 and root_path.exists()
@@ -253,12 +191,12 @@ def init(
             print(f"** {root_path} was not created. Exiting **")
             return -1
     else:
-        return chia_init(root_path, fix_ssl_permissions=fix_ssl_permissions, testnet=testnet, v1_db=v1_db)
+        return bpx_init(root_path, fix_ssl_permissions=fix_ssl_permissions, testnet=testnet)
 
     return None
 
 
-def chia_version_number() -> Tuple[str, str, str, str]:
+def bpx_version_number() -> Tuple[str, str, str, str]:
     scm_full_version = __version__
     left_full_version = scm_full_version.split("+")
 
@@ -306,18 +244,17 @@ def chia_version_number() -> Tuple[str, str, str, str]:
     return major_release_number, minor_release_number, patch_release_number, dev_release_number
 
 
-def chia_full_version_str() -> str:
-    major, minor, patch, dev = chia_version_number()
+def bpx_full_version_str() -> str:
+    major, minor, patch, dev = bpx_version_number()
     return f"{major}.{minor}.{patch}{dev}"
 
 
-def chia_init(
+def bpx_init(
     root_path: Path,
     *,
     should_check_keys: bool = True,
     fix_ssl_permissions: bool = False,
     testnet: bool = False,
-    v1_db: bool = False,
 ) -> int:
     """
     Standard first run initialization or migration steps. Handles config creation,
@@ -327,13 +264,13 @@ def chia_init(
     protected Keychain. When launching the daemon from the GUI, we want the GUI to
     handle unlocking the keychain.
     """
-    chia_root = os.environ.get("CHIA_ROOT", None)
-    if chia_root is not None:
-        print(f"CHIA_ROOT is set to {chia_root}")
+    bpx_root = os.environ.get("BPX_ROOT", None)
+    if bpx_root is not None:
+        print(f"BPX_ROOT is set to {bpx_root}")
 
-    print(f"Chia directory {root_path}")
+    print(f"BPX directory {root_path}")
     if root_path.is_dir() and Path(root_path / "config" / "config.yaml").exists():
-        # This is reached if CHIA_ROOT is set, or if user has run chia init twice
+        # This is reached if BPX_ROOT is set, or if user has run bpx init twice
         # before a new update.
         if testnet:
             configure(
@@ -360,7 +297,7 @@ def chia_init(
         print(f"{root_path} already exists, no migration action taken")
         return -1
 
-    create_default_chia_config(root_path)
+    create_default_bpx_config(root_path)
     if testnet:
         configure(
             root_path,
@@ -388,34 +325,19 @@ def chia_init(
     config: Dict[str, Any]
 
     db_path_replaced: str
-    if v1_db:
-        with lock_and_load_config(root_path, "config.yaml") as config:
-            db_pattern = config["full_node"]["database_path"]
-            new_db_path = db_pattern.replace("_v2_", "_v1_")
-            config["full_node"]["database_path"] = new_db_path
-            db_path_replaced = new_db_path.replace("CHALLENGE", config["selected_network"])
-            db_path = path_from_root(root_path, db_path_replaced)
-
-            db_path.parent.mkdir(parents=True, exist_ok=True)
-            with sqlite3.connect(db_path) as connection:
-                set_db_version(connection, 1)
-
-            save_config(root_path, "config.yaml", config)
-
-    else:
-        config = load_config(root_path, "config.yaml")["full_node"]
-        db_path_replaced = config["database_path"].replace("CHALLENGE", config["selected_network"])
-        db_path = path_from_root(root_path, db_path_replaced)
-        db_path.parent.mkdir(parents=True, exist_ok=True)
-        try:
-            # create new v2 db file
-            with sqlite3.connect(db_path) as connection:
-                set_db_version(connection, 2)
-        except sqlite3.OperationalError:
-            # db already exists, so we're good
-            pass
+    config = load_config(root_path, "config.yaml")["beacon"]
+    db_path_replaced = config["database_path"].replace("CHALLENGE", config["selected_network"])
+    db_path = path_from_root(root_path, db_path_replaced)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        # create new v2 db file
+        with sqlite3.connect(db_path) as connection:
+            set_db_version(connection, 2)
+    except sqlite3.OperationalError:
+        # db already exists, so we're good
+        pass
 
     print("")
-    print("To see your keys, run 'chia keys show --show-mnemonic-seed'")
+    print("To see your keys, run 'bpx keys show --show-mnemonic-seed'")
 
     return 0

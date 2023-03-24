@@ -13,7 +13,7 @@ from bpx.cmds.peer_funcs import peer_async
     "-p",
     "--rpc-port",
     help=(
-        "Set the port where the farmer, wallet, full node or harvester "
+        "Set the port where the farmer, beacon client or harvester "
         "is hosting the RPC interface. See the rpc_port in config.yaml"
     ),
     type=int,
@@ -22,7 +22,7 @@ from bpx.cmds.peer_funcs import peer_async
 @click.option(
     "-c", "--connections", help="List connections to the specified service", is_flag=True, type=bool, default=False
 )
-@click.option("-a", "--add-connection", help="Connect specified Chia service to ip:port", type=str, default="")
+@click.option("-a", "--add-connection", help="Connect specified BPX service to ip:port", type=str, default="")
 @click.option(
     "-r", "--remove-connection", help="Remove a Node by the first 8 characters of NodeID", type=str, default=""
 )

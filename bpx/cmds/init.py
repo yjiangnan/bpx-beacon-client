@@ -16,13 +16,8 @@ import click
     is_flag=True,
     help="Attempt to fix SSL certificate/key file permissions",
 )
-@click.option("--testnet", is_flag=True, help="Configure this chia install to connect to the testnet")
+@click.option("--testnet", is_flag=True, help="Configure this bpx install to connect to the testnet")
 @click.option("--set-passphrase", "-s", is_flag=True, help="Protect your keyring with a passphrase")
-@click.option(
-    "--v1-db",
-    is_flag=True,
-    help="Initialize the blockchain database in v1 format (compatible with older versions of the full node)",
-)
 @click.pass_context
 def init_cmd(
     ctx: click.Context,
@@ -30,19 +25,16 @@ def init_cmd(
     fix_ssl_permissions: bool,
     testnet: bool,
     set_passphrase: bool,
-    v1_db: bool,
 ) -> None:
     """
     Create a new configuration or migrate from previous versions to current
 
     \b
     Follow these steps to create new certificates for a remote harvester:
-    - Make a copy of your Farming Machine CA directory: ~/.chia/[version]/config/ssl/ca
-    - Shut down all chia daemon processes with `chia stop all -d`
-    - Run `chia init -c [directory]` on your remote harvester,
+    - Make a copy of your Farming Machine CA directory: ~/.bpx/[version]/config/ssl/ca
+    - Shut down all bpx daemon processes with `bpx stop all -d`
+    - Run `bpx init -c [directory]` on your remote harvester,
       where [directory] is the the copy of your Farming Machine CA directory
-    - Get more details on remote harvester on Chia wiki:
-      https://github.com/Chia-Network/chia-blockchain/wiki/Farming-on-many-machines
     """
     from pathlib import Path
 
@@ -58,13 +50,12 @@ def init_cmd(
         ctx.obj["root_path"],
         fix_ssl_permissions,
         testnet,
-        v1_db,
     )
 
 
 if __name__ == "__main__":
     from bpx.util.default_root import DEFAULT_ROOT_PATH
 
-    from .init_funcs import chia_init
+    from .init_funcs import bpx_init
 
-    chia_init(DEFAULT_ROOT_PATH)
+    bpx_init(DEFAULT_ROOT_PATH)

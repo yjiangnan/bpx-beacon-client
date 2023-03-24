@@ -18,9 +18,9 @@ def show_plots(root_path: Path):
     print("Directories where plots are being searched for:")
     print("Note that subdirectories must be added manually")
     print(
-        "Add with 'chia plots add -d [dir]' and remove with"
-        + " 'chia plots remove -d [dir]'"
-        + " Scan and check plots with 'chia plots check'"
+        "Add with 'bpx plots add -d [dir]' and remove with"
+        + " 'bpx plots remove -d [dir]'"
+        + " Scan and check plots with 'bpx plots check'"
     )
     print()
     for str_path in get_plot_directories(root_path):
@@ -31,11 +31,11 @@ def show_plots(root_path: Path):
 @click.pass_context
 def plots_cmd(ctx: click.Context):
     """Create, add, remove and check your plots"""
-    from bpx.util.chia_logging import initialize_logging
+    from bpx.util.bpx_logging import initialize_logging
 
     root_path: Path = ctx.obj["root_path"]
     if not root_path.is_dir():
-        raise RuntimeError("Please initialize (or migrate) your config directory with 'chia init'")
+        raise RuntimeError("Please initialize (or migrate) your config directory with 'bpx init'")
     initialize_logging("", {"log_level": "INFO", "log_stdout": True}, root_path)
 
 
@@ -52,13 +52,6 @@ def plots_cmd(ctx: click.Context):
     type=int,
     default=None,
     help="Enter the alternative fingerprint of the key you want to use",
-)
-@click.option(
-    "-c",
-    "--pool_contract_address",
-    type=str,
-    default=None,
-    help="Address of where the pool reward will be sent to. Only used if alt_fingerprint and pool public key are None",
 )
 @click.option("-f", "--farmer_public_key", help="Hex farmer public key", type=str, default=None)
 @click.option("-p", "--pool_public_key", help="Hex public key of pool", type=str, default=None)
@@ -103,7 +96,6 @@ def create_cmd(
     num_threads: int,
     buckets: int,
     alt_fingerprint: int,
-    pool_contract_address: str,
     farmer_public_key: str,
     pool_public_key: str,
     tmp_dir: str,
@@ -144,7 +136,6 @@ def create_cmd(
             farmer_public_key,
             alt_fingerprint,
             pool_public_key,
-            pool_contract_address,
             root_path,
             log,
             connect_to_daemon,

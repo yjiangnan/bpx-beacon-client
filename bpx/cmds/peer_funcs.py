@@ -119,7 +119,7 @@ async def peer_async(
         if rpc_client is not None:
             # Check or edit node connections
             if show_connections:
-                trusted_peers: Dict[str, Any] = config["full_node"].get("trusted_peers", {})
+                trusted_peers: Dict[str, Any] = config["beacon"].get("trusted_peers", {})
                 await print_connections(rpc_client, trusted_peers)
                 # if called together with state, leave a blank line
             if add_connection:
