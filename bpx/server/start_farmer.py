@@ -35,7 +35,7 @@ def create_farmer_service(
     service_config = config[SERVICE_NAME]
 
     connect_peers = []
-    fnp = service_config.get("full_node_peer")
+    fnp = service_config.get("beacon_peer")
     if fnp is not None:
         connect_peers.append(
             PeerInfo(str(get_host_addr(fnp["host"], prefer_ipv6=config.get("prefer_ipv6", False))), fnp["port"])

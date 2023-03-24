@@ -14,7 +14,7 @@ from bpx.server.rate_limit_numbers import RLSettings, get_rate_limits_to_use
 log = logging.getLogger(__name__)
 
 
-# TODO: only full node disconnects based on rate limits
+# TODO: only beacon client disconnects based on rate limits
 class RateLimiter:
     incoming: bool
     reset_seconds: int

@@ -511,7 +511,7 @@ class PoolWallet:
         # for the standard wallet to keep track of the fee. However, we will only submit the first one to the
         # blockchain, and this one has the fee inside it as well.
         # The fee tx, if present, will be added to the DB with no spend_bundle set, which has the effect that it
-        # will not be sent to full nodes.
+        # will not be sent to beacon clients.
 
         await self.wallet_state_manager.add_pending_transaction(travel_tx)
         if fee_tx is not None:

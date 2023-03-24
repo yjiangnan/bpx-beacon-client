@@ -74,10 +74,10 @@ network_overrides: &network_overrides
   config:
     mainnet:
       address_prefix: "xch"
-      default_full_node_port: 8444
+      default_beacon_port: 8444
     testnet0:
       address_prefix: "txch"
-      default_full_node_port: 58444
+      default_beacon_port: 58444
     testnet1:
       address_prefix: "txch"
     testnet2:
@@ -88,10 +88,10 @@ network_overrides: &network_overrides
       address_prefix: "txch"
     testnet7:
       address_prefix: "txch"
-      default_full_node_port: 58444
+      default_beacon_port: 58444
     testnet10:
       address_prefix: "txch"
-      default_full_node_port: 58444
+      default_beacon_port: 58444
 
 selected_network: &selected_network "mainnet"
 ALERTS_URL: https://download.chia.net/notify/mainnet_alert.txt
@@ -126,11 +126,11 @@ logging: &logging
   log_syslog_port: 514  # UDP port of the remote or local Unix syslog
 
 seeder:
-  # The fake full node used for crawling will run on this port.
+  # The fake beacon client used for crawling will run on this port.
   port: 8444
-  # Most full nodes on the network run on this port. (i.e. 8444 for mainnet, 58444 for testnet).
+  # Most beacon clients on the network run on this port. (i.e. 8444 for mainnet, 58444 for testnet).
   other_peers_port: 8444
-  # This will override the default full_node.peer_connect_timeout for the crawler full node
+  # This will override the default beacon.peer_connect_timeout for the crawler beacon client
   peer_connect_timeout: 2
   # Path to crawler DB. Defaults to $CHIA_ROOT/crawler.db
   crawler_db_path: "crawler.db"
@@ -214,8 +214,8 @@ pool:
 farmer:
   # The farmer server (if run) will run on this port
   port: 8447
-  # The farmer will attempt to connect to this full node and harvester
-  full_node_peer:
+  # The farmer will attempt to connect to this beacon client and harvester
+  beacon_peer:
     host: *self_hostname
     port: 8444
   harvester_peer:
@@ -265,7 +265,7 @@ timelord:
       - 127.0.0.1
     ips_estimate:
       - 150000
-  full_node_peer:
+  beacon_peer:
       host: *self_hostname
       port: 8444
   # Maximum number of seconds allowed for a client to reconnect to the server.
@@ -290,8 +290,8 @@ timelord:
   # If set 'True', the timelord will create compact proofs of time, instead of
   # extending the chain. The attribute 'fast_algorithm' won't apply if timelord
   # is running in bluebox_mode.
-  # You must set 'send_uncompact_interval' in 'full_node' > 0 in the full_node
-  # section below to have full_node send existing time proofs to be sanitized.
+  # You must set 'send_uncompact_interval' in 'beacon' > 0 in the beacon
+  # section below to have beacon send existing time proofs to be sanitized.
   bluebox_mode: False
   # This runs a less CPU intensive bluebox. Runs for windows. Settings apply as for `bluebox_mode`.
   # Optionally set `process_count` in `timelord_launcher` to 0, since timelord launcher won't be used in this case.
@@ -311,8 +311,8 @@ timelord:
     public_crt:  "config/ssl/timelord/public_timelord.crt"
     public_key:  "config/ssl/timelord/public_timelord.key"
 
-full_node:
-  # The full node server (if run) will run on this port
+beacon:
+  # The beacon client server (if run) will run on this port
   port: 8444
 
   # controls the sync-to-disk behavior of the database connection. Can be one of:
@@ -344,7 +344,7 @@ full_node:
   start_rpc_server: True
   rpc_port: 8555
 
-  # Use UPnP to attempt to allow other full nodes to reach your node behind a gateway
+  # Use UPnP to attempt to allow other beacon clients to reach your node behind a gateway
   enable_upnp: True
 
   # If node is more than these blocks behind, will do a sync (long sync)
@@ -362,7 +362,7 @@ full_node:
   # profiled.
   single_threaded: False
 
-  # How often to initiate outbound connections to other full nodes.
+  # How often to initiate outbound connections to other beacon clients.
   peer_connect_interval: 30
   # How long to wait for a peer connection
   peer_connect_timeout: 30
@@ -391,7 +391,7 @@ full_node:
   # timeout for weight proof request
   weight_proof_timeout: &weight_proof_timeout 360
 
-  # when enabled, the full node will print a pstats profile to the root_dir/profile every second
+  # when enabled, the beacon client will print a pstats profile to the root_dir/profile every second
   # analyze with chia/utils/profiler.py
   enable_profiler: False
 
@@ -416,7 +416,7 @@ full_node:
   trusted_max_subscribe_response_items: 500000
 
   # List of trusted DNS seeders to bootstrap from.
-  # If you modify this, please change the hardcode as well from FullNode.set_server()
+  # If you modify this, please change the hardcode as well from Beacon.set_server()
   dns_servers: &dns_servers
     - "dns-introducer.chia.net"
     - "chia.ctrlaltdel.ch"
@@ -445,17 +445,17 @@ full_node:
     0ThisisanexampleNodeID7ff9d60f1c3fa270c213c0ad0cb89c01274634a7c3cb7: Does_not_matter
 
   ssl:
-    private_crt:  "config/ssl/full_node/private_full_node.crt"
-    private_key:  "config/ssl/full_node/private_full_node.key"
-    public_crt:  "config/ssl/full_node/public_full_node.crt"
-    public_key:  "config/ssl/full_node/public_full_node.key"
+    private_crt:  "config/ssl/beacon/private_beacon.crt"
+    private_key:  "config/ssl/beacon/private_beacon.key"
+    public_crt:  "config/ssl/beacon/public_beacon.crt"
+    public_key:  "config/ssl/beacon/public_beacon.key"
   use_chia_loop_policy: True
 
 ui:
    # The ui node server (if run) will run on this port
   port: 8222
 
-  # Which port to use to communicate with the full node
+  # Which port to use to communicate with the beacon client
   rpc_port: 8555
 
   # This SSH key is for the ui SSH server
@@ -484,8 +484,8 @@ introducer:
   selected_network: *selected_network
 
   ssl:
-    public_crt:  "config/ssl/full_node/public_full_node.crt"
-    public_key:  "config/ssl/full_node/public_full_node.key"
+    public_crt:  "config/ssl/beacon/public_beacon.crt"
+    public_key:  "config/ssl/beacon/public_beacon.key"
 
 wallet:
   port: 8449
@@ -495,7 +495,7 @@ wallet:
 
   enable_memory_profiler: False
 
-  # see description for full_node.db_sync
+  # see description for beacon.db_sync
   db_sync: auto
 
   # the number of threads used to read from the wallet database
@@ -512,7 +512,7 @@ wallet:
 
   dns_servers: *dns_servers
 
-  full_node_peer:
+  beacon_peer:
     host: *self_hostname
     port: 8444
   # The path of NFT off-chain metadata cache
@@ -552,7 +552,7 @@ wallet:
     public_crt:  "config/ssl/wallet/public_wallet.crt"
     public_key:  "config/ssl/wallet/public_wallet.key"
 
-  # Node IDs of trusted full node peers, for performing a fast trusted wallet sync
+  # Node IDs of trusted beacon client peers, for performing a fast trusted wallet sync
   trusted_peers:
     0ThisisanexampleNodeID7ff9d60f1c3fa270c213c0ad0cb89c01274634a7c3cb9: Does_not_matter
 

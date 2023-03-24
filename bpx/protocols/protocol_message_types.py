@@ -14,14 +14,14 @@ class ProtocolMessageTypes(Enum):
     request_signatures = 6
     respond_signatures = 7
 
-    # Farmer protocol (farmer <-> full_node)
+    # Farmer protocol (farmer <-> beacon)
     new_signage_point = 8
     declare_proof_of_space = 9
     request_signed_values = 10
     signed_values = 11
     farming_info = 12
 
-    # Timelord protocol (timelord <-> full_node)
+    # Timelord protocol (timelord <-> beacon)
     new_peak_timelord = 13
     new_unfinished_block_timelord = 14
     new_infusion_point_vdf = 15
@@ -30,7 +30,7 @@ class ProtocolMessageTypes(Enum):
     request_compact_proof_of_time = 18
     respond_compact_proof_of_time = 19
 
-    # Full node protocol (full_node <-> full_node)
+    # Beacon client protocol (beacon <-> beacon)
     new_peak = 20
     new_transaction = 21
     request_transaction = 22
@@ -58,7 +58,7 @@ class ProtocolMessageTypes(Enum):
     respond_peers = 44
     none_response = 91
 
-    # Wallet protocol (wallet <-> full_node)
+    # Wallet protocol (wallet <-> beacon)
     request_puzzle_solution = 45
     respond_puzzle_solution = 46
     reject_puzzle_solution = 47
@@ -78,7 +78,7 @@ class ProtocolMessageTypes(Enum):
     reject_header_blocks = 61
     respond_header_blocks = 62
 
-    # Introducer protocol (introducer <-> full_node)
+    # Introducer protocol (introducer <-> beacon)
     request_peers_introducer = 63
     respond_peers_introducer = 64
 

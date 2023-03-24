@@ -14,9 +14,9 @@ from bpx.consensus.coinbase import create_farmer_coin, create_pool_coin
 from bpx.consensus.constants import ConsensusConstants
 from bpx.consensus.cost_calculator import NPCResult
 from bpx.consensus.find_fork_point import find_fork_point_in_chain
-from bpx.full_node.block_store import BlockStore
-from bpx.full_node.coin_store import CoinStore
-from bpx.full_node.mempool_check_conditions import get_name_puzzle_conditions, mempool_check_time_locks
+from bpx.beacon.block_store import BlockStore
+from bpx.beacon.coin_store import CoinStore
+from bpx.beacon.mempool_check_conditions import get_name_puzzle_conditions, mempool_check_time_locks
 from bpx.types.block_protocol import BlockInfo
 from bpx.types.blockchain_format.coin import Coin
 from bpx.types.blockchain_format.sized_bytes import bytes32, bytes48

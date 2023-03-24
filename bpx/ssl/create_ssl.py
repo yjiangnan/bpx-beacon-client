@@ -16,7 +16,7 @@ from cryptography.x509.oid import NameOID
 from bpx.util.ssl_check import DEFAULT_PERMISSIONS_CERT_FILE, DEFAULT_PERMISSIONS_KEY_FILE
 
 _all_private_node_names: List[str] = [
-    "full_node",
+    "beacon",
     "wallet",
     "farmer",
     "harvester",
@@ -25,7 +25,7 @@ _all_private_node_names: List[str] = [
     "data_layer",
     "daemon",
 ]
-_all_public_node_names: List[str] = ["full_node", "wallet", "farmer", "introducer", "timelord", "data_layer"]
+_all_public_node_names: List[str] = ["beacon", "wallet", "farmer", "introducer", "timelord", "data_layer"]
 
 
 def get_chia_ca_crt_key() -> Tuple[Any, Any]:

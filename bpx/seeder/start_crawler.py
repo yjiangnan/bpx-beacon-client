@@ -24,7 +24,7 @@ SERVICE_NAME = "seeder"
 log = logging.getLogger(__name__)
 
 
-def create_full_node_crawler_service(
+def create_beacon_crawler_service(
     root_path: pathlib.Path,
     config: Dict,
     consensus_constants: ConsensusConstants,
@@ -50,9 +50,9 @@ def create_full_node_crawler_service(
         config=config,
         node=api.crawler,
         peer_api=api,
-        node_type=NodeType.FULL_NODE,
+        node_type=NodeType.BEACON,
         advertised_port=service_config["port"],
-        service_name="full_node",
+        service_name="beacon",
         upnp_ports=[],
         server_listen_ports=[service_config["port"]],
         on_connect_callback=crawler.on_connect,
@@ -70,7 +70,7 @@ async def async_main() -> int:
     overrides = service_config["network_overrides"]["constants"][service_config["selected_network"]]
     updated_constants = DEFAULT_CONSTANTS.replace_str_to_bytes(**overrides)
     initialize_service_logging(service_name=SERVICE_NAME, config=config)
-    service = create_full_node_crawler_service(DEFAULT_ROOT_PATH, config, updated_constants)
+    service = create_beacon_crawler_service(DEFAULT_ROOT_PATH, config, updated_constants)
     await service.setup_process_global_state()
     await service.run()
 

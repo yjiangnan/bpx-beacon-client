@@ -384,7 +384,7 @@ class FarmerAPI:
                     )
                     self.farmer.state_changed("proof", {"proof": request, "passed_filter": True})
                     msg = make_msg(ProtocolMessageTypes.declare_proof_of_space, request)
-                    await self.farmer.server.send_to_all([msg], NodeType.FULL_NODE)
+                    await self.farmer.server.send_to_all([msg], NodeType.BEACON)
                     return None
 
         else:
@@ -435,7 +435,7 @@ class FarmerAPI:
                     )
 
                     msg = make_msg(ProtocolMessageTypes.signed_values, request_to_nodes)
-                    await self.farmer.server.send_to_all([msg], NodeType.FULL_NODE)
+                    await self.farmer.server.send_to_all([msg], NodeType.BEACON)
 
     """
     FARMER PROTOCOL (FARMER <-> FULL NODE)
@@ -498,19 +498,19 @@ class FarmerAPI:
         self.farmer.state_changed("new_signage_point", {"sp_hash": new_signage_point.challenge_chain_sp})
 
     @api_request()
-    async def request_signed_values(self, full_node_request: farmer_protocol.RequestSignedValues):
-        if full_node_request.quality_string not in self.farmer.quality_str_to_identifiers:
-            self.farmer.log.error(f"Do not have quality string {full_node_request.quality_string}")
+    async def request_signed_values(self, beacon_request: farmer_protocol.RequestSignedValues):
+        if beacon_request.quality_string not in self.farmer.quality_str_to_identifiers:
+            self.farmer.log.error(f"Do not have quality string {beacon_request.quality_string}")
             return None
 
         (plot_identifier, challenge_hash, sp_hash, node_id) = self.farmer.quality_str_to_identifiers[
-            full_node_request.quality_string
+            beacon_request.quality_string
         ]
         request = harvester_protocol.RequestSignatures(
             plot_identifier,
             challenge_hash,
             sp_hash,
-            [full_node_request.foliage_block_data_hash, full_node_request.foliage_transaction_block_hash],
+            [beacon_request.foliage_block_data_hash, beacon_request.foliage_transaction_block_hash],
         )
 
         msg = make_msg(ProtocolMessageTypes.request_signatures, request)

@@ -25,26 +25,26 @@ from bpx.consensus.difficulty_adjustment import get_next_sub_slot_iters_and_diff
 from bpx.consensus.make_sub_epoch_summary import next_sub_epoch_summary
 from bpx.consensus.multiprocess_validation import PreValidationResult
 from bpx.consensus.pot_iterations import calculate_sp_iters
-from bpx.full_node.block_store import BlockStore
-from bpx.full_node.bundle_tools import detect_potential_template_generator
-from bpx.full_node.coin_store import CoinStore
-from bpx.full_node.full_node_api import FullNodeAPI
-from bpx.full_node.full_node_store import FullNodeStore, FullNodeStorePeakResult
-from bpx.full_node.hint_management import get_hints_and_subscription_coin_ids
-from bpx.full_node.hint_store import HintStore
-from bpx.full_node.lock_queue import LockClient, LockQueue
-from bpx.full_node.mempool_manager import MempoolManager
-from bpx.full_node.signage_point import SignagePoint
-from bpx.full_node.subscriptions import PeerSubscriptions
-from bpx.full_node.sync_store import SyncStore
-from bpx.full_node.tx_processing_queue import TransactionQueue
-from bpx.full_node.weight_proof import WeightProofHandler
-from bpx.protocols import farmer_protocol, full_node_protocol, timelord_protocol, wallet_protocol
-from bpx.protocols.full_node_protocol import RequestBlocks, RespondBlock, RespondBlocks, RespondSignagePoint
+from bpx.beacon.block_store import BlockStore
+from bpx.beacon.bundle_tools import detect_potential_template_generator
+from bpx.beacon.coin_store import CoinStore
+from bpx.beacon.beacon_api import BeaconAPI
+from bpx.beacon.beacon_store import BeaconStore, BeaconStorePeakResult
+from bpx.beacon.hint_management import get_hints_and_subscription_coin_ids
+from bpx.beacon.hint_store import HintStore
+from bpx.beacon.lock_queue import LockClient, LockQueue
+from bpx.beacon.mempool_manager import MempoolManager
+from bpx.beacon.signage_point import SignagePoint
+from bpx.beacon.subscriptions import PeerSubscriptions
+from bpx.beacon.sync_store import SyncStore
+from bpx.beacon.tx_processing_queue import TransactionQueue
+from bpx.beacon.weight_proof import WeightProofHandler
+from bpx.protocols import farmer_protocol, beacon_protocol, timelord_protocol, wallet_protocol
+from bpx.protocols.beacon_protocol import RequestBlocks, RespondBlock, RespondBlocks, RespondSignagePoint
 from bpx.protocols.protocol_message_types import ProtocolMessageTypes
 from bpx.protocols.wallet_protocol import CoinState, CoinStateUpdate
 from bpx.rpc.rpc_server import StateChangedProtocol
-from bpx.server.node_discovery import FullNodePeers
+from bpx.server.node_discovery import BeaconPeers
 from bpx.server.outbound_message import Message, NodeType, make_msg
 from bpx.server.peer_store_resolver import PeerStoreResolver
 from bpx.server.server import ChiaServer
@@ -83,12 +83,12 @@ from bpx.util.safe_cancel_task import cancel_task_safe
 @dataclasses.dataclass
 class PeakPostProcessingResult:
     mempool_peak_result: List[Tuple[SpendBundle, NPCResult, bytes32]]  # The result of calling MempoolManager.new_peak
-    fns_peak_result: FullNodeStorePeakResult  # The result of calling FullNodeStore.new_peak
+    fns_peak_result: BeaconStorePeakResult  # The result of calling BeaconStore.new_peak
     hints: List[Tuple[bytes32, bytes]]  # The hints added to the DB
     lookup_coin_ids: List[bytes32]  # The coin IDs that we need to look up to notify wallets of changes
 
 
-class FullNode:
+class Beacon:
     _segment_task: Optional[asyncio.Task[None]]
     initialized: bool
     root_path: Path
@@ -98,10 +98,10 @@ class FullNode:
     constants: ConsensusConstants
     pow_creation: Dict[bytes32, asyncio.Event]
     state_changed_callback: Optional[StateChangedProtocol] = None
-    full_node_peers: Optional[FullNodePeers]
+    beacon_peers: Optional[BeaconPeers]
     sync_store: SyncStore
     signage_point_times: List[float]
-    full_node_store: FullNodeStore
+    beacon_store: BeaconStore
     uncompact_task: Optional[asyncio.Task[None]]
     compact_vdf_requests: Set[bytes32]
     log: logging.Logger
@@ -155,10 +155,10 @@ class FullNode:
         self.constants = consensus_constants
         self.pow_creation = {}
         self.state_changed_callback = None
-        self.full_node_peers = None
+        self.beacon_peers = None
         self.sync_store = SyncStore()
         self.signage_point_times = [time.time() for _ in range(self.constants.NUM_SPS_SUB_SLOT)]
-        self.full_node_store = FullNodeStore(self.constants)
+        self.beacon_store = BeaconStore(self.constants)
         self.uncompact_task = None
         self.compact_vdf_requests = set()
         self.log = logging.getLogger(name)
@@ -315,7 +315,7 @@ class FullNode:
             sql_log_path = path_from_root(self.root_path, "log/sql.log")
             self.log.info(f"logging SQL commands to {sql_log_path}")
 
-        # create the store (db) and full node instance
+        # create the store (db) and beacon client instance
         # TODO: is this standardized and thus able to be handled by DBWrapper2?
         async with manage_connection(self.db_path, log_path=sql_log_path, name="version_check") as db_connection:
             db_version = await lookup_db_version(db_connection)
@@ -436,8 +436,8 @@ class FullNode:
                 )
             )
         self.initialized = True
-        if self.full_node_peers is not None:
-            asyncio.create_task(self.full_node_peers.start())
+        if self.beacon_peers is not None:
+            asyncio.create_task(self.beacon_peers.start())
 
     async def _handle_one_transaction(self, entry: TransactionQueueEntry) -> None:
         peer = entry.peer
@@ -483,7 +483,7 @@ class FullNode:
         dns_servers: List[str] = []
         network_name = self.config["selected_network"]
         try:
-            default_port = self.config["network_overrides"]["config"][network_name]["default_full_node_port"]
+            default_port = self.config["network_overrides"]["config"][network_name]["default_beacon_port"]
         except Exception:
             self.log.info("Default port field not found in config.")
             default_port = None
@@ -493,7 +493,7 @@ class FullNode:
             # If `dns_servers` is missing from the `config`, hardcode it if we're running mainnet.
             dns_servers.append("dns-introducer.chia.net")
         try:
-            self.full_node_peers = FullNodePeers(
+            self.beacon_peers = BeaconPeers(
                 self.server,
                 self.config["target_outbound_peer_count"],
                 PeerStoreResolver(
@@ -550,9 +550,9 @@ class FullNode:
         self.log.info(f"Starting batch short sync from {start_height} to height {target_height}")
         if start_height > 0:
             first = await peer.call_api(
-                FullNodeAPI.request_block, full_node_protocol.RequestBlock(uint32(start_height), False)
+                BeaconAPI.request_block, beacon_protocol.RequestBlock(uint32(start_height), False)
             )
-            if first is None or not isinstance(first, full_node_protocol.RespondBlock):
+            if first is None or not isinstance(first, beacon_protocol.RespondBlock):
                 self.sync_store.batch_syncing.remove(peer.peer_node_id)
                 raise ValueError(f"Error short batch syncing, could not fetch block at height {start_height}")
             if not self.blockchain.contains_block(first.block.prev_header_hash):
@@ -573,7 +573,7 @@ class FullNode:
             for height in range(start_height, target_height, batch_size):
                 end_height = min(target_height, height + batch_size)
                 request = RequestBlocks(uint32(height), uint32(end_height), True)
-                response = await peer.call_api(FullNodeAPI.request_blocks, request)
+                response = await peer.call_api(BeaconAPI.request_blocks, request)
                 if not response:
                     raise ValueError(f"Error short batch syncing, invalid/no response for {height}-{end_height}")
                 async with self._blockchain_lock_high_priority:
@@ -626,7 +626,7 @@ class FullNode:
                 self.sync_store.backtrack_syncing[peer.peer_node_id] = 0
             self.sync_store.backtrack_syncing[peer.peer_node_id] += 1
 
-            unfinished_block: Optional[UnfinishedBlock] = self.full_node_store.get_unfinished_block(target_unf_hash)
+            unfinished_block: Optional[UnfinishedBlock] = self.beacon_store.get_unfinished_block(target_unf_hash)
             curr_height: int = target_height
             found_fork_point = False
             blocks = []
@@ -636,11 +636,11 @@ class FullNode:
                 # but not the transactions
                 fetch_tx: bool = unfinished_block is None or curr_height != target_height
                 curr = await peer.call_api(
-                    FullNodeAPI.request_block, full_node_protocol.RequestBlock(uint32(curr_height), fetch_tx)
+                    BeaconAPI.request_block, beacon_protocol.RequestBlock(uint32(curr_height), fetch_tx)
                 )
                 if curr is None:
                     raise ValueError(f"Failed to fetch block {curr_height} from {peer.get_peer_logging()}, timed out")
-                if curr is None or not isinstance(curr, full_node_protocol.RespondBlock):
+                if curr is None or not isinstance(curr, beacon_protocol.RespondBlock):
                     raise ValueError(
                         f"Failed to fetch block {curr_height} from {peer.get_peer_logging()}, wrong type {type(curr)}"
                     )
@@ -664,7 +664,7 @@ class FullNode:
             await asyncio.sleep(sleep_before)
         self._state_changed("peer_changed_peak")
 
-    async def new_peak(self, request: full_node_protocol.NewPeak, peer: WSChiaConnection) -> None:
+    async def new_peak(self, request: beacon_protocol.NewPeak, peer: WSChiaConnection) -> None:
         """
         We have received a notification of a new peak from a peer. This happens either when we have just connected,
         or when the peer has updated their peak.
@@ -706,8 +706,8 @@ class FullNode:
                 # Don't ask if we already know this peer has the peak
                 if peer.peer_node_id not in peak_peers:
                     target_peak_response: Optional[RespondBlock] = await peer.call_api(
-                        FullNodeAPI.request_block,
-                        full_node_protocol.RequestBlock(target_peak.height, False),
+                        BeaconAPI.request_block,
+                        beacon_protocol.RequestBlock(target_peak.height, False),
                         timeout=10,
                     )
                     if target_peak_response is not None and isinstance(target_peak_response, RespondBlock):
@@ -825,19 +825,19 @@ class FullNode:
 
         self._state_changed("add_connection")
         self._state_changed("sync_mode")
-        if self.full_node_peers is not None:
-            asyncio.create_task(self.full_node_peers.on_connect(connection))
+        if self.beacon_peers is not None:
+            asyncio.create_task(self.beacon_peers.on_connect(connection))
 
         if self.initialized is False:
             return None
 
-        if connection.connection_type is NodeType.FULL_NODE:
+        if connection.connection_type is NodeType.BEACON:
             # Send filter to node and request mempool items that are not in it (Only if we are currently synced)
             synced = await self.synced()
             peak_height = self.blockchain.get_peak_height()
             if synced and peak_height is not None:
                 my_filter = self.mempool_manager.get_filter()
-                mempool_request = full_node_protocol.RequestMempoolTransactions(my_filter)
+                mempool_request = beacon_protocol.RequestMempoolTransactions(my_filter)
 
                 msg = make_msg(ProtocolMessageTypes.request_mempool_transactions, mempool_request)
                 await connection.send_message(msg)
@@ -846,8 +846,8 @@ class FullNode:
 
         if peak_full is not None:
             peak: BlockRecord = self.blockchain.block_record(peak_full.header_hash)
-            if connection.connection_type is NodeType.FULL_NODE:
-                request_node = full_node_protocol.NewPeak(
+            if connection.connection_type is NodeType.BEACON:
+                request_node = beacon_protocol.NewPeak(
                     peak.header_hash,
                     peak.height,
                     peak.weight,
@@ -889,8 +889,8 @@ class FullNode:
         if self._mempool_manager is not None:
             self.mempool_manager.shut_down()
 
-        if self.full_node_peers is not None:
-            asyncio.create_task(self.full_node_peers.close())
+        if self.beacon_peers is not None:
+            asyncio.create_task(self.beacon_peers.close())
         if self.uncompact_task is not None:
             self.uncompact_task.cancel()
         if self._transaction_queue_task is not None:
@@ -900,7 +900,7 @@ class FullNode:
         cancel_task_safe(task=self._sync_task, log=self.log)
 
     async def _await_closed(self) -> None:
-        for task_id, task in list(self.full_node_store.tx_fetch_tasks.items()):
+        for task_id, task in list(self.beacon_store.tx_fetch_tasks.items()):
             cancel_task_safe(task, self.log)
         await self.db_wrapper.close()
         if self._init_weight_proof is not None:
@@ -962,13 +962,13 @@ class FullNode:
             self.log.info(f"Selected peak {target_peak}")
             # Check which peers are updated to this height
 
-            peers = self.server.get_connections(NodeType.FULL_NODE)
+            peers = self.server.get_connections(NodeType.BEACON)
             coroutines = []
             for peer in peers:
                 coroutines.append(
                     peer.call_api(
-                        FullNodeAPI.request_block,
-                        full_node_protocol.RequestBlock(target_peak.height, True),
+                        BeaconAPI.request_block,
+                        beacon_protocol.RequestBlock(target_peak.height, True),
                         timeout=10,
                     )
                 )
@@ -998,13 +998,13 @@ class FullNode:
             if "weight_proof_timeout" in self.config:
                 wp_timeout = self.config["weight_proof_timeout"]
             self.log.debug(f"weight proof timeout is {wp_timeout} sec")
-            request = full_node_protocol.RequestProofOfWeight(target_peak.height, target_peak.header_hash)
+            request = beacon_protocol.RequestProofOfWeight(target_peak.height, target_peak.header_hash)
             response = await weight_proof_peer.call_api(
-                FullNodeAPI.request_proof_of_weight, request, timeout=wp_timeout
+                BeaconAPI.request_proof_of_weight, request, timeout=wp_timeout
             )
 
             # Disconnect from this peer, because they have not behaved properly
-            if response is None or not isinstance(response, full_node_protocol.RespondProofOfWeight):
+            if response is None or not isinstance(response, beacon_protocol.RespondProofOfWeight):
                 await weight_proof_peer.close(600)
                 raise RuntimeError(f"Weight proof did not arrive in time from peer: {weight_proof_peer.peer_host}")
             if response.wp.recent_chain_data[-1].reward_chain_block.height != target_peak.height:
@@ -1077,7 +1077,7 @@ class FullNode:
                         if peer.closed:
                             peers_with_peak.remove(peer)
                             continue
-                        response = await peer.call_api(FullNodeAPI.request_blocks, request, timeout=30)
+                        response = await peer.call_api(BeaconAPI.request_blocks, request, timeout=30)
                         if response is None:
                             await peer.close()
                             peers_with_peak.remove(peer)
@@ -1337,7 +1337,7 @@ class FullNode:
 
     async def signage_point_post_processing(
         self,
-        request: full_node_protocol.RespondSignagePoint,
+        request: beacon_protocol.RespondSignagePoint,
         peer: WSChiaConnection,
         ip_sub_slot: Optional[EndOfSubSlotBundle],
     ) -> None:
@@ -1348,7 +1348,7 @@ class FullNode:
             f"RC: {request.reward_chain_vdf.output.get_hash()} "
         )
         self.signage_point_times[request.index_from_challenge] = time.time()
-        sub_slot_tuple = self.full_node_store.get_sub_slot(request.challenge_chain_vdf.challenge)
+        sub_slot_tuple = self.beacon_store.get_sub_slot(request.challenge_chain_vdf.challenge)
         prev_challenge: Optional[bytes32]
         if sub_slot_tuple is not None:
             prev_challenge = sub_slot_tuple[0].challenge_chain.challenge_chain_end_of_slot_vdf.challenge
@@ -1356,14 +1356,14 @@ class FullNode:
             prev_challenge = None
 
         # Notify nodes of the new signage point
-        broadcast = full_node_protocol.NewSignagePointOrEndOfSubSlot(
+        broadcast = beacon_protocol.NewSignagePointOrEndOfSubSlot(
             prev_challenge,
             request.challenge_chain_vdf.challenge,
             request.index_from_challenge,
             request.reward_chain_vdf.challenge,
         )
         msg = make_msg(ProtocolMessageTypes.new_signage_point_or_end_of_sub_slot, broadcast)
-        await self.server.send_to_all([msg], NodeType.FULL_NODE, peer.peer_node_id)
+        await self.server.send_to_all([msg], NodeType.BEACON, peer.peer_node_id)
 
         peak = self.blockchain.get_peak()
         if peak is not None and peak.height > self.constants.MAX_SUB_SLOT_BLOCKS:
@@ -1401,7 +1401,7 @@ class FullNode:
         peer: Optional[WSChiaConnection],
     ) -> PeakPostProcessingResult:
         """
-        Must be called under self.blockchain.lock. This updates the internal state of the full node with the
+        Must be called under self.blockchain.lock. This updates the internal state of the beacon client with the
         latest peak information. It also notifies peers about the new peak.
         """
 
@@ -1425,10 +1425,10 @@ class FullNode:
         )
 
         if (
-            self.full_node_store.previous_generator is not None
-            and state_change_summary.fork_height < self.full_node_store.previous_generator.block_height
+            self.beacon_store.previous_generator is not None
+            and state_change_summary.fork_height < self.beacon_store.previous_generator.block_height
         ):
-            self.full_node_store.previous_generator = None
+            self.beacon_store.previous_generator = None
 
         hints_to_add, lookup_coin_ids = get_hints_and_subscription_coin_ids(
             state_change_summary,
@@ -1450,7 +1450,7 @@ class FullNode:
             assert fork_hash is not None
             fork_block = self.blockchain.block_record(fork_hash)
 
-        fns_peak_result: FullNodeStorePeakResult = self.full_node_store.new_peak(
+        fns_peak_result: BeaconStorePeakResult = self.beacon_store.new_peak(
             record,
             block,
             sub_slots[0],
@@ -1474,7 +1474,7 @@ class FullNode:
         if sub_slots[1] is None:
             assert record.ip_sub_slot_total_iters(self.constants) == 0
         # Ensure the signage point is also in the store, for consistency
-        self.full_node_store.new_signage_point(
+        self.beacon_store.new_signage_point(
             record.signage_point_index,
             self.blockchain,
             record,
@@ -1495,11 +1495,11 @@ class FullNode:
         )
 
         # Check if we detected a spent transaction, to load up our generator cache
-        if block.transactions_generator is not None and self.full_node_store.previous_generator is None:
+        if block.transactions_generator is not None and self.beacon_store.previous_generator is None:
             generator_arg = detect_potential_template_generator(block.height, block.transactions_generator)
             if generator_arg:
                 self.log.info(f"Saving previous generator for height {block.height}")
-                self.full_node_store.previous_generator = generator_arg
+                self.beacon_store.previous_generator = generator_arg
 
         return PeakPostProcessingResult(mempool_new_peak_result, fns_peak_result, hints_to_add, lookup_coin_ids)
 
@@ -1522,39 +1522,39 @@ class FullNode:
             fees = mempool_item.fee
             assert fees >= 0
             assert mempool_item.cost is not None
-            new_tx = full_node_protocol.NewTransaction(
+            new_tx = beacon_protocol.NewTransaction(
                 spend_name,
                 mempool_item.cost,
                 fees,
             )
             msg = make_msg(ProtocolMessageTypes.new_transaction, new_tx)
-            await self.server.send_to_all([msg], NodeType.FULL_NODE)
+            await self.server.send_to_all([msg], NodeType.BEACON)
 
         # If there were pending end of slots that happen after this peak, broadcast them if they are added
         if ppp_result.fns_peak_result.added_eos is not None:
-            broadcast = full_node_protocol.NewSignagePointOrEndOfSubSlot(
+            broadcast = beacon_protocol.NewSignagePointOrEndOfSubSlot(
                 ppp_result.fns_peak_result.added_eos.challenge_chain.challenge_chain_end_of_slot_vdf.challenge,
                 ppp_result.fns_peak_result.added_eos.challenge_chain.get_hash(),
                 uint8(0),
                 ppp_result.fns_peak_result.added_eos.reward_chain.end_of_slot_vdf.challenge,
             )
             msg = make_msg(ProtocolMessageTypes.new_signage_point_or_end_of_sub_slot, broadcast)
-            await self.server.send_to_all([msg], NodeType.FULL_NODE)
+            await self.server.send_to_all([msg], NodeType.BEACON)
 
         # TODO: maybe add and broadcast new IPs as well
 
         if record.height % 1000 == 0:
-            # Occasionally clear data in full node store to keep memory usage small
-            self.full_node_store.clear_seen_unfinished_blocks()
-            self.full_node_store.clear_old_cache_entries()
+            # Occasionally clear data in beacon client store to keep memory usage small
+            self.beacon_store.clear_seen_unfinished_blocks()
+            self.beacon_store.clear_old_cache_entries()
 
         if self.sync_store.get_sync_mode() is False:
             await self.send_peak_to_timelords(block)
 
-            # Tell full nodes about the new peak
+            # Tell beacon clients about the new peak
             msg = make_msg(
                 ProtocolMessageTypes.new_peak,
-                full_node_protocol.NewPeak(
+                beacon_protocol.NewPeak(
                     record.header_hash,
                     record.height,
                     record.weight,
@@ -1563,9 +1563,9 @@ class FullNode:
                 ),
             )
             if peer is not None:
-                await self.server.send_to_all([msg], NodeType.FULL_NODE, peer.peer_node_id)
+                await self.server.send_to_all([msg], NodeType.BEACON, peer.peer_node_id)
             else:
-                await self.server.send_to_all([msg], NodeType.FULL_NODE)
+                await self.server.send_to_all([msg], NodeType.BEACON)
 
         # Tell wallets about the new peak
         msg = make_msg(
@@ -1588,7 +1588,7 @@ class FullNode:
         raise_on_disconnected: bool = False,
     ) -> Optional[Message]:
         """
-        Add a full block from a peer full node (or ourselves).
+        Add a full block from a peer beacon client (or ourselves).
         """
         if self.sync_store.get_sync_mode():
             return None
@@ -1608,7 +1608,7 @@ class FullNode:
             # This is the case where we already had the unfinished block, and asked for this block without
             # the transactions (since we already had them). Therefore, here we add the transactions.
             unfinished_rh: bytes32 = block.reward_chain_block.get_unfinished().get_hash()
-            unf_block: Optional[UnfinishedBlock] = self.full_node_store.get_unfinished_block(unfinished_rh)
+            unf_block: Optional[UnfinishedBlock] = self.beacon_store.get_unfinished_block(unfinished_rh)
             if (
                 unf_block is not None
                 and unf_block.transactions_generator is not None
@@ -1616,7 +1616,7 @@ class FullNode:
             ):
                 # We checked that the transaction block is the same, therefore all transactions and the signature
                 # must be identical in the unfinished and finished blocks. We can therefore use the cache.
-                pre_validation_result = self.full_node_store.get_unfinished_block_result(unfinished_rh)
+                pre_validation_result = self.beacon_store.get_unfinished_block_result(unfinished_rh)
                 assert pre_validation_result is not None
                 block = dataclasses.replace(
                     block,
@@ -1630,9 +1630,9 @@ class FullNode:
                     return None
 
                 block_response: Optional[Any] = await peer.call_api(
-                    FullNodeAPI.request_block, full_node_protocol.RequestBlock(block.height, True)
+                    BeaconAPI.request_block, beacon_protocol.RequestBlock(block.height, True)
                 )
-                if block_response is None or not isinstance(block_response, full_node_protocol.RespondBlock):
+                if block_response is None or not isinstance(block_response, beacon_protocol.RespondBlock):
                     self.log.warning(
                         f"Was not able to fetch the correct block for height {block.height} {block_response}"
                     )
@@ -1748,8 +1748,8 @@ class FullNode:
 
         # Removes all temporary data for old blocks
         clear_height = uint32(max(0, peak.height - 50))
-        self.full_node_store.clear_candidate_blocks_below(clear_height)
-        self.full_node_store.clear_unfinished_blocks_below(clear_height)
+        self.beacon_store.clear_candidate_blocks_below(clear_height)
+        self.beacon_store.clear_unfinished_blocks_below(clear_height)
         if peak.height % 1000 == 0 and not self.sync_store.get_sync_mode():
             await self.sync_store.clear_sync_info()  # Occasionally clear sync peer info
 
@@ -1810,14 +1810,14 @@ class FullNode:
         # processing it twice. This searches for the exact version of the unfinished block (there can be many different
         # foliages for the same trunk). This is intentional, to prevent DOS attacks.
         # Note that it does not require that this block was successfully processed
-        if self.full_node_store.seen_unfinished_block(block.get_hash()):
+        if self.beacon_store.seen_unfinished_block(block.get_hash()):
             return None
 
         block_hash = block.reward_chain_block.get_hash()
 
         # This searched for the trunk hash (unfinished reward hash). If we have already added a block with the same
         # hash, return
-        if self.full_node_store.get_unfinished_block(block_hash) is not None:
+        if self.beacon_store.get_unfinished_block(block_hash) is not None:
             return None
 
         peak: Optional[BlockRecord] = self.blockchain.get_peak()
@@ -1909,7 +1909,7 @@ class FullNode:
         assert validate_result.required_iters is not None
 
         # Perform another check, in case we have already concurrently added the same unfinished block
-        if self.full_node_store.get_unfinished_block(block_hash) is not None:
+        if self.beacon_store.get_unfinished_block(block_hash) is not None:
             return None
 
         if block.prev_header_hash == self.constants.GENESIS_CHALLENGE:
@@ -1925,7 +1925,7 @@ class FullNode:
             True,
         )
 
-        self.full_node_store.add_unfinished_block(height, block, validate_result)
+        self.beacon_store.add_unfinished_block(height, block, validate_result)
         pre_validation_log = (
             f"pre_validation time {pre_validation_time:0.4f}, " if pre_validation_time is not None else ""
         )
@@ -1963,7 +1963,7 @@ class FullNode:
         )
 
         if block.reward_chain_block.signage_point_index == 0:
-            res = self.full_node_store.get_sub_slot(block.reward_chain_block.pos_ss_cc_challenge_hash)
+            res = self.beacon_store.get_sub_slot(block.reward_chain_block.pos_ss_cc_challenge_hash)
             if res is None:
                 if block.reward_chain_block.pos_ss_cc_challenge_hash == self.constants.GENESIS_CHALLENGE:
                     rc_prev = self.constants.GENESIS_CHALLENGE
@@ -1988,12 +1988,12 @@ class FullNode:
         timelord_msg = make_msg(ProtocolMessageTypes.new_unfinished_block_timelord, timelord_request)
         await self.server.send_to_all([timelord_msg], NodeType.TIMELORD)
 
-        full_node_request = full_node_protocol.NewUnfinishedBlock(block.reward_chain_block.get_hash())
-        msg = make_msg(ProtocolMessageTypes.new_unfinished_block, full_node_request)
+        beacon_request = beacon_protocol.NewUnfinishedBlock(block.reward_chain_block.get_hash())
+        msg = make_msg(ProtocolMessageTypes.new_unfinished_block, beacon_request)
         if peer is not None:
-            await self.server.send_to_all([msg], NodeType.FULL_NODE, peer.peer_node_id)
+            await self.server.send_to_all([msg], NodeType.BEACON, peer.peer_node_id)
         else:
-            await self.server.send_to_all([msg], NodeType.FULL_NODE)
+            await self.server.send_to_all([msg], NodeType.BEACON)
 
         self._state_changed("unfinished_block")
 
@@ -2001,7 +2001,7 @@ class FullNode:
         self, request: timelord_protocol.NewInfusionPointVDF, timelord_peer: Optional[WSChiaConnection] = None
     ) -> Optional[Message]:
         # Lookup unfinished blocks
-        unfinished_block: Optional[UnfinishedBlock] = self.full_node_store.get_unfinished_block(
+        unfinished_block: Optional[UnfinishedBlock] = self.beacon_store.get_unfinished_block(
             request.unfinished_reward_hash
         )
 
@@ -2017,7 +2017,7 @@ class FullNode:
         last_slot_cc_hash = request.challenge_chain_ip_vdf.challenge
 
         # Backtracks through end of slot objects, should work for multiple empty sub slots
-        for eos, _, _ in reversed(self.full_node_store.finished_sub_slots):
+        for eos, _, _ in reversed(self.beacon_store.finished_sub_slots):
             if eos is not None and eos.reward_chain.get_hash() == target_rc_hash:
                 target_rc_hash = eos.reward_chain.end_of_slot_vdf.challenge
         if target_rc_hash == self.constants.GENESIS_CHALLENGE:
@@ -2038,11 +2038,11 @@ class FullNode:
 
             # If not found, cache keyed on prev block
             if prev_b is None:
-                self.full_node_store.add_to_future_ip(request)
+                self.beacon_store.add_to_future_ip(request)
                 self.log.warning(f"Previous block is None, infusion point {request.reward_chain_ip_vdf.challenge}")
                 return None
 
-        finished_sub_slots: Optional[List[EndOfSubSlotBundle]] = self.full_node_store.get_finished_sub_slots(
+        finished_sub_slots: Optional[List[EndOfSubSlotBundle]] = self.beacon_store.get_finished_sub_slots(
             self.blockchain,
             prev_b,
             last_slot_cc_hash,
@@ -2060,7 +2060,7 @@ class FullNode:
         if unfinished_block.reward_chain_block.pos_ss_cc_challenge_hash == self.constants.GENESIS_CHALLENGE:
             sub_slot_start_iters = uint128(0)
         else:
-            ss_res = self.full_node_store.get_sub_slot(unfinished_block.reward_chain_block.pos_ss_cc_challenge_hash)
+            ss_res = self.beacon_store.get_sub_slot(unfinished_block.reward_chain_block.pos_ss_cc_challenge_hash)
             if ss_res is None:
                 self.log.warning(f"Do not have sub slot {unfinished_block.reward_chain_block.pos_ss_cc_challenge_hash}")
                 return None
@@ -2103,7 +2103,7 @@ class FullNode:
     async def add_end_of_sub_slot(
         self, end_of_slot_bundle: EndOfSubSlotBundle, peer: WSChiaConnection
     ) -> Tuple[Optional[Message], bool]:
-        fetched_ss = self.full_node_store.get_sub_slot(end_of_slot_bundle.challenge_chain.get_hash())
+        fetched_ss = self.beacon_store.get_sub_slot(end_of_slot_bundle.challenge_chain.get_hash())
 
         # We are not interested in sub-slots which have the same challenge chain but different reward chain. If there
         # is a reorg, we will find out through the broadcast of blocks instead.
@@ -2112,7 +2112,7 @@ class FullNode:
             return None, True
 
         async with self.timelord_lock:
-            fetched_ss = self.full_node_store.get_sub_slot(
+            fetched_ss = self.beacon_store.get_sub_slot(
                 end_of_slot_bundle.challenge_chain.challenge_chain_end_of_slot_vdf.challenge
             )
             if (
@@ -2121,13 +2121,13 @@ class FullNode:
                 != self.constants.GENESIS_CHALLENGE
             ):
                 # If we don't have the prev, request the prev instead
-                full_node_request = full_node_protocol.RequestSignagePointOrEndOfSubSlot(
+                beacon_request = beacon_protocol.RequestSignagePointOrEndOfSubSlot(
                     end_of_slot_bundle.challenge_chain.challenge_chain_end_of_slot_vdf.challenge,
                     uint8(0),
                     bytes32([0] * 32),
                 )
                 return (
-                    make_msg(ProtocolMessageTypes.request_signage_point_or_end_of_sub_slot, full_node_request),
+                    make_msg(ProtocolMessageTypes.request_signage_point_or_end_of_sub_slot, beacon_request),
                     False,
                 )
 
@@ -2140,7 +2140,7 @@ class FullNode:
                 next_difficulty = self.constants.DIFFICULTY_STARTING
 
             # Adds the sub slot and potentially get new infusions
-            new_infusions = self.full_node_store.new_finished_sub_slot(
+            new_infusions = self.beacon_store.new_finished_sub_slot(
                 end_of_slot_bundle,
                 self.blockchain,
                 peak,
@@ -2151,21 +2151,21 @@ class FullNode:
                 self.log.info(
                     f"⏲️  Finished sub slot, SP {self.constants.NUM_SPS_SUB_SLOT}/{self.constants.NUM_SPS_SUB_SLOT}, "
                     f"{end_of_slot_bundle.challenge_chain.get_hash()}, "
-                    f"number of sub-slots: {len(self.full_node_store.finished_sub_slots)}, "
+                    f"number of sub-slots: {len(self.beacon_store.finished_sub_slots)}, "
                     f"RC hash: {end_of_slot_bundle.reward_chain.get_hash()}, "
                     f"Deficit {end_of_slot_bundle.reward_chain.deficit}"
                 )
                 # Reset farmer response timer for sub slot (SP 0)
                 self.signage_point_times[0] = time.time()
-                # Notify full nodes of the new sub-slot
-                broadcast = full_node_protocol.NewSignagePointOrEndOfSubSlot(
+                # Notify beacon clients of the new sub-slot
+                broadcast = beacon_protocol.NewSignagePointOrEndOfSubSlot(
                     end_of_slot_bundle.challenge_chain.challenge_chain_end_of_slot_vdf.challenge,
                     end_of_slot_bundle.challenge_chain.get_hash(),
                     uint8(0),
                     end_of_slot_bundle.reward_chain.end_of_slot_vdf.challenge,
                 )
                 msg = make_msg(ProtocolMessageTypes.new_signage_point_or_end_of_sub_slot, broadcast)
-                await self.server.send_to_all([msg], NodeType.FULL_NODE, peer.peer_node_id)
+                await self.server.send_to_all([msg], NodeType.BEACON, peer.peer_node_id)
 
                 for infusion in new_infusions:
                     await self.new_infusion_point_vdf(infusion)
@@ -2246,16 +2246,16 @@ class FullNode:
                 fees = mempool_item.fee
                 assert fees >= 0
                 assert cost is not None
-                new_tx = full_node_protocol.NewTransaction(
+                new_tx = beacon_protocol.NewTransaction(
                     spend_name,
                     cost,
                     fees,
                 )
                 msg = make_msg(ProtocolMessageTypes.new_transaction, new_tx)
                 if peer is None:
-                    await self.server.send_to_all([msg], NodeType.FULL_NODE)
+                    await self.server.send_to_all([msg], NodeType.BEACON)
                 else:
-                    await self.server.send_to_all([msg], NodeType.FULL_NODE, peer.peer_node_id)
+                    await self.server.send_to_all([msg], NodeType.BEACON, peer.peer_node_id)
                 if self.simulator_transaction_callback is not None:  # callback
                     await self.simulator_transaction_callback(spend_name)  # pylint: disable=E1102
             else:
@@ -2415,12 +2415,12 @@ class FullNode:
         self.log.info(f"Replaced compact proof at height {request.height}")
         msg = make_msg(
             ProtocolMessageTypes.new_compact_vdf,
-            full_node_protocol.NewCompactVDF(request.height, request.header_hash, request.field_vdf, request.vdf_info),
+            beacon_protocol.NewCompactVDF(request.height, request.header_hash, request.field_vdf, request.vdf_info),
         )
         if self._server is not None:
-            await self.server.send_to_all([msg], NodeType.FULL_NODE)
+            await self.server.send_to_all([msg], NodeType.BEACON)
 
-    async def new_compact_vdf(self, request: full_node_protocol.NewCompactVDF, peer: WSChiaConnection) -> None:
+    async def new_compact_vdf(self, request: beacon_protocol.NewCompactVDF, peer: WSChiaConnection) -> None:
         is_fully_compactified = await self.block_store.is_fully_compactified(request.header_hash)
         if is_fully_compactified is None or is_fully_compactified:
             return None
@@ -2431,14 +2431,14 @@ class FullNode:
             return None
         field_vdf = CompressibleVDFField(int(request.field_vdf))
         if await self._needs_compact_proof(request.vdf_info, header_block, field_vdf):
-            peer_request = full_node_protocol.RequestCompactVDF(
+            peer_request = beacon_protocol.RequestCompactVDF(
                 request.height, request.header_hash, request.field_vdf, request.vdf_info
             )
-            response = await peer.call_api(FullNodeAPI.request_compact_vdf, peer_request, timeout=10)
-            if response is not None and isinstance(response, full_node_protocol.RespondCompactVDF):
+            response = await peer.call_api(BeaconAPI.request_compact_vdf, peer_request, timeout=10)
+            if response is not None and isinstance(response, beacon_protocol.RespondCompactVDF):
                 await self.add_compact_vdf(response, peer)
 
-    async def request_compact_vdf(self, request: full_node_protocol.RequestCompactVDF, peer: WSChiaConnection) -> None:
+    async def request_compact_vdf(self, request: beacon_protocol.RequestCompactVDF, peer: WSChiaConnection) -> None:
         header_block = await self.blockchain.get_header_block_by_height(
             request.height, request.header_hash, tx_filter=False
         )
@@ -2472,7 +2472,7 @@ class FullNode:
         if vdf_proof is None or vdf_proof.witness_type > 0 or not vdf_proof.normalized_to_identity:
             self.log.error(f"{peer} requested compact vdf we don't have, height: {request.height}.")
             return None
-        compact_vdf = full_node_protocol.RespondCompactVDF(
+        compact_vdf = beacon_protocol.RespondCompactVDF(
             request.height,
             request.header_hash,
             request.field_vdf,
@@ -2482,7 +2482,7 @@ class FullNode:
         msg = make_msg(ProtocolMessageTypes.respond_compact_vdf, compact_vdf)
         await peer.send_message(msg)
 
-    async def add_compact_vdf(self, request: full_node_protocol.RespondCompactVDF, peer: WSChiaConnection) -> None:
+    async def add_compact_vdf(self, request: beacon_protocol.RespondCompactVDF, peer: WSChiaConnection) -> None:
         field_vdf = CompressibleVDFField(int(request.field_vdf))
         if not await self._can_accept_compact_proof(
             request.vdf_info, request.vdf_proof, request.height, request.header_hash, field_vdf
@@ -2497,10 +2497,10 @@ class FullNode:
             return None
         msg = make_msg(
             ProtocolMessageTypes.new_compact_vdf,
-            full_node_protocol.NewCompactVDF(request.height, request.header_hash, request.field_vdf, request.vdf_info),
+            beacon_protocol.NewCompactVDF(request.height, request.header_hash, request.field_vdf, request.vdf_info),
         )
         if self._server is not None:
-            await self.server.send_to_all([msg], NodeType.FULL_NODE, peer.peer_node_id)
+            await self.server.send_to_all([msg], NodeType.BEACON, peer.peer_node_id)
 
     async def broadcast_uncompact_blocks(
         self, uncompact_interval_scan: int, target_uncompact_proofs: int, sanitize_weight_proof_only: bool
@@ -2610,9 +2610,9 @@ async def node_next_block_check(
     peer: WSChiaConnection, potential_peek: uint32, blockchain: BlockchainInterface
 ) -> bool:
     block_response: Optional[Any] = await peer.call_api(
-        FullNodeAPI.request_block, full_node_protocol.RequestBlock(potential_peek, True)
+        BeaconAPI.request_block, beacon_protocol.RequestBlock(potential_peek, True)
     )
-    if block_response is not None and isinstance(block_response, full_node_protocol.RespondBlock):
+    if block_response is not None and isinstance(block_response, beacon_protocol.RespondBlock):
         peak = blockchain.get_peak()
         if peak is not None and block_response.block.prev_header_hash == peak.header_hash:
             return True

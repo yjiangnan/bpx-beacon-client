@@ -12,9 +12,9 @@ from typing import Any, Dict, List, Optional, Tuple
 import aiosqlite
 
 from bpx.consensus.constants import ConsensusConstants
-from bpx.full_node.coin_store import CoinStore
-from bpx.full_node.full_node_api import FullNodeAPI
-from bpx.protocols import full_node_protocol
+from bpx.beacon.coin_store import CoinStore
+from bpx.beacon.beacon_api import BeaconAPI
+from bpx.protocols import beacon_protocol
 from bpx.rpc.rpc_server import StateChangedProtocol, default_get_connections
 from bpx.seeder.crawl_store import CrawlStore
 from bpx.seeder.peer_record import PeerRecord, PeerReliability
@@ -106,9 +106,9 @@ class Crawler:
             if peer_info is not None and version is not None:
                 self.version_cache.append((peer_info.host, version))
             # Ask peer for peers
-            response = await peer.call_api(FullNodeAPI.request_peers, full_node_protocol.RequestPeers(), timeout=3)
+            response = await peer.call_api(BeaconAPI.request_peers, beacon_protocol.RequestPeers(), timeout=3)
             # Add peers to DB
-            if isinstance(response, full_node_protocol.RespondPeers):
+            if isinstance(response, beacon_protocol.RespondPeers):
                 self.peers_retrieved.append(response)
             peer_info = peer.get_peer_info()
             tries = 0
@@ -352,7 +352,7 @@ class Crawler:
         if self.state_changed_callback is not None:
             self.state_changed_callback(change, change_data)
 
-    async def new_peak(self, request: full_node_protocol.NewPeak, peer: WSChiaConnection):
+    async def new_peak(self, request: beacon_protocol.NewPeak, peer: WSChiaConnection):
         try:
             peer_info = peer.get_peer_info()
             tls_version = peer.get_tls_version()

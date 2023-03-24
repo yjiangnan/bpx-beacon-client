@@ -57,13 +57,13 @@ def log_disk_metrics(root_path: Path, plot_dirs: List[str]) -> None:
 
 def log_port_states(config: Dict[str, Any]) -> None:
     selected_network = config["selected_network"]
-    full_node_port = config["network_overrides"]["config"][selected_network]["default_full_node_port"]
+    beacon_port = config["network_overrides"]["config"][selected_network]["default_beacon_port"]
     test_socket_ipv4 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    port_open_ipv4 = test_socket_ipv4.connect_ex(("127.0.0.1", full_node_port)) == 0
-    log.debug(f"full node port IPv4 [{full_node_port}]: {'open' if port_open_ipv4 else 'closed'}")
+    port_open_ipv4 = test_socket_ipv4.connect_ex(("127.0.0.1", beacon_port)) == 0
+    log.debug(f"beacon client port IPv4 [{beacon_port}]: {'open' if port_open_ipv4 else 'closed'}")
     test_socket_ipv6 = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-    port_open_ipv6 = test_socket_ipv6.connect_ex(("::1", full_node_port)) == 0
-    log.debug(f"full node port IPv6 [{full_node_port}]: {'open' if port_open_ipv6 else 'closed'}")
+    port_open_ipv6 = test_socket_ipv6.connect_ex(("::1", beacon_port)) == 0
+    log.debug(f"beacon client port IPv6 [{beacon_port}]: {'open' if port_open_ipv6 else 'closed'}")
 
 
 def log_network_metrics() -> None:

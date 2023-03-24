@@ -114,10 +114,10 @@ def is_localhost(peer_host: str) -> bool:
 
 
 def class_for_type(type: NodeType) -> Any:
-    if type is NodeType.FULL_NODE:
-        from bpx.full_node.full_node_api import FullNodeAPI
+    if type is NodeType.BEACON:
+        from bpx.beacon.beacon_api import BeaconAPI
 
-        return FullNodeAPI
+        return BeaconAPI
     elif type is NodeType.WALLET:
         from bpx.wallet.wallet_node_api import WalletNodeAPI
 

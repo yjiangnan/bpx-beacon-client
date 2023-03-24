@@ -6,9 +6,9 @@ from typing import Any, Dict, List, Optional
 from bpx.consensus.block_record import BlockRecord
 from bpx.consensus.cost_calculator import NPCResult
 from bpx.consensus.pos_quality import UI_ACTUAL_SPACE_CONSTANT_FACTOR
-from bpx.full_node.fee_estimator_interface import FeeEstimatorInterface
-from bpx.full_node.full_node import FullNode
-from bpx.full_node.mempool_check_conditions import get_puzzle_and_solution_for_coin, get_spends_for_block
+from bpx.beacon.fee_estimator_interface import FeeEstimatorInterface
+from bpx.beacon.beacon import Beacon
+from bpx.beacon.mempool_check_conditions import get_puzzle_and_solution_for_coin, get_spends_for_block
 from bpx.rpc.rpc_server import Endpoint, EndpointResult
 from bpx.server.outbound_message import NodeType
 from bpx.types.blockchain_format.sized_bytes import bytes32
@@ -31,10 +31,10 @@ def coin_record_dict_backwards_compat(coin_record: Dict[str, Any]) -> Dict[str, 
     return coin_record
 
 
-class FullNodeRpcApi:
-    def __init__(self, service: FullNode) -> None:
+class BeaconRpcApi:
+    def __init__(self, service: Beacon) -> None:
         self.service = service
-        self.service_name = "chia_full_node"
+        self.service_name = "chia_beacon"
         self.cached_blockchain_state: Optional[Dict[str, Any]] = None
 
     def get_routes(self) -> Dict[str, Endpoint]:
@@ -191,7 +191,7 @@ class FullNodeRpcApi:
             mempool_min_fee_5m = 0
             mempool_max_total_cost = 0
         if self.service.server is not None:
-            is_connected = len(self.service.server.get_connections(NodeType.FULL_NODE)) > 0 or "simulator" in str(
+            is_connected = len(self.service.server.get_connections(NodeType.BEACON)) > 0 or "simulator" in str(
                 self.service.config.get("selected_network")
             )
         else:
@@ -237,13 +237,13 @@ class FullNodeRpcApi:
         if "sp_hash" not in request:
             challenge_hash: bytes32 = bytes32.from_hexstr(request["challenge_hash"])
             # This is the case of getting an end of slot
-            eos_tuple = self.service.full_node_store.recent_eos.get(challenge_hash)
+            eos_tuple = self.service.beacon_store.recent_eos.get(challenge_hash)
             if not eos_tuple:
                 raise ValueError(f"Did not find eos {challenge_hash.hex()} in cache")
             eos, time_received = eos_tuple
 
-            # If it's still in the full node store, it's not reverted
-            if self.service.full_node_store.get_sub_slot(eos.challenge_chain.get_hash()):
+            # If it's still in the beacon client store, it's not reverted
+            if self.service.beacon_store.get_sub_slot(eos.challenge_chain.get_hash()):
                 return {"eos": eos, "time_received": time_received, "reverted": False}
 
             # Otherwise we can backtrack from peak to find it in the blockchain
@@ -269,7 +269,7 @@ class FullNodeRpcApi:
 
         # Now we handle the case of getting a signage point
         sp_hash: bytes32 = bytes32.from_hexstr(request["sp_hash"])
-        sp_tuple = self.service.full_node_store.recent_signage_points.get(sp_hash)
+        sp_tuple = self.service.beacon_store.recent_signage_points.get(sp_hash)
         if sp_tuple is None:
             raise ValueError(f"Did not find sp {sp_hash.hex()} in cache")
 
@@ -277,8 +277,8 @@ class FullNodeRpcApi:
         assert sp.rc_vdf is not None, "Not an EOS, the signage point rewards chain VDF must not be None"
         assert sp.cc_vdf is not None, "Not an EOS, the signage point challenge chain VDF must not be None"
 
-        # If it's still in the full node store, it's not reverted
-        if self.service.full_node_store.get_signage_point(sp_hash):
+        # If it's still in the beacon client store, it's not reverted
+        if self.service.beacon_store.get_signage_point(sp_hash):
             return {"signage_point": sp, "time_received": time_received, "reverted": False}
 
         # Otherwise we can backtrack from peak to find it in the blockchain
@@ -471,7 +471,7 @@ class FullNodeRpcApi:
             return {"headers": []}
 
         response_headers: List[UnfinishedHeaderBlock] = []
-        for ub_height, block, _ in (self.service.full_node_store.get_unfinished_blocks()).values():
+        for ub_height, block, _ in (self.service.beacon_store.get_unfinished_blocks()).values():
             if ub_height == peak.height:
                 unfinished_header_block = UnfinishedHeaderBlock(
                     block.finished_sub_slots,
@@ -862,7 +862,7 @@ class FullNodeRpcApi:
             "mempool_fees": mempool_fees,
             "num_spends": num_mempool_spends,
             "mempool_max_size": mempool_max_size,
-            "full_node_synced": synced,
+            "beacon_synced": synced,
             "peak_height": peak_height,
             "last_peak_timestamp": last_peak_timestamp,
             "node_time_utc": int(utc_timestamp),

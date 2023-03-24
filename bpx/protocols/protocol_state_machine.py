@@ -4,7 +4,7 @@ from bpx.protocols.protocol_message_types import ProtocolMessageTypes
 from bpx.protocols.protocol_message_types import ProtocolMessageTypes as pmt
 
 NO_REPLY_EXPECTED = [
-    # full_node -> full_node messages
+    # beacon -> beacon messages
     pmt.new_peak,
     pmt.new_transaction,
     pmt.new_unfinished_block,
@@ -24,7 +24,7 @@ A state machine can be built from this message map.
 VALID_REPLY_MESSAGE_MAP = {
     # messages for all services
     # pmt.handshake is handled in WSChiaConnection.perform_handshake
-    # full_node -> full_node protocol messages
+    # beacon -> beacon protocol messages
     pmt.request_transaction: [pmt.respond_transaction],
     pmt.request_proof_of_weight: [pmt.respond_proof_of_weight],
     pmt.request_block: [pmt.respond_block, pmt.reject_block],
@@ -57,8 +57,8 @@ def static_check_sent_message_response() -> None:
 
 
 def message_requires_reply(sent: ProtocolMessageTypes) -> bool:
-    """Return True if message has an entry in the full node P2P message map"""
-    # If we knew the peer NodeType is FULL_NODE, we could also check `sent not in NO_REPLY_EXPECTED`
+    """Return True if message has an entry in the beacon client P2P message map"""
+    # If we knew the peer NodeType is BEACON, we could also check `sent not in NO_REPLY_EXPECTED`
     return sent in VALID_REPLY_MESSAGE_MAP
 
 

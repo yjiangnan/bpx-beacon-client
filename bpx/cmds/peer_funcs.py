@@ -70,7 +70,7 @@ async def print_connections(rpc_client: RpcClient, trusted_peers: Dict[str, Any]
 
         trusted: bool = is_trusted_inner(host, con["node_id"], trusted_peers, False)
         # Nodetype length is 9 because INTRODUCER will be deprecated
-        if NodeType(con["type"]) is NodeType.FULL_NODE:
+        if NodeType(con["type"]) is NodeType.BEACON:
             peak_height = con.get("peak_height", None)
             connection_peak_hash = con.get("peak_hash", None)
             if connection_peak_hash is None:

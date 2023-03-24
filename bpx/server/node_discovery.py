@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import dns.asyncresolver
 
-from bpx.protocols.full_node_protocol import RequestPeers, RespondPeers
+from bpx.protocols.beacon_protocol import RequestPeers, RespondPeers
 from bpx.protocols.introducer_protocol import RequestPeersIntroducer, RespondPeersIntroducer
 from bpx.protocols.protocol_message_types import ProtocolMessageTypes
 from bpx.server.address_manager import AddressManager, ExtendedPeerInfo
@@ -38,7 +38,7 @@ NETWORK_ID_DEFAULT_PORTS = {
 }
 
 
-class FullNodeDiscovery:
+class BeaconDiscovery:
     resolver: Optional[dns.asyncresolver.Resolver]
 
     def __init__(
@@ -147,8 +147,8 @@ class FullNodeDiscovery:
         if (
             peer.is_outbound is False
             and peer.peer_server_port is not None
-            and peer.connection_type is NodeType.FULL_NODE
-            and self.server._local_type is NodeType.FULL_NODE
+            and peer.connection_type is NodeType.BEACON
+            and self.server._local_type is NodeType.BEACON
             and self.address_manager is not None
         ):
             timestamped_peer_info = TimestampedPeerInfo(
@@ -162,8 +162,8 @@ class FullNodeDiscovery:
         if (
             peer.is_outbound
             and peer.peer_server_port is not None
-            and peer.connection_type is NodeType.FULL_NODE
-            and (self.server._local_type is NodeType.FULL_NODE or self.server._local_type is NodeType.WALLET)
+            and peer.connection_type is NodeType.BEACON
+            and (self.server._local_type is NodeType.BEACON or self.server._local_type is NodeType.WALLET)
             and self.address_manager is not None
         ):
             msg = make_msg(ProtocolMessageTypes.request_peers, RequestPeers())
@@ -174,8 +174,8 @@ class FullNodeDiscovery:
         if (
             peer.is_outbound
             and peer.peer_server_port is not None
-            and peer.connection_type is NodeType.FULL_NODE
-            and self.server._local_type is NodeType.FULL_NODE
+            and peer.connection_type is NodeType.BEACON
+            and self.server._local_type is NodeType.BEACON
             and self.address_manager is not None
         ):
             peer_info = peer.get_peer_info()
@@ -189,7 +189,7 @@ class FullNodeDiscovery:
 
     def _num_needed_peers(self) -> int:
         target = self.target_outbound_count
-        outgoing = len(self.server.get_connections(NodeType.FULL_NODE, outbound=True))
+        outgoing = len(self.server.get_connections(NodeType.BEACON, outbound=True))
         return max(0, target - outgoing)
 
     """
@@ -327,10 +327,10 @@ class FullNodeDiscovery:
 
                 # Only connect out to one peer per network group (/16 for IPv4).
                 groups = set()
-                full_node_connected = self.server.get_connections(NodeType.FULL_NODE, outbound=True)
-                connected = [c.get_peer_info() for c in full_node_connected]
+                beacon_connected = self.server.get_connections(NodeType.BEACON, outbound=True)
+                connected = [c.get_peer_info() for c in beacon_connected]
                 connected = [c for c in connected if c is not None]
-                for conn in full_node_connected:
+                for conn in beacon_connected:
                     peer = conn.get_peer_info()
                     if peer is None:
                         continue
@@ -460,22 +460,22 @@ class FullNodeDiscovery:
             await asyncio.sleep(cleanup_interval)
 
             # Perform the cleanup only if we have at least 3 connections.
-            full_node_connected = self.server.get_connections(NodeType.FULL_NODE)
-            connected = [c.get_peer_info() for c in full_node_connected]
+            beacon_connected = self.server.get_connections(NodeType.BEACON)
+            connected = [c.get_peer_info() for c in beacon_connected]
             connected = [c for c in connected if c is not None]
             if self.address_manager is not None and len(connected) >= 3:
                 async with self.address_manager.lock:
                     self.address_manager.cleanup(max_timestamp_difference, max_consecutive_failures)
 
     async def _respond_peers_common(
-        self, request: Union[RespondPeers, RespondPeersIntroducer], peer_src: Optional[PeerInfo], is_full_node: bool
+        self, request: Union[RespondPeers, RespondPeersIntroducer], peer_src: Optional[PeerInfo], is_beacon: bool
     ) -> None:
-        # Check if we got the peers from a full node or from the introducer.
+        # Check if we got the peers from a beacon client or from the introducer.
         peers_adjusted_timestamp = []
         is_misbehaving = False
         if len(request.peer_list) > MAX_PEERS_RECEIVED_PER_REQUEST:
             is_misbehaving = True
-        if is_full_node:
+        if is_beacon:
             if peer_src is None:
                 return None
             async with self.lock:
@@ -496,7 +496,7 @@ class FullNodeDiscovery:
                 )
             else:
                 current_peer = peer
-            if not is_full_node:
+            if not is_beacon:
                 current_peer = TimestampedPeerInfo(
                     peer.host,
                     peer.port,
@@ -506,13 +506,13 @@ class FullNodeDiscovery:
 
         assert self.address_manager is not None
 
-        if is_full_node:
+        if is_beacon:
             await self.address_manager.add_to_new_table(peers_adjusted_timestamp, peer_src, 2 * 60 * 60)
         else:
             await self.address_manager.add_to_new_table(peers_adjusted_timestamp, None, 0)
 
 
-class FullNodePeers(FullNodeDiscovery):
+class BeaconPeers(BeaconDiscovery):
     self_advertise_task: Optional[asyncio.Task[None]] = None
     address_relay_task: Optional[asyncio.Task[None]] = None
 
@@ -581,7 +581,7 @@ class FullNodePeers(FullNodeDiscovery):
                     ProtocolMessageTypes.respond_peers,
                     RespondPeers(timestamped_peer),
                 )
-                await self.server.send_to_all([msg], NodeType.FULL_NODE)
+                await self.server.send_to_all([msg], NodeType.BEACON)
 
                 async with self.lock:
                     for host in list(self.received_count_from_peers.keys()):
@@ -622,11 +622,11 @@ class FullNodePeers(FullNodeDiscovery):
             return None
 
     async def respond_peers(
-        self, request: Union[RespondPeers, RespondPeersIntroducer], peer_src: Optional[PeerInfo], is_full_node: bool
+        self, request: Union[RespondPeers, RespondPeersIntroducer], peer_src: Optional[PeerInfo], is_beacon: bool
     ) -> None:
         try:
-            await self._respond_peers_common(request, peer_src, is_full_node)
-            if is_full_node:
+            await self._respond_peers_common(request, peer_src, is_beacon)
+            if is_beacon:
                 if peer_src is None:
                     return
                 await self.add_peers_neighbour(request.peer_list, peer_src)
@@ -642,7 +642,7 @@ class FullNodePeers(FullNodeDiscovery):
         while not self.is_closed:
             try:
                 try:
-                    assert self.relay_queue is not None, "FullNodePeers.relay_queue should always exist"
+                    assert self.relay_queue is not None, "BeaconPeers.relay_queue should always exist"
                     relay_peer, num_peers = await self.relay_queue.get()
                 except asyncio.CancelledError:
                     return None
@@ -651,7 +651,7 @@ class FullNodePeers(FullNodeDiscovery):
                 except ValueError:
                     continue
                 # https://en.bitcoin.it/wiki/Satoshi_Client_Node_Discovery#Address_Relay
-                connections = self.server.get_connections(NodeType.FULL_NODE)
+                connections = self.server.get_connections(NodeType.BEACON)
                 hashes = []
                 cur_day = int(time.time()) // (24 * 60 * 60)
                 for connection in connections:
@@ -695,7 +695,7 @@ class FullNodePeers(FullNodeDiscovery):
                 self.log.error(f"Traceback: {traceback.format_exc()}")
 
 
-class WalletPeers(FullNodeDiscovery):
+class WalletPeers(BeaconDiscovery):
     def __init__(
         self,
         server: ChiaServer,
@@ -732,6 +732,6 @@ class WalletPeers(FullNodeDiscovery):
         await self._close_common()
 
     async def respond_peers(
-        self, request: Union[RespondPeers, RespondPeersIntroducer], peer_src: Optional[PeerInfo], is_full_node: bool
+        self, request: Union[RespondPeers, RespondPeersIntroducer], peer_src: Optional[PeerInfo], is_beacon: bool
     ) -> None:
-        await self._respond_peers_common(request, peer_src, is_full_node)
+        await self._respond_peers_common(request, peer_src, is_beacon)

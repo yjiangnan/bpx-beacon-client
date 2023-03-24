@@ -15,7 +15,7 @@ from bpx.util.path import path_from_root
 
 #   python chia/utils/profiler.py ~/.chia/mainnet/profile | less -r
 
-# this will print CPU usage of the chia full node main thread at 1 second increments.
+# this will print CPU usage of the chia beacon client main thread at 1 second increments.
 # find a time window of interest and analyze the profile file (which are in pstats format).
 
 # for example:

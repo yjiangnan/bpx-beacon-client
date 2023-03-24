@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 from bpx.cmds.cmds_util import get_any_service_client
 from bpx.consensus.block_record import BlockRecord
 from bpx.rpc.farmer_rpc_client import FarmerRpcClient
-from bpx.rpc.full_node_rpc_client import FullNodeRpcClient
+from bpx.rpc.beacon_rpc_client import BeaconRpcClient
 from bpx.util.misc import format_bytes, format_minutes
 from bpx.util.network import is_localhost
 
@@ -21,7 +21,7 @@ async def get_harvesters_summary(farmer_rpc_port: Optional[int]) -> Optional[Dic
 
 
 async def get_blockchain_state(rpc_port: Optional[int]) -> Optional[Dict[str, Any]]:
-    async with get_any_service_client(FullNodeRpcClient, rpc_port) as node_config_fp:
+    async with get_any_service_client(BeaconRpcClient, rpc_port) as node_config_fp:
         client, _, _ = node_config_fp
         if client is not None:
             return await client.get_blockchain_state()
@@ -29,7 +29,7 @@ async def get_blockchain_state(rpc_port: Optional[int]) -> Optional[Dict[str, An
 
 
 async def get_average_block_time(rpc_port: Optional[int]) -> float:
-    async with get_any_service_client(FullNodeRpcClient, rpc_port) as node_config_fp:
+    async with get_any_service_client(BeaconRpcClient, rpc_port) as node_config_fp:
         client, _, _ = node_config_fp
         if client is not None:
             blocks_to_compare = 500

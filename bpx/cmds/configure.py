@@ -12,7 +12,7 @@ def configure(
     root_path: Path,
     set_farmer_peer: str,
     set_node_introducer: str,
-    set_fullnode_port: str,
+    set_beacon_port: str,
     set_harvester_port: str,
     set_log_level: str,
     enable_upnp: str,
@@ -59,13 +59,13 @@ def configure(
                     change_made = True
             except ValueError:
                 print("Farmer address must be in format [IP:Port]")
-        if set_fullnode_port:
-            config["beacon"]["port"] = int(set_fullnode_port)
-            config["beacon"]["introducer_peer"]["port"] = int(set_fullnode_port)
-            config["farmer"]["full_node_peer"]["port"] = int(set_fullnode_port)
-            config["timelord"]["full_node_peer"]["port"] = int(set_fullnode_port)
-            config["introducer"]["port"] = int(set_fullnode_port)
-            print("Default full node port updated")
+        if set_beacon_port:
+            config["beacon"]["port"] = int(set_beacon_port)
+            config["beacon"]["introducer_peer"]["port"] = int(set_beacon_port)
+            config["farmer"]["beacon_peer"]["port"] = int(set_beacon_port)
+            config["timelord"]["beacon_peer"]["port"] = int(set_beacon_port)
+            config["introducer"]["port"] = int(set_beacon_port)
+            print("Default beacon client port updated")
             change_made = True
         if set_harvester_port:
             config["harvester"]["port"] = int(set_harvester_port)
@@ -128,7 +128,7 @@ def configure(
                     config["seeder"]["selected_network"] = testnet
                     config["seeder"]["bootstrap_peers"] = bootstrap_peers
 
-                print("Default full node port, introducer and network setting updated")
+                print("Default beacon client port, introducer and network setting updated")
                 change_made = True
 
             elif testnet == "false" or testnet == "f":
@@ -160,7 +160,7 @@ def configure(
                     config["seeder"]["selected_network"] = net
                     config["seeder"]["bootstrap_peers"] = bootstrap_peers
 
-                print("Default full node port, introducer and network setting updated")
+                print("Default beacon client port, introducer and network setting updated")
                 change_made = True
             else:
                 print("Please choose True or False")
@@ -200,8 +200,8 @@ def configure(
 @click.option("--set-node-introducer", help="Set the introducer for node - IP:Port", type=str)
 @click.option("--set-farmer-peer", help="Set the farmer peer for harvester - IP:Port", type=str)
 @click.option(
-    "--set-fullnode-port",
-    help="Set the port to use for the fullnode, useful for testing",
+    "--set-beacon-port",
+    help="Set the port to use for the beacon, useful for testing",
     type=str,
 )
 @click.option(
@@ -255,7 +255,7 @@ def configure_cmd(
     ctx: click.Context,
     set_farmer_peer: str,
     set_node_introducer: str,
-    set_fullnode_port: str,
+    set_beacon_port: str,
     set_harvester_port: str,
     set_log_level: str,
     enable_upnp: str,
@@ -272,7 +272,7 @@ def configure_cmd(
         ctx.obj["root_path"],
         set_farmer_peer,
         set_node_introducer,
-        set_fullnode_port,
+        set_beacon_port,
         set_harvester_port,
         set_log_level,
         enable_upnp,

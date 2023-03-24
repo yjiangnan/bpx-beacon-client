@@ -13,7 +13,7 @@ from bpx.consensus.difficulty_adjustment import can_finish_sub_and_full_epoch
 from bpx.consensus.make_sub_epoch_summary import next_sub_epoch_summary
 from bpx.consensus.multiprocess_validation import PreValidationResult
 from bpx.consensus.pot_iterations import calculate_sp_interval_iters
-from bpx.full_node.signage_point import SignagePoint
+from bpx.beacon.signage_point import SignagePoint
 from bpx.protocols import timelord_protocol
 from bpx.server.outbound_message import Message
 from bpx.types.blockchain_format.classgroup import ClassgroupElement
@@ -33,13 +33,13 @@ log = logging.getLogger(__name__)
 
 @streamable
 @dataclasses.dataclass(frozen=True)
-class FullNodeStorePeakResult(Streamable):
+class BeaconStorePeakResult(Streamable):
     added_eos: Optional[EndOfSubSlotBundle]
     new_signage_points: List[Tuple[uint8, SignagePoint]]
     new_infusion_points: List[timelord_protocol.NewInfusionPointVDF]
 
 
-class FullNodeStore:
+class BeaconStore:
     constants: ConsensusConstants
 
     # Blocks which we have created, but don't have plot signatures yet, so not yet "unfinished blocks"
@@ -671,7 +671,7 @@ class FullNodeStore:
         ip_sub_slot: Optional[EndOfSubSlotBundle],  # None if in first slot
         fork_block: Optional[BlockRecord],
         blocks: BlockchainInterface,
-    ) -> FullNodeStorePeakResult:
+    ) -> BeaconStorePeakResult:
         """
         If the peak is an overflow block, must provide two sub-slots: one for the current sub-slot and one for
         the prev sub-slot (since we still might get more blocks with an sp in the previous sub-slot)
@@ -760,7 +760,7 @@ class FullNodeStore:
             if eos_op is not None:
                 self.recent_eos.put(eos_op.challenge_chain.get_hash(), (eos_op, time.time()))
 
-        return FullNodeStorePeakResult(new_eos, new_sps, new_ips)
+        return BeaconStorePeakResult(new_eos, new_sps, new_ips)
 
     def get_finished_sub_slots(
         self,

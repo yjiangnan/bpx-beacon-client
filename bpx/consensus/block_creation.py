@@ -16,8 +16,8 @@ from bpx.consensus.blockchain_interface import BlockchainInterface
 from bpx.consensus.coinbase import create_farmer_coin, create_pool_coin
 from bpx.consensus.constants import ConsensusConstants
 from bpx.consensus.cost_calculator import NPCResult
-from bpx.full_node.mempool_check_conditions import get_name_puzzle_conditions
-from bpx.full_node.signage_point import SignagePoint
+from bpx.beacon.mempool_check_conditions import get_name_puzzle_conditions
+from bpx.beacon.signage_point import SignagePoint
 from bpx.types.blockchain_format.coin import Coin, hash_coin_ids
 from bpx.types.blockchain_format.foliage import Foliage, FoliageBlockData, FoliageTransactionBlock, TransactionsInfo
 from bpx.types.blockchain_format.pool_target import PoolTarget

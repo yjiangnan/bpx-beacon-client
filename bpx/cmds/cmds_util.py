@@ -10,7 +10,7 @@ from aiohttp import ClientConnectorError
 
 from bpx.daemon.keychain_proxy import KeychainProxy, connect_to_keychain_and_validate
 from bpx.rpc.farmer_rpc_client import FarmerRpcClient
-from bpx.rpc.full_node_rpc_client import FullNodeRpcClient
+from bpx.rpc.beacon_rpc_client import BeaconRpcClient
 from bpx.rpc.harvester_rpc_client import HarvesterRpcClient
 from bpx.rpc.rpc_client import RpcClient
 from bpx.types.blockchain_format.sized_bytes import bytes32
@@ -21,13 +21,13 @@ from bpx.util.keychain import KeyData
 
 NODE_TYPES: Dict[str, Type[RpcClient]] = {
     "farmer": FarmerRpcClient,
-    "beacon": FullNodeRpcClient,
+    "beacon": BeaconRpcClient,
     "harvester": HarvesterRpcClient,
 }
 
 node_config_section_names: Dict[Type[RpcClient], str] = {
     FarmerRpcClient: "farmer",
-    FullNodeRpcClient: "beacon",
+    BeaconRpcClient: "beacon",
     HarvesterRpcClient: "harvester",
 }
 

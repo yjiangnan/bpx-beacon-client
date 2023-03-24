@@ -11,7 +11,7 @@ import click
     "--rpc-port",
     help=(
         "Set the port where the Full Node is hosting the RPC interface. "
-        "See the rpc_port under full_node in config.yaml. "
+        "See the rpc_port under beacon in config.yaml. "
         "[default: 8555]"
     ),
     type=int,

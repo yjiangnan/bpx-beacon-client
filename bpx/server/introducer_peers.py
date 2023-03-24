@@ -35,7 +35,7 @@ class VettedPeer:
 
 class IntroducerPeers:
     """
-    Has the list of known full node peers that are already connected or may be
+    Has the list of known beacon client peers that are already connected or may be
     connected to, and the time that they were last added.
     """
 

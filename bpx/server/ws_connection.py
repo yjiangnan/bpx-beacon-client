@@ -639,12 +639,12 @@ class WSChiaConnection:
             if not self.inbound_rate_limiter.process_msg_and_check(
                 full_message_loaded, self.local_capabilities, self.peer_capabilities
             ):
-                if self.local_type == NodeType.FULL_NODE and not is_localhost(self.peer_host):
+                if self.local_type == NodeType.BEACON and not is_localhost(self.peer_host):
                     self.log.error(
                         f"Peer has been rate limited and will be disconnected: {self.peer_host}, "
                         f"message: {message_type}"
                     )
-                    # Only full node disconnects peers, to prevent abuse and crashing timelords, farmers, etc
+                    # Only beacon client disconnects peers, to prevent abuse and crashing timelords, farmers, etc
                     asyncio.create_task(self.close(300))
                     await asyncio.sleep(3)
                     return None

@@ -5,7 +5,7 @@ from typing import List, Optional, Tuple, Union
 
 from clvm.casts import int_to_bytes
 
-from bpx.full_node.generator import create_compressed_generator
+from bpx.beacon.generator import create_compressed_generator
 from bpx.types.blockchain_format.program import Program
 from bpx.types.blockchain_format.serialized_program import SerializedProgram
 from bpx.types.coin_spend import CoinSpend

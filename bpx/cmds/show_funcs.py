@@ -4,10 +4,10 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from bpx.rpc.full_node_rpc_client import FullNodeRpcClient
+from bpx.rpc.beacon_rpc_client import BeaconRpcClient
 
 
-async def print_blockchain_state(node_client: FullNodeRpcClient, config: Dict[str, Any]) -> bool:
+async def print_blockchain_state(node_client: BeaconRpcClient, config: Dict[str, Any]) -> bool:
     import time
 
     from bpx.consensus.block_record import BlockRecord
@@ -27,10 +27,10 @@ async def print_blockchain_state(node_client: FullNodeRpcClient, config: Dict[st
     num_blocks: int = 10
     network_name = config["selected_network"]
     genesis_challenge = config["farmer"]["network_overrides"]["constants"][network_name]["GENESIS_CHALLENGE"]
-    full_node_port = config["beacon"]["port"]
-    full_node_rpc_port = config["beacon"]["rpc_port"]
+    beacon_port = config["beacon"]["port"]
+    beacon_rpc_port = config["beacon"]["rpc_port"]
 
-    print(f"Network: {network_name}    Port: {full_node_port}   RPC Port: {full_node_rpc_port}")
+    print(f"Network: {network_name}    Port: {beacon_port}   RPC Port: {beacon_rpc_port}")
     print(f"Node ID: {node_id}")
     print(f"Genesis Challenge: {genesis_challenge}")
 
@@ -49,7 +49,7 @@ async def print_blockchain_state(node_client: FullNodeRpcClient, config: Dict[st
         print(f"Current Blockchain Status: Not Synced. Peak height: {peak.height}")
     else:
         print("\nSearching for an initial chain\n")
-        print("You may be able to expedite with 'bpx peer full_node -a host:port' using a known node.\n")
+        print("You may be able to expedite with 'bpx peer beacon -a host:port' using a known node.\n")
 
     if peak is not None:
         if peak.is_transaction_block:
@@ -91,7 +91,7 @@ async def print_blockchain_state(node_client: FullNodeRpcClient, config: Dict[st
 
 
 async def print_block_from_hash(
-    node_client: FullNodeRpcClient, config: Dict[str, Any], block_by_header_hash: str
+    node_client: BeaconRpcClient, config: Dict[str, Any], block_by_header_hash: str
 ) -> None:
     import time
 
@@ -169,7 +169,7 @@ async def show_async(
 ) -> None:
     from bpx.cmds.cmds_util import get_any_service_client
 
-    async with get_any_service_client(FullNodeRpcClient, rpc_port, root_path) as node_config_fp:
+    async with get_any_service_client(BeaconRpcClient, rpc_port, root_path) as node_config_fp:
         node_client, config, _ = node_config_fp
         if node_client is not None:
             # Check State

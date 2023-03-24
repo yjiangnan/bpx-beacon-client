@@ -36,7 +36,7 @@ def create_timelord_service(
     service_config = config[SERVICE_NAME]
 
     connect_peers = [
-        PeerInfo(str(get_host_addr(service_config["full_node_peer"]["host"])), service_config["full_node_peer"]["port"])
+        PeerInfo(str(get_host_addr(service_config["beacon_peer"]["host"])), service_config["beacon_peer"]["port"])
     ]
     overrides = service_config["network_overrides"]["constants"][service_config["selected_network"]]
     updated_constants = constants.replace_str_to_bytes(**overrides)

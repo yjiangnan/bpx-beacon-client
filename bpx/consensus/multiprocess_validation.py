@@ -18,7 +18,7 @@ from bpx.consensus.difficulty_adjustment import get_next_sub_slot_iters_and_diff
 from bpx.consensus.full_block_to_block_record import block_to_block_record
 from bpx.consensus.get_block_challenge import get_block_challenge
 from bpx.consensus.pot_iterations import calculate_iterations_quality, is_overflow_block
-from bpx.full_node.mempool_check_conditions import get_name_puzzle_conditions
+from bpx.beacon.mempool_check_conditions import get_name_puzzle_conditions
 from bpx.types.block_protocol import BlockInfo
 from bpx.types.blockchain_format.coin import Coin
 from bpx.types.blockchain_format.proof_of_space import verify_and_get_quality_string

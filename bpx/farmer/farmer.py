@@ -465,7 +465,7 @@ class Farmer:
                 if pool_config.pool_url == "":
                     continue
 
-                enforce_https = config["full_node"]["selected_network"] == "mainnet"
+                enforce_https = config["beacon"]["selected_network"] == "mainnet"
                 if enforce_https and not pool_config.pool_url.startswith("https://"):
                     self.log.error(f"Pool URLs must be HTTPS on mainnet {pool_config.pool_url}")
                     continue

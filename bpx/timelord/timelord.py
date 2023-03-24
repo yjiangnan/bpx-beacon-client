@@ -489,7 +489,7 @@ class Timelord:
                 )
                 if self._server is not None:
                     msg = make_msg(ProtocolMessageTypes.new_signage_point_vdf, response)
-                    await self.server.send_to_all([msg], NodeType.FULL_NODE)
+                    await self.server.send_to_all([msg], NodeType.BEACON)
                 # Cleanup the signage point from memory.
                 to_remove.append((signage_iter, signage_point_index))
 
@@ -601,7 +601,7 @@ class Timelord:
                     )
                     msg = make_msg(ProtocolMessageTypes.new_infusion_point_vdf, response)
                     if self._server is not None:
-                        await self.server.send_to_all([msg], NodeType.FULL_NODE)
+                        await self.server.send_to_all([msg], NodeType.BEACON)
 
                     self.proofs_finished = self._clear_proof_list(iteration)
 
@@ -813,7 +813,7 @@ class Timelord:
                     ProtocolMessageTypes.new_end_of_sub_slot_vdf,
                     timelord_protocol.NewEndOfSubSlotVDF(eos_bundle),
                 )
-                await self.server.send_to_all([msg], NodeType.FULL_NODE)
+                await self.server.send_to_all([msg], NodeType.BEACON)
 
             log.info(
                 f"Built end of subslot bundle. cc hash: {eos_bundle.challenge_chain.get_hash()}. New_difficulty: "
@@ -1069,7 +1069,7 @@ class Timelord:
                     )
                     if self._server is not None:
                         message = make_msg(ProtocolMessageTypes.respond_compact_proof_of_time, response)
-                        await self.server.send_to_all([message], NodeType.FULL_NODE)
+                        await self.server.send_to_all([message], NodeType.BEACON)
                     self.state_changed(
                         "new_compact_proof", {"header_hash": header_hash, "height": height, "field_vdf": field_vdf}
                     )
@@ -1188,7 +1188,7 @@ class Timelord:
                     )
                     if self._server is not None:
                         message = make_msg(ProtocolMessageTypes.respond_compact_proof_of_time, response)
-                        await self.server.send_to_all([message], NodeType.FULL_NODE)
+                        await self.server.send_to_all([message], NodeType.BEACON)
                 except Exception as e:
                     log.error(f"Exception manage discriminant queue: {e}")
                     tb = traceback.format_exc()

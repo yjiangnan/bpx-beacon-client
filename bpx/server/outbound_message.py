@@ -10,7 +10,7 @@ from bpx.util.streamable import Streamable, streamable
 
 
 class NodeType(IntEnum):
-    FULL_NODE = 1
+    BEACON = 1
     HARVESTER = 2
     FARMER = 3
     TIMELORD = 4

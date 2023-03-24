@@ -12,7 +12,7 @@ from bpx.util.ints import uint8, uint32, uint64
 from bpx.util.streamable import Streamable, streamable
 
 """
-Protocol between farmer and full node.
+Protocol between farmer and beacon client.
 Note: When changing this file, also change protocol_message_types.py, and the protocol version in shared_protocol.py
 """
 

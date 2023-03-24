@@ -241,8 +241,8 @@ class ChiaServer:
                 if connection.closed:
                     to_remove.append(connection)
                 elif (
-                    self._local_type == NodeType.FULL_NODE or self._local_type == NodeType.WALLET
-                ) and connection.connection_type == NodeType.FULL_NODE:
+                    self._local_type == NodeType.BEACON or self._local_type == NodeType.WALLET
+                ) and connection.connection_type == NodeType.BEACON:
                     if is_crawler is not None:
                         if time.time() - connection.creation_time > 5:
                             to_remove.append(connection)
@@ -336,7 +336,7 @@ class ChiaServer:
                 await connection.close()
             else:
                 await self.connection_added(connection, self.on_connect)
-                if self.introducer_peers is not None and connection.connection_type is NodeType.FULL_NODE:
+                if self.introducer_peers is not None and connection.connection_type is NodeType.BEACON:
                     self.introducer_peers.add(connection.get_peer_info())
         except ProtocolError as e:
             if connection is not None:
@@ -658,10 +658,10 @@ class ChiaServer:
         return uint16(self._port)
 
     def accept_inbound_connections(self, node_type: NodeType) -> bool:
-        if not self._local_type == NodeType.FULL_NODE:
+        if not self._local_type == NodeType.BEACON:
             return True
         inbound_count = len(self.get_connections(node_type, outbound=False))
-        if node_type == NodeType.FULL_NODE:
+        if node_type == NodeType.BEACON:
             return inbound_count < cast(int, self.config["target_peer_count"]) - cast(
                 int, self.config["target_outbound_peer_count"]
             )

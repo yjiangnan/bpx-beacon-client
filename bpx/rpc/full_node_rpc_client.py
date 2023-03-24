@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple
 
 from bpx.consensus.block_record import BlockRecord
-from bpx.full_node.signage_point import SignagePoint
+from bpx.beacon.signage_point import SignagePoint
 from bpx.rpc.rpc_client import RpcClient
 from bpx.types.blockchain_format.sized_bytes import bytes32
 from bpx.types.coin_record import CoinRecord
@@ -21,13 +21,13 @@ def coin_record_dict_backwards_compat(coin_record: Dict[str, Any]):
     return coin_record
 
 
-class FullNodeRpcClient(RpcClient):
+class BeaconRpcClient(RpcClient):
     """
-    Client to Chia RPC, connects to a local full node. Uses HTTP/JSON, and converts back from
+    Client to Chia RPC, connects to a local beacon client. Uses HTTP/JSON, and converts back from
     JSON into native python objects before returning. All api calls use POST requests.
     Note that this is not the same as the peer protocol, or wallet protocol (which run Chia's
     protocol on top of TCP), it's a separate protocol on top of HTTP that provides easy access
-    to the full node.
+    to the beacon client.
     """
 
     async def get_blockchain_state(self) -> Dict:

@@ -26,10 +26,10 @@ from bpx.consensus.multiprocess_validation import (
     _run_generator,
     pre_validate_blocks_multiprocessing,
 )
-from bpx.full_node.block_height_map import BlockHeightMap
-from bpx.full_node.block_store import BlockStore
-from bpx.full_node.coin_store import CoinStore
-from bpx.full_node.mempool_check_conditions import get_name_puzzle_conditions
+from bpx.beacon.block_height_map import BlockHeightMap
+from bpx.beacon.block_store import BlockStore
+from bpx.beacon.coin_store import CoinStore
+from bpx.beacon.mempool_check_conditions import get_name_puzzle_conditions
 from bpx.types.block_protocol import BlockInfo
 from bpx.types.blockchain_format.coin import Coin
 from bpx.types.blockchain_format.serialized_program import SerializedProgram
@@ -122,7 +122,7 @@ class Blockchain(BlockchainInterface):
         in the consensus constants config.
         """
         self = Blockchain()
-        self.lock = asyncio.Lock()  # External lock handled by full node
+        self.lock = asyncio.Lock()  # External lock handled by beacon client
         self.compact_proof_lock = asyncio.Lock()
         if single_threaded:
             self.pool = InlineExecutor()
