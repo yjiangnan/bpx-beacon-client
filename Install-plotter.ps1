@@ -102,7 +102,7 @@ $ARCH = "x86-64"
 
 if ($null -eq (Get-ChildItem env:VIRTUAL_ENV -ErrorAction SilentlyContinue))
 {
-    Write-Output "This script requires that the Chia Python virtual environment is activated."
+    Write-Output "This script requires that the BPX Python virtual environment is activated."
     Write-Output "Execute '.\venv\Scripts\Activate.ps1' before running."
     Exit 1
 }

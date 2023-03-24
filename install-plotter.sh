@@ -100,7 +100,7 @@ if [ "${SCRIPT_DIR}" != "$(pwd)" ]; then
 fi
 
 if [ -z "$VIRTUAL_ENV" ]; then
-  echo "This requires the chia python virtual environment."
+  echo "This requires the bpx python virtual environment."
   echo "Execute '. ./activate' before running."
   exit 1
 fi
