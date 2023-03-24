@@ -7,25 +7,25 @@ from typing import List, Optional, Tuple
 
 from blspy import AugSchemeMPL, G1Element, G2Element
 
-from chia.consensus.pot_iterations import calculate_iterations_quality, calculate_sp_interval_iters
-from chia.harvester.harvester import Harvester
-from chia.plotting.util import PlotInfo, parse_plot_info
-from chia.protocols import harvester_protocol
-from chia.protocols.farmer_protocol import FarmingInfo
-from chia.protocols.harvester_protocol import Plot, PlotSyncResponse
-from chia.protocols.protocol_message_types import ProtocolMessageTypes
-from chia.server.outbound_message import Message, make_msg
-from chia.server.ws_connection import WSChiaConnection
-from chia.types.blockchain_format.proof_of_space import (
+from bpx.consensus.pot_iterations import calculate_iterations_quality, calculate_sp_interval_iters
+from bpx.harvester.harvester import Harvester
+from bpx.plotting.util import PlotInfo, parse_plot_info
+from bpx.protocols import harvester_protocol
+from bpx.protocols.farmer_protocol import FarmingInfo
+from bpx.protocols.harvester_protocol import Plot, PlotSyncResponse
+from bpx.protocols.protocol_message_types import ProtocolMessageTypes
+from bpx.server.outbound_message import Message, make_msg
+from bpx.server.ws_connection import WSChiaConnection
+from bpx.types.blockchain_format.proof_of_space import (
     ProofOfSpace,
     calculate_pos_challenge,
     generate_plot_public_key,
     passes_plot_filter,
 )
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.util.api_decorators import api_request
-from chia.util.ints import uint8, uint32, uint64
-from chia.wallet.derive_keys import master_sk_to_local_sk
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.util.api_decorators import api_request
+from bpx.util.ints import uint8, uint32, uint64
+from bpx.wallet.derive_keys import master_sk_to_local_sk
 
 
 class HarvesterAPI:

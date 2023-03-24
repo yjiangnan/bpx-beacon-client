@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Awaitable, Callable, List
 
-from chia.consensus.blockchain_interface import BlockchainInterface
-from chia.server.ws_connection import WSChiaConnection
-from chia.util.ints import uint32
+from bpx.consensus.blockchain_interface import BlockchainInterface
+from bpx.server.ws_connection import WSChiaConnection
+from bpx.util.ints import uint32
 
 
 async def check_fork_next_block(

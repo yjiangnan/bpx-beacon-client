@@ -4,11 +4,11 @@ from typing import Tuple
 
 from chiavdf import prove
 
-from chia.consensus.constants import ConsensusConstants
-from chia.types.blockchain_format.classgroup import ClassgroupElement
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.blockchain_format.vdf import VDFInfo, VDFProof
-from chia.util.ints import uint8, uint64
+from bpx.consensus.constants import ConsensusConstants
+from bpx.types.blockchain_format.classgroup import ClassgroupElement
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.types.blockchain_format.vdf import VDFInfo, VDFProof
+from bpx.util.ints import uint8, uint64
 
 
 def get_vdf_info_and_proof(

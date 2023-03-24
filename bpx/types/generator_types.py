@@ -3,9 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import List
 
-from chia.types.blockchain_format.serialized_program import SerializedProgram
-from chia.util.ints import uint32
-from chia.util.streamable import Streamable, streamable
+from bpx.types.blockchain_format.serialized_program import SerializedProgram
+from bpx.util.ints import uint32
+from bpx.util.streamable import Streamable, streamable
 
 
 class GeneratorBlockCacheInterface:

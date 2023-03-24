@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from chia.cmds.cmds_util import get_any_service_client
-from chia.cmds.units import units
-from chia.consensus.block_record import BlockRecord
-from chia.rpc.farmer_rpc_client import FarmerRpcClient
-from chia.rpc.full_node_rpc_client import FullNodeRpcClient
-from chia.rpc.wallet_rpc_client import WalletRpcClient
-from chia.util.misc import format_bytes, format_minutes
-from chia.util.network import is_localhost
+from bpx.cmds.cmds_util import get_any_service_client
+from bpx.cmds.units import units
+from bpx.consensus.block_record import BlockRecord
+from bpx.rpc.farmer_rpc_client import FarmerRpcClient
+from bpx.rpc.full_node_rpc_client import FullNodeRpcClient
+from bpx.rpc.wallet_rpc_client import WalletRpcClient
+from bpx.util.misc import format_bytes, format_minutes
+from bpx.util.network import is_localhost
 
 SECONDS_PER_BLOCK = (24 * 3600) / 4608
 

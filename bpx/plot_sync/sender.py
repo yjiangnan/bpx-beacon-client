@@ -10,11 +10,11 @@ from typing import Any, Generic, Iterable, List, Optional, Tuple, Type, TypeVar
 
 from typing_extensions import Protocol
 
-from chia.plot_sync.exceptions import AlreadyStartedError, InvalidConnectionTypeError
-from chia.plot_sync.util import Constants
-from chia.plotting.manager import PlotManager
-from chia.plotting.util import PlotInfo
-from chia.protocols.harvester_protocol import (
+from bpx.plot_sync.exceptions import AlreadyStartedError, InvalidConnectionTypeError
+from bpx.plot_sync.util import Constants
+from bpx.plotting.manager import PlotManager
+from bpx.plotting.util import PlotInfo
+from bpx.protocols.harvester_protocol import (
     Plot,
     PlotSyncDone,
     PlotSyncIdentifier,
@@ -23,11 +23,11 @@ from chia.protocols.harvester_protocol import (
     PlotSyncResponse,
     PlotSyncStart,
 )
-from chia.protocols.protocol_message_types import ProtocolMessageTypes
-from chia.server.outbound_message import NodeType, make_msg
-from chia.server.ws_connection import WSChiaConnection
-from chia.util.generator_tools import list_to_batches
-from chia.util.ints import int16, uint32, uint64
+from bpx.protocols.protocol_message_types import ProtocolMessageTypes
+from bpx.server.outbound_message import NodeType, make_msg
+from bpx.server.ws_connection import WSChiaConnection
+from bpx.util.generator_tools import list_to_batches
+from bpx.util.ints import int16, uint32, uint64
 
 log = logging.getLogger(__name__)
 

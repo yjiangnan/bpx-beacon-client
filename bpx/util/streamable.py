@@ -25,10 +25,10 @@ from typing import (
 from blspy import G1Element, G2Element, PrivateKey
 from typing_extensions import TYPE_CHECKING, Literal, get_args, get_origin
 
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.util.byte_types import hexstr_to_bytes
-from chia.util.hash import std_hash
-from chia.util.ints import uint32
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.util.byte_types import hexstr_to_bytes
+from bpx.util.hash import std_hash
+from bpx.util.ints import uint32
 
 if TYPE_CHECKING:
     from _typeshed import DataclassInstance

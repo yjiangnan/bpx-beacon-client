@@ -7,8 +7,8 @@ from logging import Logger
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
-from chia.util.config import load_config, traverse_dict
-from chia.util.permissions import octal_mode_string, verify_file_permissions
+from bpx.util.config import load_config, traverse_dict
+from bpx.util.permissions import octal_mode_string, verify_file_permissions
 
 DEFAULT_PERMISSIONS_CERT_FILE: int = 0o644
 DEFAULT_PERMISSIONS_KEY_FILE: int = 0o600
@@ -65,7 +65,7 @@ warned_ssl_files: Set[Path] = set()
 
 def get_all_ssl_file_paths(root_path: Path) -> Tuple[List[Path], List[Path]]:
     """Lookup config values and append to a list of files whose permissions we need to check"""
-    from chia.ssl.create_ssl import get_mozilla_ca_crt
+    from bpx.ssl.create_ssl import get_mozilla_ca_crt
 
     all_certs: List[Path] = []
     all_keys: List[Path] = []

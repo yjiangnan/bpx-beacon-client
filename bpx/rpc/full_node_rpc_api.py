@@ -3,27 +3,27 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from chia.consensus.block_record import BlockRecord
-from chia.consensus.cost_calculator import NPCResult
-from chia.consensus.pos_quality import UI_ACTUAL_SPACE_CONSTANT_FACTOR
-from chia.full_node.fee_estimator_interface import FeeEstimatorInterface
-from chia.full_node.full_node import FullNode
-from chia.full_node.mempool_check_conditions import get_puzzle_and_solution_for_coin, get_spends_for_block
-from chia.rpc.rpc_server import Endpoint, EndpointResult
-from chia.server.outbound_message import NodeType
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.coin_record import CoinRecord
-from chia.types.coin_spend import CoinSpend
-from chia.types.full_block import FullBlock
-from chia.types.generator_types import BlockGenerator
-from chia.types.mempool_inclusion_status import MempoolInclusionStatus
-from chia.types.spend_bundle import SpendBundle
-from chia.types.unfinished_header_block import UnfinishedHeaderBlock
-from chia.util.byte_types import hexstr_to_bytes
-from chia.util.ints import uint32, uint64, uint128
-from chia.util.log_exceptions import log_exceptions
-from chia.util.math import make_monotonically_decreasing
-from chia.util.ws_message import WsRpcMessage, create_payload_dict
+from bpx.consensus.block_record import BlockRecord
+from bpx.consensus.cost_calculator import NPCResult
+from bpx.consensus.pos_quality import UI_ACTUAL_SPACE_CONSTANT_FACTOR
+from bpx.full_node.fee_estimator_interface import FeeEstimatorInterface
+from bpx.full_node.full_node import FullNode
+from bpx.full_node.mempool_check_conditions import get_puzzle_and_solution_for_coin, get_spends_for_block
+from bpx.rpc.rpc_server import Endpoint, EndpointResult
+from bpx.server.outbound_message import NodeType
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.types.coin_record import CoinRecord
+from bpx.types.coin_spend import CoinSpend
+from bpx.types.full_block import FullBlock
+from bpx.types.generator_types import BlockGenerator
+from bpx.types.mempool_inclusion_status import MempoolInclusionStatus
+from bpx.types.spend_bundle import SpendBundle
+from bpx.types.unfinished_header_block import UnfinishedHeaderBlock
+from bpx.util.byte_types import hexstr_to_bytes
+from bpx.util.ints import uint32, uint64, uint128
+from bpx.util.log_exceptions import log_exceptions
+from bpx.util.math import make_monotonically_decreasing
+from bpx.util.ws_message import WsRpcMessage, create_payload_dict
 
 
 def coin_record_dict_backwards_compat(coin_record: Dict[str, Any]) -> Dict[str, bool]:

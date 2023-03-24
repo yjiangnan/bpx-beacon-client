@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from chia.util.db_wrapper import DBWrapper2
+from bpx.util.db_wrapper import DBWrapper2
 
 
 class KeyValStore:

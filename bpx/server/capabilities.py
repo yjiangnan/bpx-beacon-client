@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Iterable, List, Set, Tuple
 
-from chia.protocols.shared_protocol import Capability
-from chia.util.ints import uint16
+from bpx.protocols.shared_protocol import Capability
+from bpx.util.ints import uint16
 
 _capability_values = {int(capability) for capability in Capability}
 

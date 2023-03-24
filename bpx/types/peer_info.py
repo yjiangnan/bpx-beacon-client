@@ -4,9 +4,9 @@ import ipaddress
 from dataclasses import dataclass
 from typing import Union
 
-from chia.util.ints import uint16, uint64
-from chia.util.network import IPAddress
-from chia.util.streamable import Streamable, streamable
+from bpx.util.ints import uint16, uint64
+from bpx.util.network import IPAddress
+from bpx.util.streamable import Streamable, streamable
 
 
 # TODO, Replace unsafe_hash with frozen and drop the __init__ as soon as all PeerInfo call sites pass in an IPAddress.

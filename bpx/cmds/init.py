@@ -46,7 +46,7 @@ def init_cmd(
     """
     from pathlib import Path
 
-    from chia.cmds.passphrase_funcs import initialize_passphrase
+    from bpx.cmds.passphrase_funcs import initialize_passphrase
 
     from .init_funcs import init
 
@@ -63,7 +63,7 @@ def init_cmd(
 
 
 if __name__ == "__main__":
-    from chia.util.default_root import DEFAULT_ROOT_PATH
+    from bpx.util.default_root import DEFAULT_ROOT_PATH
 
     from .init_funcs import chia_init
 

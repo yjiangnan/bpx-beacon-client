@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.util.hash import std_hash
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.util.hash import std_hash
 
 
 @dataclass(frozen=True)

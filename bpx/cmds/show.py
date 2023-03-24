@@ -4,7 +4,7 @@ from typing import Optional
 
 import click
 
-from chia.cmds.show_funcs import show_async
+from bpx.cmds.show_funcs import show_async
 
 
 @click.command("show", short_help="Show node information", no_args_is_help=True)

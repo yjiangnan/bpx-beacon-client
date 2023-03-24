@@ -7,8 +7,8 @@ from typing import Any, Awaitable, Callable, Collection, Dict, List, Optional
 
 from typing_extensions import Protocol
 
-from chia.plot_sync.delta import Delta, PathListDelta, PlotListDelta
-from chia.plot_sync.exceptions import (
+from bpx.plot_sync.delta import Delta, PathListDelta, PlotListDelta
+from bpx.plot_sync.exceptions import (
     InvalidIdentifierError,
     InvalidLastSyncIdError,
     PlotAlreadyAvailableError,
@@ -16,8 +16,8 @@ from chia.plot_sync.exceptions import (
     PlotSyncException,
     SyncIdsMatchError,
 )
-from chia.plot_sync.util import ErrorCodes, State, T_PlotSyncMessage
-from chia.protocols.harvester_protocol import (
+from bpx.plot_sync.util import ErrorCodes, State, T_PlotSyncMessage
+from bpx.protocols.harvester_protocol import (
     Plot,
     PlotSyncDone,
     PlotSyncError,
@@ -27,12 +27,12 @@ from chia.protocols.harvester_protocol import (
     PlotSyncResponse,
     PlotSyncStart,
 )
-from chia.protocols.protocol_message_types import ProtocolMessageTypes
-from chia.server.outbound_message import make_msg
-from chia.server.ws_connection import WSChiaConnection
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.util.ints import int16, uint32, uint64
-from chia.util.misc import get_list_or_len
+from bpx.protocols.protocol_message_types import ProtocolMessageTypes
+from bpx.server.outbound_message import make_msg
+from bpx.server.ws_connection import WSChiaConnection
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.util.ints import int16, uint32, uint64
+from bpx.util.misc import get_list_or_len
 
 log = logging.getLogger(__name__)
 

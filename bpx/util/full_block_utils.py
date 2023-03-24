@@ -8,11 +8,11 @@ from blspy import G1Element, G2Element
 from chia_rs import serialized_length
 from chiabip158 import PyBIP158
 
-from chia.types.blockchain_format.coin import Coin
-from chia.types.blockchain_format.foliage import TransactionsInfo
-from chia.types.blockchain_format.serialized_program import SerializedProgram
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.util.ints import uint32
+from bpx.types.blockchain_format.coin import Coin
+from bpx.types.blockchain_format.foliage import TransactionsInfo
+from bpx.types.blockchain_format.serialized_program import SerializedProgram
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.util.ints import uint32
 
 
 def skip_list(buf: memoryview, skip_item: Callable[[memoryview], memoryview]) -> memoryview:

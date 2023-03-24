@@ -5,12 +5,12 @@ import logging
 import time
 from typing import Any, Dict, List, Optional
 
-from chia.rpc.rpc_server import StateChangedProtocol, default_get_connections
-from chia.server.introducer_peers import VettedPeer
-from chia.server.outbound_message import NodeType
-from chia.server.server import ChiaServer
-from chia.server.ws_connection import WSChiaConnection
-from chia.util.ints import uint64
+from bpx.rpc.rpc_server import StateChangedProtocol, default_get_connections
+from bpx.server.introducer_peers import VettedPeer
+from bpx.server.outbound_message import NodeType
+from bpx.server.server import ChiaServer
+from bpx.server.ws_connection import WSChiaConnection
+from bpx.util.ints import uint64
 
 
 class Introducer:

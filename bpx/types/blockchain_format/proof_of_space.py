@@ -8,11 +8,11 @@ from bitstring import BitArray
 from blspy import AugSchemeMPL, G1Element, PrivateKey
 from chiapos import Verifier
 
-from chia.consensus.constants import ConsensusConstants
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.util.hash import std_hash
-from chia.util.ints import uint8
-from chia.util.streamable import Streamable, streamable
+from bpx.consensus.constants import ConsensusConstants
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.util.hash import std_hash
+from bpx.util.ints import uint8
+from bpx.util.streamable import Streamable, streamable
 
 log = logging.getLogger(__name__)
 

@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from typing import List, Optional, Tuple
 
-from chia.consensus.block_record import BlockRecord
-from chia.consensus.blockchain_interface import BlockchainInterface
-from chia.consensus.constants import ConsensusConstants
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.util.ints import uint8, uint32, uint64, uint128
-from chia.util.significant_bits import count_significant_bits, truncate_to_significant_bits
+from bpx.consensus.block_record import BlockRecord
+from bpx.consensus.blockchain_interface import BlockchainInterface
+from bpx.consensus.constants import ConsensusConstants
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.util.ints import uint8, uint32, uint64, uint128
+from bpx.util.significant_bits import count_significant_bits, truncate_to_significant_bits
 
 
 def _get_blocks_at_height(

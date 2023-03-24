@@ -9,17 +9,17 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 from blspy import AugSchemeMPL, G1Element, G2Element, PrivateKey
 
-from chia.cmds.passphrase_funcs import obtain_current_passphrase
-from chia.consensus.coinbase import create_puzzlehash_for_pk
-from chia.types.signing_mode import SigningMode
-from chia.util.bech32m import encode_puzzle_hash
-from chia.util.config import load_config
-from chia.util.errors import KeychainException
-from chia.util.file_keyring import MAX_LABEL_LENGTH
-from chia.util.ints import uint32
-from chia.util.keychain import Keychain, KeyData, bytes_to_mnemonic, generate_mnemonic, mnemonic_to_seed
-from chia.util.keyring_wrapper import KeyringWrapper
-from chia.wallet.derive_keys import (
+from bpx.cmds.passphrase_funcs import obtain_current_passphrase
+from bpx.consensus.coinbase import create_puzzlehash_for_pk
+from bpx.types.signing_mode import SigningMode
+from bpx.util.bech32m import encode_puzzle_hash
+from bpx.util.config import load_config
+from bpx.util.errors import KeychainException
+from bpx.util.file_keyring import MAX_LABEL_LENGTH
+from bpx.util.ints import uint32
+from bpx.util.keychain import Keychain, KeyData, bytes_to_mnemonic, generate_mnemonic, mnemonic_to_seed
+from bpx.util.keyring_wrapper import KeyringWrapper
+from bpx.wallet.derive_keys import (
     master_sk_to_farmer_sk,
     master_sk_to_pool_sk,
     master_sk_to_wallet_sk,
@@ -214,7 +214,7 @@ def derive_sk_from_hd_path(master_sk: PrivateKey, hd_path_root: str) -> Tuple[Pr
     and returns the derived key and the HD path that was used to derive it.
     """
 
-    from chia.wallet.derive_keys import _derive_path, _derive_path_unhardened
+    from bpx.wallet.derive_keys import _derive_path, _derive_path_unhardened
 
     class DerivationType(Enum):
         NONOBSERVER = 0
@@ -322,7 +322,7 @@ def _search_derived(
     the provided search terms.
     """
 
-    from chia.wallet.derive_keys import _derive_path, _derive_path_unhardened
+    from bpx.wallet.derive_keys import _derive_path, _derive_path_unhardened
 
     class DerivedSearchResultType(Enum):
         PUBLIC_KEY = "public key"
@@ -623,7 +623,7 @@ def derive_child_key(
     Derive child keys from the provided master key.
     """
 
-    from chia.wallet.derive_keys import _derive_path, _derive_path_unhardened
+    from bpx.wallet.derive_keys import _derive_path, _derive_path_unhardened
 
     derivation_root_sk: Optional[PrivateKey] = None
     hd_path_root: Optional[str] = None

@@ -4,9 +4,9 @@ from typing import Dict, List, Optional, Tuple
 
 from chia_rs import compute_merkle_set_root
 
-from chia.types.blockchain_format.coin import Coin, hash_coin_ids
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.util.errors import Err
+from bpx.types.blockchain_format.coin import Coin, hash_coin_ids
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.util.errors import Err
 
 
 def validate_block_merkle_roots(

@@ -18,26 +18,26 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, AsyncIterator, Dict, List, Optional, Set, TextIO, Tuple
 
-from chia import __version__
-from chia.cmds.init_funcs import check_keys, chia_full_version_str, chia_init
-from chia.cmds.passphrase_funcs import default_passphrase, using_default_passphrase
-from chia.daemon.keychain_server import KeychainServer, keychain_commands
-from chia.daemon.windows_signal import kill
-from chia.plotters.plotters import get_available_plotters
-from chia.plotting.util import add_plot_directory
-from chia.server.server import ssl_context_for_root, ssl_context_for_server
-from chia.ssl.create_ssl import get_mozilla_ca_crt
-from chia.util.beta_metrics import BetaMetricsLogger
-from chia.util.chia_logging import initialize_service_logging
-from chia.util.config import load_config
-from chia.util.errors import KeychainCurrentPassphraseIsInvalid
-from chia.util.json_util import dict_to_json_str
-from chia.util.keychain import Keychain, passphrase_requirements, supports_os_passphrase_storage
-from chia.util.lock import Lockfile, LockfileError
-from chia.util.network import WebServer
-from chia.util.service_groups import validate_service
-from chia.util.setproctitle import setproctitle
-from chia.util.ws_message import WsRpcMessage, create_payload, format_response
+from bpx import __version__
+from bpx.cmds.init_funcs import check_keys, chia_full_version_str, chia_init
+from bpx.cmds.passphrase_funcs import default_passphrase, using_default_passphrase
+from bpx.daemon.keychain_server import KeychainServer, keychain_commands
+from bpx.daemon.windows_signal import kill
+from bpx.plotters.plotters import get_available_plotters
+from bpx.plotting.util import add_plot_directory
+from bpx.server.server import ssl_context_for_root, ssl_context_for_server
+from bpx.ssl.create_ssl import get_mozilla_ca_crt
+from bpx.util.beta_metrics import BetaMetricsLogger
+from bpx.util.chia_logging import initialize_service_logging
+from bpx.util.config import load_config
+from bpx.util.errors import KeychainCurrentPassphraseIsInvalid
+from bpx.util.json_util import dict_to_json_str
+from bpx.util.keychain import Keychain, passphrase_requirements, supports_os_passphrase_storage
+from bpx.util.lock import Lockfile, LockfileError
+from bpx.util.network import WebServer
+from bpx.util.service_groups import validate_service
+from bpx.util.setproctitle import setproctitle
+from bpx.util.ws_message import WsRpcMessage, create_payload, format_response
 
 io_pool_exc = ThreadPoolExecutor()
 
@@ -1418,8 +1418,8 @@ def run_daemon(root_path: Path, wait_for_unlock: bool = False) -> int:
 
 
 def main() -> int:
-    from chia.util.default_root import DEFAULT_ROOT_PATH
-    from chia.util.keychain import Keychain
+    from bpx.util.default_root import DEFAULT_ROOT_PATH
+    from bpx.util.keychain import Keychain
 
     wait_for_unlock = "--wait-for-unlock" in sys.argv[1:] and Keychain.is_keyring_locked()
     return run_daemon(DEFAULT_ROOT_PATH, wait_for_unlock)

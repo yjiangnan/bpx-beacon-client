@@ -22,7 +22,7 @@ from __future__ import annotations
 
 from typing import Iterable, List, Optional, Tuple
 
-from chia.types.blockchain_format.sized_bytes import bytes32
+from bpx.types.blockchain_format.sized_bytes import bytes32
 
 # Based on this specification from Pieter Wuille:
 # https://github.com/sipa/bips/blob/bip-bech32m/bip-bech32m.mediawiki

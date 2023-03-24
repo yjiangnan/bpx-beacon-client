@@ -5,7 +5,7 @@ from typing import Optional
 
 import click
 
-from chia.util.config import load_defaults_for_missing_services, lock_and_load_config, save_config, str2bool
+from bpx.util.config import load_defaults_for_missing_services, lock_and_load_config, save_config, str2bool
 
 
 def configure(

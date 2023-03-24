@@ -7,8 +7,8 @@ from typing import Callable, List, Optional, Type, TypeVar, Union, get_type_hint
 
 from typing_extensions import Concatenate, ParamSpec
 
-from chia.protocols.protocol_message_types import ProtocolMessageTypes
-from chia.util.streamable import Streamable
+from bpx.protocols.protocol_message_types import ProtocolMessageTypes
+from bpx.util.streamable import Streamable
 
 log = logging.getLogger(__name__)
 

@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional
 
-from chia.consensus.block_record import BlockRecord
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.blockchain_format.sub_epoch_summary import SubEpochSummary
-from chia.types.blockchain_format.vdf import VDFInfo
-from chia.types.header_block import HeaderBlock
-from chia.types.weight_proof import SubEpochChallengeSegment
-from chia.util.ints import uint32
+from bpx.consensus.block_record import BlockRecord
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.types.blockchain_format.sub_epoch_summary import SubEpochSummary
+from bpx.types.blockchain_format.vdf import VDFInfo
+from bpx.types.header_block import HeaderBlock
+from bpx.types.weight_proof import SubEpochChallengeSegment
+from bpx.util.ints import uint32
 
 
 class BlockchainInterface:

@@ -4,15 +4,15 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from chia.rpc.full_node_rpc_client import FullNodeRpcClient
+from bpx.rpc.full_node_rpc_client import FullNodeRpcClient
 
 
 async def print_blockchain_state(node_client: FullNodeRpcClient, config: Dict[str, Any]) -> bool:
     import time
 
-    from chia.consensus.block_record import BlockRecord
-    from chia.util.ints import uint64
-    from chia.util.misc import format_bytes
+    from bpx.consensus.block_record import BlockRecord
+    from bpx.util.ints import uint64
+    from bpx.util.misc import format_bytes
 
     blockchain_state = await node_client.get_blockchain_state()
     if blockchain_state is None:
@@ -95,11 +95,11 @@ async def print_block_from_hash(
 ) -> None:
     import time
 
-    from chia.consensus.block_record import BlockRecord
-    from chia.types.blockchain_format.sized_bytes import bytes32
-    from chia.types.full_block import FullBlock
-    from chia.util.bech32m import encode_puzzle_hash
-    from chia.util.byte_types import hexstr_to_bytes
+    from bpx.consensus.block_record import BlockRecord
+    from bpx.types.blockchain_format.sized_bytes import bytes32
+    from bpx.types.full_block import FullBlock
+    from bpx.util.bech32m import encode_puzzle_hash
+    from bpx.util.byte_types import hexstr_to_bytes
 
     block: Optional[BlockRecord] = await node_client.get_block_record(hexstr_to_bytes(block_by_header_hash))
     full_block: Optional[FullBlock] = await node_client.get_block(hexstr_to_bytes(block_by_header_hash))
@@ -194,7 +194,7 @@ async def show_async(
     block_header_hash_by_height: str,
     block_by_header_hash: str,
 ) -> None:
-    from chia.cmds.cmds_util import get_any_service_client
+    from bpx.cmds.cmds_util import get_any_service_client
 
     async with get_any_service_client(FullNodeRpcClient, rpc_port, root_path) as node_config_fp:
         node_client, config, _ = node_config_fp

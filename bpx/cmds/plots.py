@@ -7,13 +7,13 @@ from pathlib import Path
 
 import click
 
-from chia.plotting.util import add_plot_directory, validate_plot_size
+from bpx.plotting.util import add_plot_directory, validate_plot_size
 
 log = logging.getLogger(__name__)
 
 
 def show_plots(root_path: Path):
-    from chia.plotting.util import get_plot_directories
+    from bpx.plotting.util import get_plot_directories
 
     print("Directories where plots are being searched for:")
     print("Note that subdirectories must be added manually")
@@ -31,7 +31,7 @@ def show_plots(root_path: Path):
 @click.pass_context
 def plots_cmd(ctx: click.Context):
     """Create, add, remove and check your plots"""
-    from chia.util.chia_logging import initialize_logging
+    from bpx.util.chia_logging import initialize_logging
 
     root_path: Path = ctx.obj["root_path"]
     if not root_path.is_dir():
@@ -115,8 +115,8 @@ def create_cmd(
     exclude_final_dir: bool,
     connect_to_daemon: bool,
 ):
-    from chia.plotting.create_plots import create_plots, resolve_plot_keys
-    from chia.plotting.util import Params
+    from bpx.plotting.create_plots import create_plots, resolve_plot_keys
+    from bpx.plotting.util import Params
 
     params = Params(
         size=size,
@@ -175,7 +175,7 @@ def create_cmd(
 def check_cmd(
     ctx: click.Context, num: int, grep_string: str, list_duplicates: bool, debug_show_memo: bool, challenge_start: int
 ):
-    from chia.plotting.check_plots import check_plots
+    from bpx.plotting.check_plots import check_plots
 
     check_plots(ctx.obj["root_path"], num, challenge_start, grep_string, list_duplicates, debug_show_memo)
 
@@ -191,7 +191,7 @@ def check_cmd(
 )
 @click.pass_context
 def add_cmd(ctx: click.Context, final_dir: str):
-    from chia.plotting.util import add_plot_directory
+    from bpx.plotting.util import add_plot_directory
 
     try:
         add_plot_directory(ctx.obj["root_path"], final_dir)
@@ -211,7 +211,7 @@ def add_cmd(ctx: click.Context, final_dir: str):
 )
 @click.pass_context
 def remove_cmd(ctx: click.Context, final_dir: str):
-    from chia.plotting.util import remove_plot_directory
+    from bpx.plotting.util import remove_plot_directory
 
     remove_plot_directory(ctx.obj["root_path"], final_dir)
 

@@ -3,9 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
-from chia.types.spend_bundle_conditions import SpendBundleConditions
-from chia.util.ints import uint16, uint64
-from chia.util.streamable import Streamable, streamable
+from bpx.types.spend_bundle_conditions import SpendBundleConditions
+from bpx.util.ints import uint16, uint64
+from bpx.util.streamable import Streamable, streamable
 
 
 @streamable

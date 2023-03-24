@@ -6,8 +6,8 @@ import dataclasses
 import functools
 from typing import Any, Dict, List, Optional
 
-from chia.protocols.protocol_message_types import ProtocolMessageTypes
-from chia.protocols.shared_protocol import Capability
+from bpx.protocols.protocol_message_types import ProtocolMessageTypes
+from bpx.protocols.shared_protocol import Capability
 
 compose_rate_limits_cache: Dict[int, Dict[str, Any]] = {}
 

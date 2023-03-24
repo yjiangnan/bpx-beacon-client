@@ -14,19 +14,19 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 from blspy import AugSchemeMPL, G1Element, G2Element
 from chiabip158 import PyBIP158
 
-from chia.consensus.block_creation import create_unfinished_block
-from chia.consensus.block_record import BlockRecord
-from chia.consensus.pot_iterations import calculate_ip_iters, calculate_iterations_quality, calculate_sp_iters
-from chia.full_node.bundle_tools import best_solution_generator_from_template, simple_solution_generator
-from chia.full_node.fee_estimate import FeeEstimate, FeeEstimateGroup, fee_rate_v2_to_v1
-from chia.full_node.fee_estimator_interface import FeeEstimatorInterface
-from chia.full_node.mempool_check_conditions import get_name_puzzle_conditions, get_puzzle_and_solution_for_coin
-from chia.full_node.signage_point import SignagePoint
-from chia.full_node.tx_processing_queue import TransactionQueueFull
-from chia.protocols import farmer_protocol, full_node_protocol, introducer_protocol, timelord_protocol, wallet_protocol
-from chia.protocols.full_node_protocol import RejectBlock, RejectBlocks
-from chia.protocols.protocol_message_types import ProtocolMessageTypes
-from chia.protocols.wallet_protocol import (
+from bpx.consensus.block_creation import create_unfinished_block
+from bpx.consensus.block_record import BlockRecord
+from bpx.consensus.pot_iterations import calculate_ip_iters, calculate_iterations_quality, calculate_sp_iters
+from bpx.full_node.bundle_tools import best_solution_generator_from_template, simple_solution_generator
+from bpx.full_node.fee_estimate import FeeEstimate, FeeEstimateGroup, fee_rate_v2_to_v1
+from bpx.full_node.fee_estimator_interface import FeeEstimatorInterface
+from bpx.full_node.mempool_check_conditions import get_name_puzzle_conditions, get_puzzle_and_solution_for_coin
+from bpx.full_node.signage_point import SignagePoint
+from bpx.full_node.tx_processing_queue import TransactionQueueFull
+from bpx.protocols import farmer_protocol, full_node_protocol, introducer_protocol, timelord_protocol, wallet_protocol
+from bpx.protocols.full_node_protocol import RejectBlock, RejectBlocks
+from bpx.protocols.protocol_message_types import ProtocolMessageTypes
+from bpx.protocols.wallet_protocol import (
     CoinState,
     PuzzleSolutionResponse,
     RejectBlockHeaders,
@@ -35,34 +35,34 @@ from chia.protocols.wallet_protocol import (
     RespondFeeEstimates,
     RespondSESInfo,
 )
-from chia.server.outbound_message import Message, make_msg
-from chia.server.server import ChiaServer
-from chia.server.ws_connection import WSChiaConnection
-from chia.types.block_protocol import BlockInfo
-from chia.types.blockchain_format.coin import Coin, hash_coin_ids
-from chia.types.blockchain_format.pool_target import PoolTarget
-from chia.types.blockchain_format.proof_of_space import verify_and_get_quality_string
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.blockchain_format.sub_epoch_summary import SubEpochSummary
-from chia.types.coin_record import CoinRecord
-from chia.types.end_of_slot_bundle import EndOfSubSlotBundle
-from chia.types.full_block import FullBlock
-from chia.types.generator_types import BlockGenerator
-from chia.types.mempool_inclusion_status import MempoolInclusionStatus
-from chia.types.peer_info import PeerInfo
-from chia.types.spend_bundle import SpendBundle
-from chia.types.transaction_queue_entry import TransactionQueueEntry
-from chia.types.unfinished_block import UnfinishedBlock
-from chia.util.api_decorators import api_request
-from chia.util.full_block_utils import header_block_from_block
-from chia.util.generator_tools import get_block_header, tx_removals_and_additions
-from chia.util.hash import std_hash
-from chia.util.ints import uint8, uint32, uint64, uint128
-from chia.util.limited_semaphore import LimitedSemaphoreFullError
-from chia.util.merkle_set import MerkleSet
+from bpx.server.outbound_message import Message, make_msg
+from bpx.server.server import ChiaServer
+from bpx.server.ws_connection import WSChiaConnection
+from bpx.types.block_protocol import BlockInfo
+from bpx.types.blockchain_format.coin import Coin, hash_coin_ids
+from bpx.types.blockchain_format.pool_target import PoolTarget
+from bpx.types.blockchain_format.proof_of_space import verify_and_get_quality_string
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.types.blockchain_format.sub_epoch_summary import SubEpochSummary
+from bpx.types.coin_record import CoinRecord
+from bpx.types.end_of_slot_bundle import EndOfSubSlotBundle
+from bpx.types.full_block import FullBlock
+from bpx.types.generator_types import BlockGenerator
+from bpx.types.mempool_inclusion_status import MempoolInclusionStatus
+from bpx.types.peer_info import PeerInfo
+from bpx.types.spend_bundle import SpendBundle
+from bpx.types.transaction_queue_entry import TransactionQueueEntry
+from bpx.types.unfinished_block import UnfinishedBlock
+from bpx.util.api_decorators import api_request
+from bpx.util.full_block_utils import header_block_from_block
+from bpx.util.generator_tools import get_block_header, tx_removals_and_additions
+from bpx.util.hash import std_hash
+from bpx.util.ints import uint8, uint32, uint64, uint128
+from bpx.util.limited_semaphore import LimitedSemaphoreFullError
+from bpx.util.merkle_set import MerkleSet
 
 if TYPE_CHECKING:
-    from chia.full_node.full_node import FullNode
+    from bpx.full_node.full_node import FullNode
 else:
     FullNode = object
 

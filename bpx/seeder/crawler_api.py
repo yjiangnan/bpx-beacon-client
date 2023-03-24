@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from typing import Optional
 
-from chia.protocols import full_node_protocol, wallet_protocol
-from chia.seeder.crawler import Crawler
-from chia.server.outbound_message import Message
-from chia.server.server import ChiaServer
-from chia.server.ws_connection import WSChiaConnection
-from chia.util.api_decorators import api_request
+from bpx.protocols import full_node_protocol, wallet_protocol
+from bpx.seeder.crawler import Crawler
+from bpx.server.outbound_message import Message
+from bpx.server.server import ChiaServer
+from bpx.server.ws_connection import WSChiaConnection
+from bpx.util.api_decorators import api_request
 
 
 class CrawlerAPI:

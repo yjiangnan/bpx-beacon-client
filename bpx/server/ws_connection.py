@@ -15,24 +15,24 @@ from aiohttp.client import ClientWebSocketResponse
 from aiohttp.web import WebSocketResponse
 from typing_extensions import Protocol, final
 
-from chia.cmds.init_funcs import chia_full_version_str
-from chia.protocols.protocol_message_types import ProtocolMessageTypes
-from chia.protocols.protocol_state_machine import message_response_ok
-from chia.protocols.protocol_timing import API_EXCEPTION_BAN_SECONDS, INTERNAL_PROTOCOL_ERROR_BAN_SECONDS
-from chia.protocols.shared_protocol import Capability, Handshake
-from chia.server.capabilities import known_active_capabilities
-from chia.server.outbound_message import Message, NodeType, make_msg
-from chia.server.rate_limits import RateLimiter
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.peer_info import PeerInfo
-from chia.util.api_decorators import get_metadata
-from chia.util.errors import Err, ProtocolError
-from chia.util.ints import uint8, uint16
-from chia.util.log_exceptions import log_exceptions
+from bpx.cmds.init_funcs import chia_full_version_str
+from bpx.protocols.protocol_message_types import ProtocolMessageTypes
+from bpx.protocols.protocol_state_machine import message_response_ok
+from bpx.protocols.protocol_timing import API_EXCEPTION_BAN_SECONDS, INTERNAL_PROTOCOL_ERROR_BAN_SECONDS
+from bpx.protocols.shared_protocol import Capability, Handshake
+from bpx.server.capabilities import known_active_capabilities
+from bpx.server.outbound_message import Message, NodeType, make_msg
+from bpx.server.rate_limits import RateLimiter
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.types.peer_info import PeerInfo
+from bpx.util.api_decorators import get_metadata
+from bpx.util.errors import Err, ProtocolError
+from bpx.util.ints import uint8, uint16
+from bpx.util.log_exceptions import log_exceptions
 
 # Each message is prepended with LENGTH_BYTES bytes specifying the length
-from chia.util.network import class_for_type, is_localhost
-from chia.util.streamable import Streamable
+from bpx.util.network import class_for_type, is_localhost
+from bpx.util.streamable import Streamable
 
 # Max size 2^(8*4) which is around 4GiB
 LENGTH_BYTES: int = 4

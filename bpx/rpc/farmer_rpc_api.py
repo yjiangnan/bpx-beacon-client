@@ -6,16 +6,16 @@ from typing import Any, Callable, Dict, List, Optional
 
 from typing_extensions import Protocol
 
-from chia.farmer.farmer import Farmer
-from chia.plot_sync.receiver import Receiver
-from chia.protocols.harvester_protocol import Plot
-from chia.rpc.rpc_server import Endpoint, EndpointResult
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.util.byte_types import hexstr_to_bytes
-from chia.util.ints import uint32
-from chia.util.paginator import Paginator
-from chia.util.streamable import Streamable, streamable
-from chia.util.ws_message import WsRpcMessage, create_payload_dict
+from bpx.farmer.farmer import Farmer
+from bpx.plot_sync.receiver import Receiver
+from bpx.protocols.harvester_protocol import Plot
+from bpx.rpc.rpc_server import Endpoint, EndpointResult
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.util.byte_types import hexstr_to_bytes
+from bpx.util.ints import uint32
+from bpx.util.paginator import Paginator
+from bpx.util.streamable import Streamable, streamable
+from bpx.util.ws_message import WsRpcMessage, create_payload_dict
 
 
 class PaginatedRequestData(Protocol):

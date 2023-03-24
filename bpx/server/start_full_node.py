@@ -7,18 +7,18 @@ import sys
 from multiprocessing import freeze_support
 from typing import Any, Dict, List, Optional, Tuple
 
-from chia.consensus.constants import ConsensusConstants
-from chia.consensus.default_constants import DEFAULT_CONSTANTS
-from chia.full_node.full_node import FullNode
-from chia.full_node.full_node_api import FullNodeAPI
-from chia.rpc.full_node_rpc_api import FullNodeRpcApi
-from chia.server.outbound_message import NodeType
-from chia.server.start_service import RpcInfo, Service, async_run
-from chia.util.chia_logging import initialize_service_logging
-from chia.util.config import load_config, load_config_cli
-from chia.util.default_root import DEFAULT_ROOT_PATH
-from chia.util.ints import uint16
-from chia.util.task_timing import maybe_manage_task_instrumentation
+from bpx.consensus.constants import ConsensusConstants
+from bpx.consensus.default_constants import DEFAULT_CONSTANTS
+from bpx.full_node.full_node import FullNode
+from bpx.full_node.full_node_api import FullNodeAPI
+from bpx.rpc.full_node_rpc_api import FullNodeRpcApi
+from bpx.server.outbound_message import NodeType
+from bpx.server.start_service import RpcInfo, Service, async_run
+from bpx.util.chia_logging import initialize_service_logging
+from bpx.util.config import load_config, load_config_cli
+from bpx.util.default_root import DEFAULT_ROOT_PATH
+from bpx.util.ints import uint16
+from bpx.util.task_timing import maybe_manage_task_instrumentation
 
 # See: https://bugs.python.org/issue29288
 "".encode("idna")

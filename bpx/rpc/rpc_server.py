@@ -12,17 +12,17 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional
 from aiohttp import ClientConnectorError, ClientSession, ClientWebSocketResponse, WSMsgType, web
 from typing_extensions import Protocol, final
 
-from chia.rpc.util import wrap_http_handler
-from chia.server.outbound_message import NodeType
-from chia.server.server import ChiaServer, ssl_context_for_client, ssl_context_for_server
-from chia.server.ws_connection import WSChiaConnection
-from chia.types.peer_info import PeerInfo
-from chia.util.byte_types import hexstr_to_bytes
-from chia.util.config import str2bool
-from chia.util.ints import uint16
-from chia.util.json_util import dict_to_json_str
-from chia.util.network import WebServer, get_host_addr
-from chia.util.ws_message import WsRpcMessage, create_payload, create_payload_dict, format_response, pong
+from bpx.rpc.util import wrap_http_handler
+from bpx.server.outbound_message import NodeType
+from bpx.server.server import ChiaServer, ssl_context_for_client, ssl_context_for_server
+from bpx.server.ws_connection import WSChiaConnection
+from bpx.types.peer_info import PeerInfo
+from bpx.util.byte_types import hexstr_to_bytes
+from bpx.util.config import str2bool
+from bpx.util.ints import uint16
+from bpx.util.json_util import dict_to_json_str
+from bpx.util.network import WebServer, get_host_addr
+from bpx.util.ws_message import WsRpcMessage, create_payload, create_payload_dict, format_response, pong
 
 log = logging.getLogger(__name__)
 max_message_size = 50 * 1024 * 1024  # 50MB

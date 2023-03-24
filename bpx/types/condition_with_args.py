@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List
 
-from chia.types.condition_opcodes import ConditionOpcode
-from chia.util.streamable import Streamable, streamable
+from bpx.types.condition_opcodes import ConditionOpcode
+from bpx.util.streamable import Streamable, streamable
 
 
 @streamable

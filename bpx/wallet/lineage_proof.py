@@ -3,10 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, List, Optional
 
-from chia.types.blockchain_format.program import Program
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.util.ints import uint64
-from chia.util.streamable import Streamable, streamable
+from bpx.types.blockchain_format.program import Program
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.util.ints import uint64
+from bpx.util.streamable import Streamable, streamable
 
 
 @streamable

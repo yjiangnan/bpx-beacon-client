@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from chia.plot_sync.util import ErrorCodes, State
-from chia.protocols.harvester_protocol import PlotSyncIdentifier
-from chia.server.outbound_message import NodeType
-from chia.util.ints import uint64
+from bpx.plot_sync.util import ErrorCodes, State
+from bpx.protocols.harvester_protocol import PlotSyncIdentifier
+from bpx.server.outbound_message import NodeType
+from bpx.util.ints import uint64
 
 
 class PlotSyncException(Exception):

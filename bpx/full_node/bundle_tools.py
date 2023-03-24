@@ -5,14 +5,14 @@ from typing import List, Optional, Tuple, Union
 
 from clvm.casts import int_to_bytes
 
-from chia.full_node.generator import create_compressed_generator
-from chia.types.blockchain_format.program import Program
-from chia.types.blockchain_format.serialized_program import SerializedProgram
-from chia.types.coin_spend import CoinSpend
-from chia.types.generator_types import BlockGenerator, CompressorArg
-from chia.types.spend_bundle import SpendBundle
-from chia.util.byte_types import hexstr_to_bytes
-from chia.util.ints import uint32
+from bpx.full_node.generator import create_compressed_generator
+from bpx.types.blockchain_format.program import Program
+from bpx.types.blockchain_format.serialized_program import SerializedProgram
+from bpx.types.coin_spend import CoinSpend
+from bpx.types.generator_types import BlockGenerator, CompressorArg
+from bpx.types.spend_bundle import SpendBundle
+from bpx.util.byte_types import hexstr_to_bytes
+from bpx.util.ints import uint32
 
 
 def _serialize_amount(val: int) -> bytes:

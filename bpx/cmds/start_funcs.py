@@ -8,11 +8,11 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from chia.cmds.passphrase_funcs import get_current_passphrase
-from chia.daemon.client import DaemonProxy, connect_to_daemon_and_validate
-from chia.util.errors import KeychainMaxUnlockAttempts
-from chia.util.keychain import Keychain
-from chia.util.service_groups import services_for_groups
+from bpx.cmds.passphrase_funcs import get_current_passphrase
+from bpx.daemon.client import DaemonProxy, connect_to_daemon_and_validate
+from bpx.util.errors import KeychainMaxUnlockAttempts
+from bpx.util.keychain import Keychain
+from bpx.util.service_groups import services_for_groups
 
 
 def launch_start_daemon(root_path: Path) -> subprocess.Popen:

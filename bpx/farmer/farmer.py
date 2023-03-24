@@ -11,13 +11,13 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 import aiohttp
 from blspy import AugSchemeMPL, G1Element, G2Element, PrivateKey
 
-from chia.consensus.constants import ConsensusConstants
-from chia.daemon.keychain_proxy import KeychainProxy, connect_to_keychain_and_validate, wrap_local_keychain
-from chia.plot_sync.delta import Delta
-from chia.plot_sync.receiver import Receiver
-from chia.pools.pool_config import PoolWalletConfig, add_auth_key, load_pool_config
-from chia.protocols import farmer_protocol, harvester_protocol
-from chia.protocols.pool_protocol import (
+from bpx.consensus.constants import ConsensusConstants
+from bpx.daemon.keychain_proxy import KeychainProxy, connect_to_keychain_and_validate, wrap_local_keychain
+from bpx.plot_sync.delta import Delta
+from bpx.plot_sync.receiver import Receiver
+from bpx.pools.pool_config import PoolWalletConfig, add_auth_key, load_pool_config
+from bpx.protocols import farmer_protocol, harvester_protocol
+from bpx.protocols.pool_protocol import (
     AuthenticationPayload,
     ErrorResponse,
     GetFarmerResponse,
@@ -28,30 +28,30 @@ from chia.protocols.pool_protocol import (
     PutFarmerRequest,
     get_current_authentication_token,
 )
-from chia.protocols.protocol_message_types import ProtocolMessageTypes
-from chia.rpc.rpc_server import StateChangedProtocol, default_get_connections
-from chia.server.outbound_message import NodeType, make_msg
-from chia.server.server import ChiaServer, ssl_context_for_root
-from chia.server.ws_connection import WSChiaConnection
-from chia.ssl.create_ssl import get_mozilla_ca_crt
-from chia.types.blockchain_format.proof_of_space import ProofOfSpace
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.util.bech32m import decode_puzzle_hash
-from chia.util.byte_types import hexstr_to_bytes
-from chia.util.config import config_path_for_filename, load_config, lock_and_load_config, save_config
-from chia.util.errors import KeychainProxyConnectionFailure
-from chia.util.hash import std_hash
-from chia.util.ints import uint8, uint16, uint64
-from chia.util.keychain import Keychain
-from chia.util.logging import TimedDuplicateFilter
-from chia.wallet.derive_keys import (
+from bpx.protocols.protocol_message_types import ProtocolMessageTypes
+from bpx.rpc.rpc_server import StateChangedProtocol, default_get_connections
+from bpx.server.outbound_message import NodeType, make_msg
+from bpx.server.server import ChiaServer, ssl_context_for_root
+from bpx.server.ws_connection import WSChiaConnection
+from bpx.ssl.create_ssl import get_mozilla_ca_crt
+from bpx.types.blockchain_format.proof_of_space import ProofOfSpace
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.util.bech32m import decode_puzzle_hash
+from bpx.util.byte_types import hexstr_to_bytes
+from bpx.util.config import config_path_for_filename, load_config, lock_and_load_config, save_config
+from bpx.util.errors import KeychainProxyConnectionFailure
+from bpx.util.hash import std_hash
+from bpx.util.ints import uint8, uint16, uint64
+from bpx.util.keychain import Keychain
+from bpx.util.logging import TimedDuplicateFilter
+from bpx.wallet.derive_keys import (
     find_authentication_sk,
     find_owner_sk,
     master_sk_to_farmer_sk,
     master_sk_to_pool_sk,
     match_address_to_sk,
 )
-from chia.wallet.puzzles.singleton_top_layer import SINGLETON_MOD
+from bpx.wallet.puzzles.singleton_top_layer import SINGLETON_MOD
 
 singleton_mod_hash = SINGLETON_MOD.get_tree_hash()
 

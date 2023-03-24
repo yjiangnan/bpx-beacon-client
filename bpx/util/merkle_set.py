@@ -4,7 +4,7 @@ from abc import ABCMeta, abstractmethod
 from hashlib import sha256
 from typing import Any, Dict, List, Tuple
 
-from chia.types.blockchain_format.sized_bytes import bytes32
+from bpx.types.blockchain_format.sized_bytes import bytes32
 
 """
 A simple, confidence-inspiring Merkle Set standard

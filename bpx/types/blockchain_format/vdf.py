@@ -9,11 +9,11 @@ from typing import Optional
 
 from chiavdf import create_discriminant, verify_n_wesolowski
 
-from chia.consensus.constants import ConsensusConstants
-from chia.types.blockchain_format.classgroup import ClassgroupElement
-from chia.types.blockchain_format.sized_bytes import bytes32, bytes100
-from chia.util.ints import uint8, uint64
-from chia.util.streamable import Streamable, streamable
+from bpx.consensus.constants import ConsensusConstants
+from bpx.types.blockchain_format.classgroup import ClassgroupElement
+from bpx.types.blockchain_format.sized_bytes import bytes32, bytes100
+from bpx.util.ints import uint8, uint64
+from bpx.util.streamable import Streamable, streamable
 
 log = logging.getLogger(__name__)
 

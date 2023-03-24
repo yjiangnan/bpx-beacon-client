@@ -11,10 +11,10 @@ import colorama
 import yaml
 from cryptography.exceptions import InvalidTag
 
-from chia.cmds.passphrase_funcs import prompt_for_passphrase, read_passphrase_from_file
-from chia.util.default_root import DEFAULT_KEYS_ROOT_PATH
-from chia.util.file_keyring import FileKeyringContent
-from chia.util.keyring_wrapper import DEFAULT_PASSPHRASE_IF_NO_MASTER_PASSPHRASE, KeyringWrapper
+from bpx.cmds.passphrase_funcs import prompt_for_passphrase, read_passphrase_from_file
+from bpx.util.default_root import DEFAULT_KEYS_ROOT_PATH
+from bpx.util.file_keyring import FileKeyringContent
+from bpx.util.keyring_wrapper import DEFAULT_PASSPHRASE_IF_NO_MASTER_PASSPHRASE, KeyringWrapper
 
 DEFAULT_KEYRING_YAML = DEFAULT_KEYS_ROOT_PATH / "keyring.yaml"
 

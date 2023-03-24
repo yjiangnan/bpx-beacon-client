@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from chia.rpc.rpc_client import RpcClient
+from bpx.rpc.rpc_client import RpcClient
 
 
 class HarvesterRpcClient(RpcClient):

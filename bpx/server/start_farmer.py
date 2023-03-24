@@ -4,19 +4,19 @@ import pathlib
 import sys
 from typing import Any, Dict, Optional
 
-from chia.consensus.constants import ConsensusConstants
-from chia.consensus.default_constants import DEFAULT_CONSTANTS
-from chia.farmer.farmer import Farmer
-from chia.farmer.farmer_api import FarmerAPI
-from chia.rpc.farmer_rpc_api import FarmerRpcApi
-from chia.server.outbound_message import NodeType
-from chia.server.start_service import RpcInfo, Service, async_run
-from chia.types.peer_info import PeerInfo
-from chia.util.chia_logging import initialize_service_logging
-from chia.util.config import load_config, load_config_cli
-from chia.util.default_root import DEFAULT_ROOT_PATH
-from chia.util.keychain import Keychain
-from chia.util.network import get_host_addr
+from bpx.consensus.constants import ConsensusConstants
+from bpx.consensus.default_constants import DEFAULT_CONSTANTS
+from bpx.farmer.farmer import Farmer
+from bpx.farmer.farmer_api import FarmerAPI
+from bpx.rpc.farmer_rpc_api import FarmerRpcApi
+from bpx.server.outbound_message import NodeType
+from bpx.server.start_service import RpcInfo, Service, async_run
+from bpx.types.peer_info import PeerInfo
+from bpx.util.chia_logging import initialize_service_logging
+from bpx.util.config import load_config, load_config_cli
+from bpx.util.default_root import DEFAULT_ROOT_PATH
+from bpx.util.keychain import Keychain
+from bpx.util.network import get_host_addr
 
 # See: https://bugs.python.org/issue29288
 "".encode("idna")

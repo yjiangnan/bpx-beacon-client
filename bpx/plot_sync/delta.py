@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Dict, List, Union
 
-from chia.protocols.harvester_protocol import Plot
+from bpx.protocols.harvester_protocol import Plot
 
 
 @dataclass

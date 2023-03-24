@@ -6,7 +6,7 @@ from typing import Any
 
 from aiohttp import web
 
-from chia.wallet.util.wallet_types import WalletType
+from bpx.wallet.util.wallet_types import WalletType
 
 
 class EnhancedJSONEncoder(json.JSONEncoder):

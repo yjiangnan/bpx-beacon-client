@@ -12,8 +12,8 @@ from typing import Callable, List, Optional, Set
 
 from clvm import CLVMObject
 
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.util.hash import std_hash
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.util.hash import std_hash
 
 Op = Callable[[List["CLVMObject"], List["Op"], Set[bytes32]], None]
 

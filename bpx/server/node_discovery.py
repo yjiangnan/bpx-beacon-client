@@ -12,20 +12,20 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import dns.asyncresolver
 
-from chia.protocols.full_node_protocol import RequestPeers, RespondPeers
-from chia.protocols.introducer_protocol import RequestPeersIntroducer, RespondPeersIntroducer
-from chia.protocols.protocol_message_types import ProtocolMessageTypes
-from chia.server.address_manager import AddressManager, ExtendedPeerInfo
-from chia.server.address_manager_sqlite_store import create_address_manager_from_db
-from chia.server.address_manager_store import AddressManagerStore
-from chia.server.outbound_message import Message, NodeType, make_msg
-from chia.server.peer_store_resolver import PeerStoreResolver
-from chia.server.server import ChiaServer
-from chia.server.ws_connection import WSChiaConnection
-from chia.types.peer_info import PeerInfo, TimestampedPeerInfo
-from chia.util.hash import std_hash
-from chia.util.ints import uint16, uint64
-from chia.util.network import IPAddress, get_host_addr
+from bpx.protocols.full_node_protocol import RequestPeers, RespondPeers
+from bpx.protocols.introducer_protocol import RequestPeersIntroducer, RespondPeersIntroducer
+from bpx.protocols.protocol_message_types import ProtocolMessageTypes
+from bpx.server.address_manager import AddressManager, ExtendedPeerInfo
+from bpx.server.address_manager_sqlite_store import create_address_manager_from_db
+from bpx.server.address_manager_store import AddressManagerStore
+from bpx.server.outbound_message import Message, NodeType, make_msg
+from bpx.server.peer_store_resolver import PeerStoreResolver
+from bpx.server.server import ChiaServer
+from bpx.server.ws_connection import WSChiaConnection
+from bpx.types.peer_info import PeerInfo, TimestampedPeerInfo
+from bpx.util.hash import std_hash
+from bpx.util.ints import uint16, uint64
+from bpx.util.network import IPAddress, get_host_addr
 
 MAX_PEERS_RECEIVED_PER_REQUEST = 1000
 MAX_TOTAL_PEERS_RECEIVED = 3000

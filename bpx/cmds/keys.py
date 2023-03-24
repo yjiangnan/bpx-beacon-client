@@ -177,7 +177,7 @@ def delete_cmd(ctx: click.Context, fingerprint: int) -> None:
 
 @keys_cmd.command("delete_all", short_help="Delete all private keys in keychain")
 def delete_all_cmd() -> None:
-    from chia.util.keychain import Keychain
+    from bpx.util.keychain import Keychain
 
     Keychain().delete_all_keys()
 

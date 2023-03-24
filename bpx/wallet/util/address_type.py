@@ -3,8 +3,8 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any, Dict, Set
 
-from chia.util.bech32m import bech32_decode, convertbits
-from chia.util.config import selected_network_address_prefix
+from bpx.util.bech32m import bech32_decode, convertbits
+from bpx.util.config import selected_network_address_prefix
 
 
 class AddressType(Enum):

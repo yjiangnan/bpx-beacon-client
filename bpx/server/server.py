@@ -24,20 +24,20 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from typing_extensions import final
 
-from chia.protocols.protocol_message_types import ProtocolMessageTypes
-from chia.protocols.protocol_state_machine import message_requires_reply
-from chia.protocols.protocol_timing import INVALID_PROTOCOL_BAN_SECONDS
-from chia.protocols.shared_protocol import protocol_version
-from chia.server.introducer_peers import IntroducerPeers
-from chia.server.outbound_message import Message, NodeType
-from chia.server.ssl_context import private_ssl_paths, public_ssl_paths
-from chia.server.ws_connection import ConnectionCallback, WSChiaConnection
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.peer_info import PeerInfo
-from chia.util.errors import Err, ProtocolError
-from chia.util.ints import uint16
-from chia.util.network import WebServer, is_in_network, is_localhost
-from chia.util.ssl_check import verify_ssl_certs_and_keys
+from bpx.protocols.protocol_message_types import ProtocolMessageTypes
+from bpx.protocols.protocol_state_machine import message_requires_reply
+from bpx.protocols.protocol_timing import INVALID_PROTOCOL_BAN_SECONDS
+from bpx.protocols.shared_protocol import protocol_version
+from bpx.server.introducer_peers import IntroducerPeers
+from bpx.server.outbound_message import Message, NodeType
+from bpx.server.ssl_context import private_ssl_paths, public_ssl_paths
+from bpx.server.ws_connection import ConnectionCallback, WSChiaConnection
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.types.peer_info import PeerInfo
+from bpx.util.errors import Err, ProtocolError
+from bpx.util.ints import uint16
+from bpx.util.network import WebServer, is_in_network, is_localhost
+from bpx.util.ssl_check import verify_ssl_certs_and_keys
 
 max_message_size = 50 * 1024 * 1024  # 50MB
 

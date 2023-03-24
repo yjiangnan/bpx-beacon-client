@@ -7,37 +7,37 @@ from typing import Any, Dict, List, Optional, Tuple
 import aiohttp
 from blspy import AugSchemeMPL, G2Element, PrivateKey
 
-from chia import __version__
-from chia.consensus.pot_iterations import calculate_iterations_quality, calculate_sp_interval_iters
-from chia.farmer.farmer import Farmer
-from chia.harvester.harvester_api import HarvesterAPI
-from chia.protocols import farmer_protocol, harvester_protocol
-from chia.protocols.harvester_protocol import (
+from bpx import __version__
+from bpx.consensus.pot_iterations import calculate_iterations_quality, calculate_sp_interval_iters
+from bpx.farmer.farmer import Farmer
+from bpx.harvester.harvester_api import HarvesterAPI
+from bpx.protocols import farmer_protocol, harvester_protocol
+from bpx.protocols.harvester_protocol import (
     PlotSyncDone,
     PlotSyncPathList,
     PlotSyncPlotList,
     PlotSyncStart,
     PoolDifficulty,
 )
-from chia.protocols.pool_protocol import (
+from bpx.protocols.pool_protocol import (
     PoolErrorCode,
     PostPartialPayload,
     PostPartialRequest,
     get_current_authentication_token,
 )
-from chia.protocols.protocol_message_types import ProtocolMessageTypes
-from chia.server.outbound_message import NodeType, make_msg
-from chia.server.server import ssl_context_for_root
-from chia.server.ws_connection import WSChiaConnection
-from chia.ssl.create_ssl import get_mozilla_ca_crt
-from chia.types.blockchain_format.pool_target import PoolTarget
-from chia.types.blockchain_format.proof_of_space import (
+from bpx.protocols.protocol_message_types import ProtocolMessageTypes
+from bpx.server.outbound_message import NodeType, make_msg
+from bpx.server.server import ssl_context_for_root
+from bpx.server.ws_connection import WSChiaConnection
+from bpx.ssl.create_ssl import get_mozilla_ca_crt
+from bpx.types.blockchain_format.pool_target import PoolTarget
+from bpx.types.blockchain_format.proof_of_space import (
     generate_plot_public_key,
     generate_taproot_sk,
     verify_and_get_quality_string,
 )
-from chia.util.api_decorators import api_request
-from chia.util.ints import uint32, uint64
+from bpx.util.api_decorators import api_request
+from bpx.util.ints import uint32, uint64
 
 
 def strip_old_entries(pairs: List[Tuple[float, Any]], before: float) -> List[Tuple[float, Any]]:

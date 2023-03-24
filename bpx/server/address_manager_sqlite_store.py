@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Tuple
 
 import aiosqlite
 
-from chia.server.address_manager import NEW_BUCKETS_PER_ADDRESS, AddressManager, ExtendedPeerInfo
+from bpx.server.address_manager import NEW_BUCKETS_PER_ADDRESS, AddressManager, ExtendedPeerInfo
 
 Node = Tuple[int, ExtendedPeerInfo]
 Table = Tuple[int, int]

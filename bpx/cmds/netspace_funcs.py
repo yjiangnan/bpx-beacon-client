@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Optional
 
-from chia.cmds.cmds_util import get_any_service_client
-from chia.rpc.full_node_rpc_client import FullNodeRpcClient
-from chia.util.byte_types import hexstr_to_bytes
-from chia.util.misc import format_bytes
+from bpx.cmds.cmds_util import get_any_service_client
+from bpx.rpc.full_node_rpc_client import FullNodeRpcClient
+from bpx.util.byte_types import hexstr_to_bytes
+from bpx.util.misc import format_bytes
 
 
 async def netstorge_async(rpc_port: Optional[int], delta_block_height: str, start: str) -> None:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from hashlib import sha256
 
-from chia.types.blockchain_format.sized_bytes import bytes32
+from bpx.types.blockchain_format.sized_bytes import bytes32
 
 
 def std_hash(b, skip_bytes_conversion: bool = False) -> bytes32:

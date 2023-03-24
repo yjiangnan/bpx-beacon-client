@@ -8,9 +8,9 @@ from typing import Any, Dict, List, Optional
 import colorlog
 from concurrent_log_handler import ConcurrentRotatingFileHandler
 
-from chia.cmds.init_funcs import chia_full_version_str
-from chia.util.default_root import DEFAULT_ROOT_PATH
-from chia.util.path import path_from_root
+from bpx.cmds.init_funcs import chia_full_version_str
+from bpx.util.default_root import DEFAULT_ROOT_PATH
+from bpx.util.path import path_from_root
 
 default_log_level = "WARNING"
 

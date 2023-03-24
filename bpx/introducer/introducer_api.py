@@ -2,15 +2,15 @@ from __future__ import annotations
 
 from typing import Optional
 
-from chia.introducer.introducer import Introducer
-from chia.protocols.introducer_protocol import RequestPeersIntroducer, RespondPeersIntroducer
-from chia.protocols.protocol_message_types import ProtocolMessageTypes
-from chia.rpc.rpc_server import StateChangedProtocol
-from chia.server.outbound_message import Message, make_msg
-from chia.server.ws_connection import WSChiaConnection
-from chia.types.peer_info import TimestampedPeerInfo
-from chia.util.api_decorators import api_request
-from chia.util.ints import uint64
+from bpx.introducer.introducer import Introducer
+from bpx.protocols.introducer_protocol import RequestPeersIntroducer, RespondPeersIntroducer
+from bpx.protocols.protocol_message_types import ProtocolMessageTypes
+from bpx.rpc.rpc_server import StateChangedProtocol
+from bpx.server.outbound_message import Message, make_msg
+from bpx.server.ws_connection import WSChiaConnection
+from bpx.types.peer_info import TimestampedPeerInfo
+from bpx.util.api_decorators import api_request
+from bpx.util.ints import uint64
 
 
 class IntroducerAPI:

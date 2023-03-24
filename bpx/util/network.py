@@ -12,9 +12,9 @@ from aiohttp import web
 from aiohttp.log import web_logger
 from typing_extensions import final
 
-from chia.server.outbound_message import NodeType
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.util.ints import uint16
+from bpx.server.outbound_message import NodeType
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.util.ints import uint16
 
 
 @dataclass(frozen=True)
@@ -115,27 +115,27 @@ def is_localhost(peer_host: str) -> bool:
 
 def class_for_type(type: NodeType) -> Any:
     if type is NodeType.FULL_NODE:
-        from chia.full_node.full_node_api import FullNodeAPI
+        from bpx.full_node.full_node_api import FullNodeAPI
 
         return FullNodeAPI
     elif type is NodeType.WALLET:
-        from chia.wallet.wallet_node_api import WalletNodeAPI
+        from bpx.wallet.wallet_node_api import WalletNodeAPI
 
         return WalletNodeAPI
     elif type is NodeType.INTRODUCER:
-        from chia.introducer.introducer_api import IntroducerAPI
+        from bpx.introducer.introducer_api import IntroducerAPI
 
         return IntroducerAPI
     elif type is NodeType.TIMELORD:
-        from chia.timelord.timelord_api import TimelordAPI
+        from bpx.timelord.timelord_api import TimelordAPI
 
         return TimelordAPI
     elif type is NodeType.FARMER:
-        from chia.farmer.farmer_api import FarmerAPI
+        from bpx.farmer.farmer_api import FarmerAPI
 
         return FarmerAPI
     elif type is NodeType.HARVESTER:
-        from chia.harvester.harvester_api import HarvesterAPI
+        from bpx.harvester.harvester_api import HarvesterAPI
 
         return HarvesterAPI
     raise ValueError("No class for type")

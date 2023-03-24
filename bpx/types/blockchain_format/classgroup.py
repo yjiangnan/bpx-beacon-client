@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from chia.consensus.constants import ConsensusConstants
-from chia.types.blockchain_format.sized_bytes import bytes100
-from chia.util.streamable import Streamable, streamable
+from bpx.consensus.constants import ConsensusConstants
+from bpx.types.blockchain_format.sized_bytes import bytes100
+from bpx.util.streamable import Streamable, streamable
 
 
 @streamable

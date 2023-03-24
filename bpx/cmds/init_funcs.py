@@ -8,12 +8,12 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import yaml
 
-from chia import __version__
-from chia.cmds.configure import configure
-from chia.consensus.coinbase import create_puzzlehash_for_pk
-from chia.ssl.create_ssl import create_all_ssl
-from chia.util.bech32m import encode_puzzle_hash
-from chia.util.config import (
+from bpx import __version__
+from bpx.cmds.configure import configure
+from bpx.consensus.coinbase import create_puzzlehash_for_pk
+from bpx.ssl.create_ssl import create_all_ssl
+from bpx.util.bech32m import encode_puzzle_hash
+from bpx.util.config import (
     create_default_chia_config,
     initial_config_file,
     load_config,
@@ -21,10 +21,10 @@ from chia.util.config import (
     save_config,
     unflatten_properties,
 )
-from chia.util.db_version import set_db_version
-from chia.util.keychain import Keychain
-from chia.util.path import path_from_root
-from chia.util.ssl_check import (
+from bpx.util.db_version import set_db_version
+from bpx.util.keychain import Keychain
+from bpx.util.path import path_from_root
+from bpx.util.ssl_check import (
     DEFAULT_PERMISSIONS_CERT_FILE,
     DEFAULT_PERMISSIONS_KEY_FILE,
     RESTRICT_MASK_CERT_FILE,
@@ -32,7 +32,7 @@ from chia.util.ssl_check import (
     check_and_fix_permissions_for_ssl_file,
     fix_ssl,
 )
-from chia.wallet.derive_keys import (
+from bpx.wallet.derive_keys import (
     _derive_path,
     _derive_path_unhardened,
     master_sk_to_pool_sk,

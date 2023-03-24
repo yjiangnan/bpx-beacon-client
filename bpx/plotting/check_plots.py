@@ -9,8 +9,8 @@ from typing import List, Optional
 from blspy import G1Element
 from chiapos import Verifier
 
-from chia.plotting.manager import PlotManager
-from chia.plotting.util import (
+from bpx.plotting.manager import PlotManager
+from bpx.plotting.util import (
     PlotRefreshEvents,
     PlotRefreshResult,
     PlotsRefreshParameter,
@@ -18,12 +18,12 @@ from chia.plotting.util import (
     get_plot_filenames,
     parse_plot_info,
 )
-from chia.util.bech32m import encode_puzzle_hash
-from chia.util.config import load_config
-from chia.util.hash import std_hash
-from chia.util.ints import uint32
-from chia.util.keychain import Keychain
-from chia.wallet.derive_keys import master_sk_to_farmer_sk, master_sk_to_local_sk
+from bpx.util.bech32m import encode_puzzle_hash
+from bpx.util.config import load_config
+from bpx.util.hash import std_hash
+from bpx.util.ints import uint32
+from bpx.util.keychain import Keychain
+from bpx.wallet.derive_keys import master_sk_to_farmer_sk, master_sk_to_local_sk
 
 log = logging.getLogger(__name__)
 

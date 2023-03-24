@@ -3,12 +3,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from chia.consensus.block_record import BlockRecord
-from chia.consensus.default_constants import DEFAULT_CONSTANTS
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.full_block import FullBlock
-from chia.util.config import load_config
-from chia.util.path import path_from_root
+from bpx.consensus.block_record import BlockRecord
+from bpx.consensus.default_constants import DEFAULT_CONSTANTS
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.types.full_block import FullBlock
+from bpx.util.config import load_config
+from bpx.util.path import path_from_root
 
 
 def db_validate_func(

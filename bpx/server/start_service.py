@@ -11,19 +11,19 @@ from pathlib import Path
 from types import FrameType
 from typing import Any, Awaitable, Callable, Coroutine, Dict, Generic, List, Optional, Tuple, Type, TypeVar
 
-from chia.cmds.init_funcs import chia_full_version_str
-from chia.daemon.server import service_launch_lock_path
-from chia.rpc.rpc_server import RpcApiProtocol, RpcServer, RpcServiceProtocol, start_rpc_server
-from chia.server.chia_policy import set_chia_policy
-from chia.server.outbound_message import NodeType
-from chia.server.server import ChiaServer
-from chia.server.ssl_context import chia_ssl_ca_paths, private_ssl_ca_paths
-from chia.server.upnp import UPnP
-from chia.server.ws_connection import WSChiaConnection
-from chia.types.peer_info import PeerInfo
-from chia.util.ints import uint16
-from chia.util.lock import Lockfile, LockfileError
-from chia.util.setproctitle import setproctitle
+from bpx.cmds.init_funcs import chia_full_version_str
+from bpx.daemon.server import service_launch_lock_path
+from bpx.rpc.rpc_server import RpcApiProtocol, RpcServer, RpcServiceProtocol, start_rpc_server
+from bpx.server.chia_policy import set_chia_policy
+from bpx.server.outbound_message import NodeType
+from bpx.server.server import ChiaServer
+from bpx.server.ssl_context import chia_ssl_ca_paths, private_ssl_ca_paths
+from bpx.server.upnp import UPnP
+from bpx.server.ws_connection import WSChiaConnection
+from bpx.types.peer_info import PeerInfo
+from bpx.util.ints import uint16
+from bpx.util.lock import Lockfile, LockfileError
+from bpx.util.setproctitle import setproctitle
 
 from ..protocols.shared_protocol import capabilities
 from .reconnect_task import start_reconnect_task

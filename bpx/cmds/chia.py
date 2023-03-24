@@ -5,29 +5,29 @@ from typing import Optional
 
 import click
 
-from chia import __version__
-from chia.cmds.beta import beta_cmd
-from chia.cmds.configure import configure_cmd
-from chia.cmds.data import data_cmd
-from chia.cmds.db import db_cmd
-from chia.cmds.farm import farm_cmd
-from chia.cmds.init import init_cmd
-from chia.cmds.keys import keys_cmd
-from chia.cmds.netspace import netspace_cmd
-from chia.cmds.passphrase import passphrase_cmd
-from chia.cmds.peer import peer_cmd
-from chia.cmds.plotnft import plotnft_cmd
-from chia.cmds.plots import plots_cmd
-from chia.cmds.plotters import plotters_cmd
-from chia.cmds.rpc import rpc_cmd
-from chia.cmds.show import show_cmd
-from chia.cmds.start import start_cmd
-from chia.cmds.stop import stop_cmd
-from chia.cmds.wallet import wallet_cmd
-from chia.util.default_root import DEFAULT_KEYS_ROOT_PATH, DEFAULT_ROOT_PATH
-from chia.util.errors import KeychainCurrentPassphraseIsInvalid
-from chia.util.keychain import Keychain, set_keys_root_path
-from chia.util.ssl_check import check_ssl
+from bpx import __version__
+from bpx.cmds.beta import beta_cmd
+from bpx.cmds.configure import configure_cmd
+from bpx.cmds.data import data_cmd
+from bpx.cmds.db import db_cmd
+from bpx.cmds.farm import farm_cmd
+from bpx.cmds.init import init_cmd
+from bpx.cmds.keys import keys_cmd
+from bpx.cmds.netspace import netspace_cmd
+from bpx.cmds.passphrase import passphrase_cmd
+from bpx.cmds.peer import peer_cmd
+from bpx.cmds.plotnft import plotnft_cmd
+from bpx.cmds.plots import plots_cmd
+from bpx.cmds.plotters import plotters_cmd
+from bpx.cmds.rpc import rpc_cmd
+from bpx.cmds.show import show_cmd
+from bpx.cmds.start import start_cmd
+from bpx.cmds.stop import stop_cmd
+from bpx.cmds.wallet import wallet_cmd
+from bpx.util.default_root import DEFAULT_KEYS_ROOT_PATH, DEFAULT_ROOT_PATH
+from bpx.util.errors import KeychainCurrentPassphraseIsInvalid
+from bpx.util.keychain import Keychain, set_keys_root_path
+from bpx.util.ssl_check import check_ssl
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
@@ -62,7 +62,7 @@ def cli(
     if passphrase_file is not None:
         from sys import exit
 
-        from chia.cmds.passphrase_funcs import cache_passphrase, read_passphrase_from_file
+        from bpx.cmds.passphrase_funcs import cache_passphrase, read_passphrase_from_file
 
         try:
             passphrase = read_passphrase_from_file(passphrase_file)
@@ -99,8 +99,8 @@ def version_cmd() -> None:
 def run_daemon_cmd(ctx: click.Context, wait_for_unlock: bool) -> None:
     import asyncio
 
-    from chia.daemon.server import async_run_daemon
-    from chia.util.keychain import Keychain
+    from bpx.daemon.server import async_run_daemon
+    from bpx.util.keychain import Keychain
 
     wait_for_unlock = wait_for_unlock and Keychain.is_keyring_locked()
 

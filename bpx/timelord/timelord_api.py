@@ -4,11 +4,11 @@ import logging
 import time
 from typing import Optional
 
-from chia.protocols import timelord_protocol
-from chia.rpc.rpc_server import StateChangedProtocol
-from chia.timelord.timelord import Chain, IterationType, Timelord, iters_from_block
-from chia.util.api_decorators import api_request
-from chia.util.ints import uint64
+from bpx.protocols import timelord_protocol
+from bpx.rpc.rpc_server import StateChangedProtocol
+from bpx.timelord.timelord import Chain, IterationType, Timelord, iters_from_block
+from bpx.util.api_decorators import api_request
+from bpx.util.ints import uint64
 
 log = logging.getLogger(__name__)
 

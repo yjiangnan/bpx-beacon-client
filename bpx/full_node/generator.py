@@ -3,12 +3,12 @@ from __future__ import annotations
 import logging
 from typing import List, Optional, Tuple, Union
 
-from chia.types.blockchain_format.program import Program
-from chia.types.blockchain_format.serialized_program import SerializedProgram
-from chia.types.generator_types import BlockGenerator, CompressorArg, GeneratorBlockCacheInterface
-from chia.util.ints import uint32
-from chia.wallet.puzzles.load_clvm import load_clvm_maybe_recompile
-from chia.wallet.puzzles.rom_bootstrap_generator import get_generator
+from bpx.types.blockchain_format.program import Program
+from bpx.types.blockchain_format.serialized_program import SerializedProgram
+from bpx.types.generator_types import BlockGenerator, CompressorArg, GeneratorBlockCacheInterface
+from bpx.util.ints import uint32
+from bpx.wallet.puzzles.load_clvm import load_clvm_maybe_recompile
+from bpx.wallet.puzzles.rom_bootstrap_generator import get_generator
 
 GENERATOR_MOD = get_generator()
 

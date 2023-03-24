@@ -2,18 +2,18 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Tuple
 
-from chia.consensus.block_record import BlockRecord
-from chia.full_node.signage_point import SignagePoint
-from chia.rpc.rpc_client import RpcClient
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.coin_record import CoinRecord
-from chia.types.coin_spend import CoinSpend
-from chia.types.end_of_slot_bundle import EndOfSubSlotBundle
-from chia.types.full_block import FullBlock
-from chia.types.spend_bundle import SpendBundle
-from chia.types.unfinished_header_block import UnfinishedHeaderBlock
-from chia.util.byte_types import hexstr_to_bytes
-from chia.util.ints import uint32, uint64
+from bpx.consensus.block_record import BlockRecord
+from bpx.full_node.signage_point import SignagePoint
+from bpx.rpc.rpc_client import RpcClient
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.types.coin_record import CoinRecord
+from bpx.types.coin_spend import CoinSpend
+from bpx.types.end_of_slot_bundle import EndOfSubSlotBundle
+from bpx.types.full_block import FullBlock
+from bpx.types.spend_bundle import SpendBundle
+from bpx.types.unfinished_header_block import UnfinishedHeaderBlock
+from bpx.util.byte_types import hexstr_to_bytes
+from bpx.util.ints import uint32, uint64
 
 
 def coin_record_dict_backwards_compat(coin_record: Dict[str, Any]):

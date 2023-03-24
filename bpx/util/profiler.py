@@ -7,7 +7,7 @@ import pathlib
 import tracemalloc
 from datetime import datetime
 
-from chia.util.path import path_from_root
+from bpx.util.path import path_from_root
 
 # to use the profiler, enable it config file, "enable_profiler"
 # the output will be printed to your chia root path, e.g. ~/.chia/mainnet/profile/

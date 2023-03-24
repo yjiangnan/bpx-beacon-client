@@ -10,10 +10,10 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from typing_extensions import Literal
 
-from chia.consensus.constants import ConsensusConstants
-from chia.plot_sync.sender import Sender
-from chia.plotting.manager import PlotManager
-from chia.plotting.util import (
+from bpx.consensus.constants import ConsensusConstants
+from bpx.plot_sync.sender import Sender
+from bpx.plotting.manager import PlotManager
+from bpx.plotting.util import (
     PlotRefreshEvents,
     PlotRefreshResult,
     PlotsRefreshParameter,
@@ -22,10 +22,10 @@ from chia.plotting.util import (
     remove_plot,
     remove_plot_directory,
 )
-from chia.rpc.rpc_server import StateChangedProtocol, default_get_connections
-from chia.server.outbound_message import NodeType
-from chia.server.server import ChiaServer
-from chia.server.ws_connection import WSChiaConnection
+from bpx.rpc.rpc_server import StateChangedProtocol, default_get_connections
+from bpx.server.outbound_message import NodeType
+from bpx.server.server import ChiaServer
+from bpx.server.ws_connection import WSChiaConnection
 
 log = logging.getLogger(__name__)
 

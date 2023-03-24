@@ -8,20 +8,20 @@ from typing import Any, AsyncIterator, Awaitable, Callable, Dict, List, Optional
 
 from aiohttp import ClientConnectorError
 
-from chia.daemon.keychain_proxy import KeychainProxy, connect_to_keychain_and_validate
-from chia.rpc.data_layer_rpc_client import DataLayerRpcClient
-from chia.rpc.farmer_rpc_client import FarmerRpcClient
-from chia.rpc.full_node_rpc_client import FullNodeRpcClient
-from chia.rpc.harvester_rpc_client import HarvesterRpcClient
-from chia.rpc.rpc_client import RpcClient
-from chia.rpc.wallet_rpc_client import WalletRpcClient
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.mempool_submission_status import MempoolSubmissionStatus
-from chia.util.config import load_config
-from chia.util.default_root import DEFAULT_ROOT_PATH
-from chia.util.ints import uint16
-from chia.util.keychain import KeyData
-from chia.wallet.transaction_record import TransactionRecord
+from bpx.daemon.keychain_proxy import KeychainProxy, connect_to_keychain_and_validate
+from bpx.rpc.data_layer_rpc_client import DataLayerRpcClient
+from bpx.rpc.farmer_rpc_client import FarmerRpcClient
+from bpx.rpc.full_node_rpc_client import FullNodeRpcClient
+from bpx.rpc.harvester_rpc_client import HarvesterRpcClient
+from bpx.rpc.rpc_client import RpcClient
+from bpx.rpc.wallet_rpc_client import WalletRpcClient
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.types.mempool_submission_status import MempoolSubmissionStatus
+from bpx.util.config import load_config
+from bpx.util.default_root import DEFAULT_ROOT_PATH
+from bpx.util.ints import uint16
+from bpx.util.keychain import KeyData
+from bpx.wallet.transaction_record import TransactionRecord
 
 NODE_TYPES: Dict[str, Type[RpcClient]] = {
     "farmer": FarmerRpcClient,

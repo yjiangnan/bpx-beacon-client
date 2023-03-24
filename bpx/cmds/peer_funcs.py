@@ -3,8 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from chia.cmds.cmds_util import NODE_TYPES, get_any_service_client
-from chia.rpc.rpc_client import RpcClient
+from bpx.cmds.cmds_util import NODE_TYPES, get_any_service_client
+from bpx.rpc.rpc_client import RpcClient
 
 
 async def add_node_connection(rpc_client: RpcClient, add_connection: str) -> None:
@@ -26,7 +26,7 @@ async def add_node_connection(rpc_client: RpcClient, add_connection: str) -> Non
 
 
 async def remove_node_connection(rpc_client: RpcClient, remove_connection: str) -> None:
-    from chia.server.outbound_message import NodeType
+    from bpx.server.outbound_message import NodeType
 
     result_txt = ""
     if len(remove_connection) != 8:
@@ -52,8 +52,8 @@ async def remove_node_connection(rpc_client: RpcClient, remove_connection: str) 
 async def print_connections(rpc_client: RpcClient, trusted_peers: Dict[str, Any]) -> None:
     import time
 
-    from chia.server.outbound_message import NodeType
-    from chia.util.network import is_trusted_inner
+    from bpx.server.outbound_message import NodeType
+    from bpx.util.network import is_trusted_inner
 
     connections = await rpc_client.get_connections()
     print("Connections:")

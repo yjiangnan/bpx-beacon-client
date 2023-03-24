@@ -7,7 +7,7 @@ from typing import List, Optional
 
 import click
 
-from chia.cmds.beta_funcs import (
+from bpx.cmds.beta_funcs import (
     default_beta_root_path,
     prepare_chia_blockchain_log,
     prepare_logs,
@@ -19,8 +19,8 @@ from chia.cmds.beta_funcs import (
     validate_beta_path,
     validate_metrics_log_interval,
 )
-from chia.util.beta_metrics import metrics_log_interval_default
-from chia.util.config import lock_and_load_config, save_config
+from bpx.util.beta_metrics import metrics_log_interval_default
+from bpx.util.config import lock_and_load_config, save_config
 
 
 def print_restart_warning() -> None:

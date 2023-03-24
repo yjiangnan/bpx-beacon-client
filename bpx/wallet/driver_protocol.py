@@ -4,10 +4,10 @@ from typing import Optional
 
 from typing_extensions import Protocol
 
-from chia.types.blockchain_format.program import Program
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.wallet.puzzle_drivers import PuzzleInfo, Solver
-from chia.wallet.uncurried_puzzle import UncurriedPuzzle
+from bpx.types.blockchain_format.program import Program
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.wallet.puzzle_drivers import PuzzleInfo, Solver
+from bpx.wallet.uncurried_puzzle import UncurriedPuzzle
 
 
 class DriverProtocol(Protocol):

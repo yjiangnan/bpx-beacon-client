@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import click
 
-from chia.plotters.plotters import call_plotters
+from bpx.plotters.plotters import call_plotters
 
 
 @click.command(

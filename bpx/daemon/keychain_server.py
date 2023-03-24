@@ -7,11 +7,11 @@ from typing import Any, Dict, List, Optional, Type
 
 from blspy import PrivateKey
 
-from chia.cmds.init_funcs import check_keys
-from chia.util.errors import KeychainException, KeychainFingerprintNotFound
-from chia.util.ints import uint32
-from chia.util.keychain import Keychain, KeyData
-from chia.util.streamable import Streamable, streamable
+from bpx.cmds.init_funcs import check_keys
+from bpx.util.errors import KeychainException, KeychainFingerprintNotFound
+from bpx.util.ints import uint32
+from bpx.util.keychain import Keychain, KeyData
+from bpx.util.streamable import Streamable, streamable
 
 # Commands that are handled by the KeychainServer
 keychain_commands = [

@@ -11,8 +11,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterator, Optional, TextIO
 
-from chia.cmds.init_funcs import chia_full_version_str
-from chia.util.config import lock_and_load_config
+from bpx.cmds.init_funcs import chia_full_version_str
+from bpx.util.config import lock_and_load_config
 
 
 @contextlib.contextmanager

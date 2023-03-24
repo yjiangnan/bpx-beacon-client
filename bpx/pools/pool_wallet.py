@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple, cast
 from blspy import G1Element, G2Element, PrivateKey
 from typing_extensions import final
 
-from chia.pools.pool_config import PoolWalletConfig, load_pool_config, update_pool_config
-from chia.pools.pool_puzzles import (
+from bpx.pools.pool_config import PoolWalletConfig, load_pool_config, update_pool_config
+from bpx.pools.pool_puzzles import (
     SINGLETON_LAUNCHER,
     create_absorb_spend,
     create_full_puzzle,
@@ -26,7 +26,7 @@ from chia.pools.pool_puzzles import (
     uncurry_pool_member_inner_puzzle,
     uncurry_pool_waitingroom_inner_puzzle,
 )
-from chia.pools.pool_wallet_info import (
+from bpx.pools.pool_wallet_info import (
     FARMING_TO_POOL,
     LEAVING_POOL,
     SELF_POOLING,
@@ -35,25 +35,25 @@ from chia.pools.pool_wallet_info import (
     PoolWalletInfo,
     create_pool_state,
 )
-from chia.protocols.pool_protocol import POOL_PROTOCOL_VERSION
-from chia.server.ws_connection import WSChiaConnection
-from chia.types.announcement import Announcement
-from chia.types.blockchain_format.coin import Coin
-from chia.types.blockchain_format.program import Program
-from chia.types.blockchain_format.serialized_program import SerializedProgram
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.coin_record import CoinRecord
-from chia.types.coin_spend import CoinSpend, compute_additions
-from chia.types.spend_bundle import SpendBundle
-from chia.util.ints import uint8, uint32, uint64, uint128
-from chia.wallet.derive_keys import find_owner_sk
-from chia.wallet.sign_coin_spends import sign_coin_spends
-from chia.wallet.transaction_record import TransactionRecord
-from chia.wallet.util.transaction_type import TransactionType
-from chia.wallet.util.wallet_types import WalletType
-from chia.wallet.wallet import Wallet
-from chia.wallet.wallet_coin_record import WalletCoinRecord
-from chia.wallet.wallet_info import WalletInfo
+from bpx.protocols.pool_protocol import POOL_PROTOCOL_VERSION
+from bpx.server.ws_connection import WSChiaConnection
+from bpx.types.announcement import Announcement
+from bpx.types.blockchain_format.coin import Coin
+from bpx.types.blockchain_format.program import Program
+from bpx.types.blockchain_format.serialized_program import SerializedProgram
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.types.coin_record import CoinRecord
+from bpx.types.coin_spend import CoinSpend, compute_additions
+from bpx.types.spend_bundle import SpendBundle
+from bpx.util.ints import uint8, uint32, uint64, uint128
+from bpx.wallet.derive_keys import find_owner_sk
+from bpx.wallet.sign_coin_spends import sign_coin_spends
+from bpx.wallet.transaction_record import TransactionRecord
+from bpx.wallet.util.transaction_type import TransactionType
+from bpx.wallet.util.wallet_types import WalletType
+from bpx.wallet.wallet import Wallet
+from bpx.wallet.wallet_coin_record import WalletCoinRecord
+from bpx.wallet.wallet_info import WalletInfo
 
 
 @final
@@ -991,6 +991,6 @@ class PoolWallet:
 
 
 if TYPE_CHECKING:
-    from chia.wallet.wallet_protocol import WalletProtocol
+    from bpx.wallet.wallet_protocol import WalletProtocol
 
     _dummy: WalletProtocol = cast(PoolWallet, None)

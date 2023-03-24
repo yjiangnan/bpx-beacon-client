@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Union
 
-from chia.consensus.block_record import BlockRecord
-from chia.consensus.blockchain_interface import BlockchainInterface
-from chia.types.header_block import HeaderBlock
+from bpx.consensus.block_record import BlockRecord
+from bpx.consensus.blockchain_interface import BlockchainInterface
+from bpx.types.header_block import HeaderBlock
 
 
 def find_fork_point_in_chain(

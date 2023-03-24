@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import List, Optional, Tuple
 
-from chia.consensus.block_record import BlockRecord
-from chia.consensus.blockchain_interface import BlockchainInterface
-from chia.consensus.constants import ConsensusConstants
-from chia.types.blockchain_format.classgroup import ClassgroupElement
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.end_of_slot_bundle import EndOfSubSlotBundle
-from chia.util.ints import uint64, uint128
+from bpx.consensus.block_record import BlockRecord
+from bpx.consensus.blockchain_interface import BlockchainInterface
+from bpx.consensus.constants import ConsensusConstants
+from bpx.types.blockchain_format.classgroup import ClassgroupElement
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.types.end_of_slot_bundle import EndOfSubSlotBundle
+from bpx.util.ints import uint64, uint128
 
 
 def get_signage_point_vdf_info(

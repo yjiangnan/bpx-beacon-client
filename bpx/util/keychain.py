@@ -13,7 +13,7 @@ from bitstring import BitArray  # pyright: reportMissingImports=false
 from blspy import AugSchemeMPL, G1Element, PrivateKey  # pyright: reportMissingImports=false
 from typing_extensions import final
 
-from chia.util.errors import (
+from bpx.util.errors import (
     KeychainException,
     KeychainFingerprintExists,
     KeychainFingerprintNotFound,
@@ -22,10 +22,10 @@ from chia.util.errors import (
     KeychainSecretsMissing,
     KeychainUserNotFound,
 )
-from chia.util.hash import std_hash
-from chia.util.ints import uint32
-from chia.util.keyring_wrapper import KeyringWrapper
-from chia.util.streamable import Streamable, streamable
+from bpx.util.hash import std_hash
+from bpx.util.ints import uint32
+from bpx.util.keyring_wrapper import KeyringWrapper
+from bpx.util.streamable import Streamable, streamable
 
 CURRENT_KEY_VERSION = "1.8"
 DEFAULT_USER = f"user-chia-{CURRENT_KEY_VERSION}"  # e.g. user-chia-1.8

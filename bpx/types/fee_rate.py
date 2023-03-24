@@ -5,10 +5,10 @@ from dataclasses import dataclass
 
 import typing_extensions
 
-from chia.types.clvm_cost import CLVMCost
-from chia.types.mojos import Mojos
-from chia.util.ints import uint64
-from chia.util.streamable import Streamable, streamable
+from bpx.types.clvm_cost import CLVMCost
+from bpx.types.mojos import Mojos
+from bpx.util.ints import uint64
+from bpx.util.streamable import Streamable, streamable
 
 
 @typing_extensions.final

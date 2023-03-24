@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, cast
 
-from chia.rpc.farmer_rpc_api import PlotInfoRequestData, PlotPathRequestData
-from chia.rpc.rpc_client import RpcClient
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.util.misc import dataclass_to_json_dict
+from bpx.rpc.farmer_rpc_api import PlotInfoRequestData, PlotPathRequestData
+from bpx.rpc.rpc_client import RpcClient
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.util.misc import dataclass_to_json_dict
 
 
 class FarmerRpcClient(RpcClient):

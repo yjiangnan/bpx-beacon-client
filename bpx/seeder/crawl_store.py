@@ -10,7 +10,7 @@ from typing import Dict, List
 
 import aiosqlite
 
-from chia.seeder.peer_record import PeerRecord, PeerReliability
+from bpx.seeder.peer_record import PeerRecord, PeerReliability
 
 log = logging.getLogger(__name__)
 

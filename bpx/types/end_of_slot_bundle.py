@@ -3,13 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
-from chia.types.blockchain_format.slots import (
+from bpx.types.blockchain_format.slots import (
     ChallengeChainSubSlot,
     InfusedChallengeChainSubSlot,
     RewardChainSubSlot,
     SubSlotProofs,
 )
-from chia.util.streamable import Streamable, streamable
+from bpx.util.streamable import Streamable, streamable
 
 
 @streamable

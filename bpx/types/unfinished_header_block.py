@@ -3,13 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List, Optional
 
-from chia.types.blockchain_format.foliage import Foliage, FoliageTransactionBlock
-from chia.types.blockchain_format.reward_chain_block import RewardChainBlockUnfinished
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.blockchain_format.vdf import VDFProof
-from chia.types.end_of_slot_bundle import EndOfSubSlotBundle
-from chia.util.ints import uint128
-from chia.util.streamable import Streamable, streamable
+from bpx.types.blockchain_format.foliage import Foliage, FoliageTransactionBlock
+from bpx.types.blockchain_format.reward_chain_block import RewardChainBlockUnfinished
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.types.blockchain_format.vdf import VDFProof
+from bpx.types.end_of_slot_bundle import EndOfSubSlotBundle
+from bpx.util.ints import uint128
+from bpx.util.streamable import Streamable, streamable
 
 
 @streamable

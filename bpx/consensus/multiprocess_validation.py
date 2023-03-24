@@ -9,31 +9,31 @@ from typing import Awaitable, Callable, Dict, List, Optional, Sequence, Tuple
 
 from blspy import AugSchemeMPL, G1Element
 
-from chia.consensus.block_header_validation import validate_finished_header_block
-from chia.consensus.block_record import BlockRecord
-from chia.consensus.blockchain_interface import BlockchainInterface
-from chia.consensus.constants import ConsensusConstants
-from chia.consensus.cost_calculator import NPCResult
-from chia.consensus.difficulty_adjustment import get_next_sub_slot_iters_and_difficulty
-from chia.consensus.full_block_to_block_record import block_to_block_record
-from chia.consensus.get_block_challenge import get_block_challenge
-from chia.consensus.pot_iterations import calculate_iterations_quality, is_overflow_block
-from chia.full_node.mempool_check_conditions import get_name_puzzle_conditions
-from chia.types.block_protocol import BlockInfo
-from chia.types.blockchain_format.coin import Coin
-from chia.types.blockchain_format.proof_of_space import verify_and_get_quality_string
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.blockchain_format.sub_epoch_summary import SubEpochSummary
-from chia.types.full_block import FullBlock
-from chia.types.generator_types import BlockGenerator
-from chia.types.header_block import HeaderBlock
-from chia.types.unfinished_block import UnfinishedBlock
-from chia.util.block_cache import BlockCache
-from chia.util.condition_tools import pkm_pairs
-from chia.util.errors import Err, ValidationError
-from chia.util.generator_tools import get_block_header, tx_removals_and_additions
-from chia.util.ints import uint16, uint32, uint64
-from chia.util.streamable import Streamable, streamable
+from bpx.consensus.block_header_validation import validate_finished_header_block
+from bpx.consensus.block_record import BlockRecord
+from bpx.consensus.blockchain_interface import BlockchainInterface
+from bpx.consensus.constants import ConsensusConstants
+from bpx.consensus.cost_calculator import NPCResult
+from bpx.consensus.difficulty_adjustment import get_next_sub_slot_iters_and_difficulty
+from bpx.consensus.full_block_to_block_record import block_to_block_record
+from bpx.consensus.get_block_challenge import get_block_challenge
+from bpx.consensus.pot_iterations import calculate_iterations_quality, is_overflow_block
+from bpx.full_node.mempool_check_conditions import get_name_puzzle_conditions
+from bpx.types.block_protocol import BlockInfo
+from bpx.types.blockchain_format.coin import Coin
+from bpx.types.blockchain_format.proof_of_space import verify_and_get_quality_string
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.types.blockchain_format.sub_epoch_summary import SubEpochSummary
+from bpx.types.full_block import FullBlock
+from bpx.types.generator_types import BlockGenerator
+from bpx.types.header_block import HeaderBlock
+from bpx.types.unfinished_block import UnfinishedBlock
+from bpx.util.block_cache import BlockCache
+from bpx.util.condition_tools import pkm_pairs
+from bpx.util.errors import Err, ValidationError
+from bpx.util.generator_tools import get_block_header, tx_removals_and_additions
+from bpx.util.ints import uint16, uint32, uint64
+from bpx.util.streamable import Streamable, streamable
 
 log = logging.getLogger(__name__)
 

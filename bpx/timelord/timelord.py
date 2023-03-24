@@ -14,33 +14,33 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from chiavdf import create_discriminant, prove
 
-from chia.consensus.constants import ConsensusConstants
-from chia.consensus.pot_iterations import calculate_sp_iters, is_overflow_block
-from chia.protocols import timelord_protocol
-from chia.protocols.protocol_message_types import ProtocolMessageTypes
-from chia.rpc.rpc_server import StateChangedProtocol, default_get_connections
-from chia.server.outbound_message import NodeType, make_msg
-from chia.server.server import ChiaServer
-from chia.server.ws_connection import WSChiaConnection
-from chia.timelord.iters_from_block import iters_from_block
-from chia.timelord.timelord_state import LastState
-from chia.timelord.types import Chain, IterationType, StateType
-from chia.types.blockchain_format.classgroup import ClassgroupElement
-from chia.types.blockchain_format.reward_chain_block import RewardChainBlock
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.blockchain_format.slots import (
+from bpx.consensus.constants import ConsensusConstants
+from bpx.consensus.pot_iterations import calculate_sp_iters, is_overflow_block
+from bpx.protocols import timelord_protocol
+from bpx.protocols.protocol_message_types import ProtocolMessageTypes
+from bpx.rpc.rpc_server import StateChangedProtocol, default_get_connections
+from bpx.server.outbound_message import NodeType, make_msg
+from bpx.server.server import ChiaServer
+from bpx.server.ws_connection import WSChiaConnection
+from bpx.timelord.iters_from_block import iters_from_block
+from bpx.timelord.timelord_state import LastState
+from bpx.timelord.types import Chain, IterationType, StateType
+from bpx.types.blockchain_format.classgroup import ClassgroupElement
+from bpx.types.blockchain_format.reward_chain_block import RewardChainBlock
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.types.blockchain_format.slots import (
     ChallengeChainSubSlot,
     InfusedChallengeChainSubSlot,
     RewardChainSubSlot,
     SubSlotProofs,
 )
-from chia.types.blockchain_format.sub_epoch_summary import SubEpochSummary
-from chia.types.blockchain_format.vdf import VDFInfo, VDFProof
-from chia.types.end_of_slot_bundle import EndOfSubSlotBundle
-from chia.util.config import process_config_start_method
-from chia.util.ints import uint8, uint16, uint32, uint64, uint128
-from chia.util.setproctitle import getproctitle, setproctitle
-from chia.util.streamable import Streamable, streamable
+from bpx.types.blockchain_format.sub_epoch_summary import SubEpochSummary
+from bpx.types.blockchain_format.vdf import VDFInfo, VDFProof
+from bpx.types.end_of_slot_bundle import EndOfSubSlotBundle
+from bpx.util.config import process_config_start_method
+from bpx.util.ints import uint8, uint16, uint32, uint64, uint128
+from bpx.util.setproctitle import getproctitle, setproctitle
+from bpx.util.streamable import Streamable, streamable
 
 log = logging.getLogger(__name__)
 

@@ -4,7 +4,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Dict, List, Set
 
-from chia.types.blockchain_format.sized_bytes import bytes32
+from bpx.types.blockchain_format.sized_bytes import bytes32
 
 log = logging.getLogger(__name__)
 

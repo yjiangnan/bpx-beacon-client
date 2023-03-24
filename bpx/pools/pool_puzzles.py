@@ -6,18 +6,18 @@ from typing import List, Optional, Tuple
 from blspy import G1Element
 from clvm.casts import int_from_bytes, int_to_bytes
 
-from chia.clvm.singleton import SINGLETON_LAUNCHER
-from chia.consensus.block_rewards import calculate_pool_reward
-from chia.consensus.coinbase import pool_parent_id
-from chia.pools.pool_wallet_info import LEAVING_POOL, SELF_POOLING, PoolState
-from chia.types.blockchain_format.coin import Coin
-from chia.types.blockchain_format.program import Program
-from chia.types.blockchain_format.serialized_program import SerializedProgram
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.types.coin_spend import CoinSpend, compute_additions
-from chia.util.ints import uint32, uint64
-from chia.wallet.puzzles.load_clvm import load_clvm_maybe_recompile
-from chia.wallet.puzzles.singleton_top_layer import puzzle_for_singleton
+from bpx.clvm.singleton import SINGLETON_LAUNCHER
+from bpx.consensus.block_rewards import calculate_pool_reward
+from bpx.consensus.coinbase import pool_parent_id
+from bpx.pools.pool_wallet_info import LEAVING_POOL, SELF_POOLING, PoolState
+from bpx.types.blockchain_format.coin import Coin
+from bpx.types.blockchain_format.program import Program
+from bpx.types.blockchain_format.serialized_program import SerializedProgram
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.types.coin_spend import CoinSpend, compute_additions
+from bpx.util.ints import uint32, uint64
+from bpx.wallet.puzzles.load_clvm import load_clvm_maybe_recompile
+from bpx.wallet.puzzles.singleton_top_layer import puzzle_for_singleton
 
 log = logging.getLogger(__name__)
 # "Full" is the outer singleton, with the inner puzzle filled in

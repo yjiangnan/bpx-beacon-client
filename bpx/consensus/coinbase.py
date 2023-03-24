@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from blspy import G1Element
 
-from chia.types.blockchain_format.coin import Coin
-from chia.types.blockchain_format.sized_bytes import bytes32
-from chia.util.ints import uint32, uint64
-from chia.wallet.puzzles.p2_delegated_puzzle_or_hidden_puzzle import puzzle_hash_for_pk
+from bpx.types.blockchain_format.coin import Coin
+from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.util.ints import uint32, uint64
+from bpx.wallet.puzzles.p2_delegated_puzzle_or_hidden_puzzle import puzzle_hash_for_pk
 
 
 def create_puzzlehash_for_pk(pub_key: G1Element) -> bytes32:

@@ -8,8 +8,8 @@ from keyring.backends.macOS import Keyring as MacKeyring
 from keyring.backends.Windows import WinVaultKeyring as WinKeyring
 from keyring.errors import KeyringError, PasswordDeleteError
 
-from chia.util.default_root import DEFAULT_KEYS_ROOT_PATH
-from chia.util.file_keyring import FileKeyring
+from bpx.util.default_root import DEFAULT_KEYS_ROOT_PATH
+from bpx.util.file_keyring import FileKeyring
 
 # We want to protect the keyring, even if a user-specified master passphrase isn't provided
 #
@@ -90,7 +90,7 @@ class KeyringWrapper:
         Grab the saved passphrase from the OS credential store (if available), otherwise
         use the default passphrase
         """
-        from chia.util.keychain import supports_os_passphrase_storage
+        from bpx.util.keychain import supports_os_passphrase_storage
 
         passphrase: Optional[str] = None
 
@@ -169,8 +169,8 @@ class KeyringWrapper:
         """
         Sets a new master passphrase for the keyring
         """
-        from chia.util.errors import KeychainCurrentPassphraseIsInvalid
-        from chia.util.keychain import supports_os_passphrase_storage
+        from bpx.util.errors import KeychainCurrentPassphraseIsInvalid
+        from bpx.util.keychain import supports_os_passphrase_storage
 
         # Require a valid current_passphrase
         if (

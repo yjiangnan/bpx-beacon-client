@@ -3,8 +3,8 @@ from __future__ import annotations
 import asyncio
 from logging import Logger
 
-from chia.server.server import ChiaServer
-from chia.types.peer_info import PeerInfo
+from bpx.server.server import ChiaServer
+from bpx.types.peer_info import PeerInfo
 
 
 def start_reconnect_task(server: ChiaServer, peer_info: PeerInfo, log: Logger) -> asyncio.Task[None]:

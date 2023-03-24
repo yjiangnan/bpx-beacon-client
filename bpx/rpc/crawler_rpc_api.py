@@ -3,9 +3,9 @@ from __future__ import annotations
 import ipaddress
 from typing import Any, Dict, List, Optional
 
-from chia.rpc.rpc_server import Endpoint, EndpointResult
-from chia.seeder.crawler import Crawler
-from chia.util.ws_message import WsRpcMessage, create_payload_dict
+from bpx.rpc.rpc_server import Endpoint, EndpointResult
+from bpx.seeder.crawler import Crawler
+from bpx.util.ws_message import WsRpcMessage, create_payload_dict
 
 
 class CrawlerRpcApi:

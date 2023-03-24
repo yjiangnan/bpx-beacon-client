@@ -5,8 +5,8 @@ import time
 from dataclasses import dataclass
 from typing import List, Optional, Set
 
-from chia.types.peer_info import PeerInfo
-from chia.util.ints import uint16, uint64
+from bpx.types.peer_info import PeerInfo
+from bpx.util.ints import uint16, uint64
 
 
 @dataclass(frozen=False)

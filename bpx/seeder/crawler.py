@@ -11,20 +11,20 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import aiosqlite
 
-from chia.consensus.constants import ConsensusConstants
-from chia.full_node.coin_store import CoinStore
-from chia.full_node.full_node_api import FullNodeAPI
-from chia.protocols import full_node_protocol
-from chia.rpc.rpc_server import StateChangedProtocol, default_get_connections
-from chia.seeder.crawl_store import CrawlStore
-from chia.seeder.peer_record import PeerRecord, PeerReliability
-from chia.server.outbound_message import NodeType
-from chia.server.server import ChiaServer
-from chia.server.ws_connection import WSChiaConnection
-from chia.types.peer_info import PeerInfo
-from chia.util.ints import uint32, uint64
-from chia.util.network import get_host_addr
-from chia.util.path import path_from_root
+from bpx.consensus.constants import ConsensusConstants
+from bpx.full_node.coin_store import CoinStore
+from bpx.full_node.full_node_api import FullNodeAPI
+from bpx.protocols import full_node_protocol
+from bpx.rpc.rpc_server import StateChangedProtocol, default_get_connections
+from bpx.seeder.crawl_store import CrawlStore
+from bpx.seeder.peer_record import PeerRecord, PeerReliability
+from bpx.server.outbound_message import NodeType
+from bpx.server.server import ChiaServer
+from bpx.server.ws_connection import WSChiaConnection
+from bpx.types.peer_info import PeerInfo
+from bpx.util.ints import uint32, uint64
+from bpx.util.network import get_host_addr
+from bpx.util.path import path_from_root
 
 log = logging.getLogger(__name__)
 

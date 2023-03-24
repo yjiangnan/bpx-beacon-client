@@ -11,8 +11,8 @@ from typing import Any, Dict, Optional
 
 import pkg_resources
 
-from chia.plotting.create_plots import create_plots, resolve_plot_keys
-from chia.plotting.util import Params, add_plot_directory, validate_plot_size
+from bpx.plotting.create_plots import create_plots, resolve_plot_keys
+from bpx.plotting.util import Params, add_plot_directory, validate_plot_size
 
 log = logging.getLogger(__name__)
 
