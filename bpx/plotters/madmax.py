@@ -151,7 +151,7 @@ def dir_with_trailing_slash(dir: str) -> str:
     return dir if dir[-1] == os.path.sep else dir + os.path.sep
 
 
-def plot_madmax(args, chia_root_path: Path, plotters_root_path: Path):
+def plot_madmax(args, bpx_root_path: Path, plotters_root_path: Path):
     if sys.platform != "win32" and sys.platform != "cygwin":
         import resource
 
@@ -173,8 +173,7 @@ def plot_madmax(args, chia_root_path: Path, plotters_root_path: Path):
             None if args.farmerkey == b"" else args.farmerkey.hex(),
             None,
             None if args.pool_key == b"" else args.pool_key.hex(),
-            None if args.contract == "" else args.contract,
-            chia_root_path,
+            bpx_root_path,
             log,
             args.connect_to_daemon,
         )
@@ -183,9 +182,8 @@ def plot_madmax(args, chia_root_path: Path, plotters_root_path: Path):
     call_args.append(os.fspath(madmax_executable_path_for_ksize))
     call_args.append("-f")
     call_args.append(bytes(plot_keys.farmer_public_key).hex())
-    if plot_keys.pool_public_key is not None:
-        call_args.append("-p")
-        call_args.append(bytes(plot_keys.pool_public_key).hex())
+    call_args.append("-p")
+    call_args.append(bytes(plot_keys.pool_public_key).hex())
     call_args.append("-t")
     # s if s[-1] == os.path.sep else s + os.path.sep
     call_args.append(dir_with_trailing_slash(args.tmpdir))
@@ -194,9 +192,6 @@ def plot_madmax(args, chia_root_path: Path, plotters_root_path: Path):
         call_args.append(dir_with_trailing_slash(args.tmpdir2))
     call_args.append("-d")
     call_args.append(dir_with_trailing_slash(args.finaldir))
-    if plot_keys.pool_contract_address is not None:
-        call_args.append("-c")
-        call_args.append(plot_keys.pool_contract_address)
     call_args.append("-n")
     call_args.append(str(args.count))
     call_args.append("-r")
@@ -215,7 +210,7 @@ def plot_madmax(args, chia_root_path: Path, plotters_root_path: Path):
         call_args.append("-k")
         call_args.append(str(args.size))
     try:
-        asyncio.run(run_plotter(chia_root_path, args.plotter, call_args, progress))
+        asyncio.run(run_plotter(bpx_root_path, args.plotter, call_args, progress))
     except Exception as e:
         print(f"Exception while plotting: {type(e)} {e}")
         print(f"Traceback: {traceback.format_exc()}")

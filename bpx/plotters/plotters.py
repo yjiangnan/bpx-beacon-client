@@ -30,25 +30,24 @@ class Options(Enum):
     POOLKEY = 15
     FARMERKEY = 16
     MADMAX_TMPTOGGLE = 17
-    POOLCONTRACT = 18
-    MADMAX_RMULTI2 = 19
-    BLADEBIT_WARMSTART = 20
-    BLADEBIT_NONUMA = 21
-    VERBOSE = 22
-    OVERRIDE_K = 23
-    ALT_FINGERPRINT = 24
-    EXCLUDE_FINAL_DIR = 25
-    CONNECT_TO_DAEMON = 26
-    BLADEBIT_NO_CPU_AFFINITY = 27
-    BLADEBIT_CACHE = 28
-    BLADEBIT_F1_THREAD = 29
-    BLADEBIT_FP_THREAD = 30
-    BLADEBIT_C_THREAD = 31
-    BLADEBIT_P2_THREAD = 32
-    BLADEBIT_P3_THREAD = 33
-    BLADEBIT_ALTERNATE = 34
-    BLADEBIT_NO_T1_DIRECT = 35
-    BLADEBIT_NO_T2_DIRECT = 36
+    MADMAX_RMULTI2 = 18
+    BLADEBIT_WARMSTART = 19
+    BLADEBIT_NONUMA = 20
+    VERBOSE = 21
+    OVERRIDE_K = 22
+    ALT_FINGERPRINT = 23
+    EXCLUDE_FINAL_DIR = 24
+    CONNECT_TO_DAEMON = 25
+    BLADEBIT_NO_CPU_AFFINITY = 26
+    BLADEBIT_CACHE = 27
+    BLADEBIT_F1_THREAD = 28
+    BLADEBIT_FP_THREAD = 29
+    BLADEBIT_C_THREAD = 30
+    BLADEBIT_P2_THREAD = 31
+    BLADEBIT_P3_THREAD = 32
+    BLADEBIT_ALTERNATE = 33
+    BLADEBIT_NO_T1_DIRECT = 34
+    BLADEBIT_NO_T2_DIRECT = 35
 
 
 chia_plotter_options = [
@@ -64,7 +63,6 @@ chia_plotter_options = [
     Options.NOBITFIELD,
     Options.OVERRIDE_K,
     Options.ALT_FINGERPRINT,
-    Options.POOLCONTRACT,
     Options.FARMERKEY,
     Options.POOLKEY,
     Options.PLOT_COUNT,
@@ -84,7 +82,6 @@ madmax_plotter_options = [
     Options.MADMAX_WAITFORCOPY,
     Options.POOLKEY,
     Options.FARMERKEY,
-    Options.POOLCONTRACT,
     Options.MADMAX_TMPTOGGLE,
     Options.MADMAX_RMULTI2,
     Options.CONNECT_TO_DAEMON,
@@ -96,7 +93,6 @@ bladebit_ram_plotter_options = [
     Options.PLOT_COUNT,
     Options.FARMERKEY,
     Options.POOLKEY,
-    Options.POOLCONTRACT,
     Options.ID,
     Options.BLADEBIT_WARMSTART,
     Options.BLADEBIT_NONUMA,
@@ -111,7 +107,6 @@ bladebit_disk_plotter_options = [
     Options.PLOT_COUNT,
     Options.FARMERKEY,
     Options.POOLKEY,
-    Options.POOLCONTRACT,
     Options.ID,
     Options.BLADEBIT_WARMSTART,
     Options.BLADEBIT_NONUMA,
@@ -265,14 +260,6 @@ def build_parser(subparsers, root_path, option_list, name, plotter_desc):
                 help="Alternate tmpdir/tmpdir2 (default = false)",
                 default=False,
             )
-        if option is Options.POOLCONTRACT:
-            parser.add_argument(
-                "-c",
-                "--contract",
-                type=str,
-                help="Pool Contract Address (64 chars)",
-                default="",
-            )
         if option is Options.MADMAX_RMULTI2:
             parser.add_argument(
                 "-K",
@@ -419,8 +406,8 @@ def build_parser(subparsers, root_path, option_list, name, plotter_desc):
 
 
 def call_plotters(root_path: Path, args):
-    # Add `plotters` section in CHIA_ROOT.
-    chia_root_path = root_path
+    # Add `plotters` section in BPX_ROOT.
+    bpx_root_path = root_path
     root_path = get_plotters_root_path(root_path)
     if not root_path.is_dir():
         if os.path.exists(root_path):
@@ -430,16 +417,16 @@ def call_plotters(root_path: Path, args):
                 print(f"Exception deleting old root path: {type(e)} {e}.")
 
     if not os.path.exists(root_path):
-        print(f"Creating plotters folder within CHIA_ROOT: {root_path}")
+        print(f"Creating plotters folder within BPX_ROOT: {root_path}")
         try:
             os.mkdir(root_path)
         except Exception as e:
             print(f"Cannot create plotters root path {root_path} {type(e)} {e}.")
 
-    plotters = argparse.ArgumentParser("chia plotters", description="Available options.")
+    plotters = argparse.ArgumentParser("bpx plotters", description="Available options.")
     subparsers = plotters.add_subparsers(help="Available options", dest="plotter")
 
-    build_parser(subparsers, root_path, chia_plotter_options, "chiapos", "Create a plot with the default chia plotter")
+    build_parser(subparsers, root_path, chia_plotter_options, "chiapos", "Create a plot with the chiapos")
     build_parser(subparsers, root_path, madmax_plotter_options, "madmax", "Create a plot with madMAx")
 
     bladebit_parser = subparsers.add_parser("bladebit", help="Create a plot with bladebit")
@@ -447,37 +434,18 @@ def call_plotters(root_path: Path, args):
     build_parser(subparsers_bb, root_path, bladebit_ram_plotter_options, "ramplot", "Create a plot using RAM")
     build_parser(subparsers_bb, root_path, bladebit_disk_plotter_options, "diskplot", "Create a plot using disk")
 
-    subparsers.add_parser("version", help="Show plotter versions")
-
-    deprecation_warning = (
-        "[DEPRECATED] 'chia plotters install' is no longer available. Use install-plotter.sh/ps1 instead."
-    )
-    subparsers.add_parser("install", help=deprecation_warning, add_help=False)
-
-    deprecation_warning_bb2 = "[DEPRECATED] 'chia plotters bladebit2' was integrated to 'chia plotters bladebit'"
-    subparsers.add_parser("bladebit2", help=deprecation_warning_bb2, add_help=False)
-
-    known_args = plotters.parse_known_args(args)
-    maybe_plotter = vars(known_args[0]).get("plotter")
-    if maybe_plotter == "install":
-        print(deprecation_warning)
-        return
-    elif maybe_plotter == "bladebit2":
-        print(deprecation_warning_bb2)
-        return
-
     args = plotters.parse_args(args)
 
     if args.plotter is None:
         plotters.print_help()
     elif args.plotter == "chiapos":
-        plot_chia(args, chia_root_path)
+        plot_chia(args, bpx_root_path)
     elif args.plotter == "madmax":
-        plot_madmax(args, chia_root_path, root_path)
+        plot_madmax(args, bpx_root_path, root_path)
     elif args.plotter == "bladebit":
-        plot_bladebit(args, chia_root_path, root_path)
+        plot_bladebit(args, bpx_root_path, root_path)
     elif args.plotter == "version":
-        show_plotters_version(chia_root_path)
+        show_plotters_version(bpx_root_path)
 
 
 def get_available_plotters(root_path) -> Dict[str, Any]:

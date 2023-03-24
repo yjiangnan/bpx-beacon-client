@@ -1,6 +1,6 @@
 """
-NOTE: This contains duplicate code from `chia.cmds.plots`.
-After `chia plots create` becomes obsolete, consider removing it from there.
+NOTE: This contains duplicate code from `bpx.cmds.plots`.
+After `bpx plots create` becomes obsolete, consider removing it from there.
 """
 from __future__ import annotations
 
@@ -34,7 +34,6 @@ def plot_chia(args, root_path):
             None if args.farmerkey == b"" else args.farmerkey.hex(),
             args.alt_fingerprint,
             None if args.pool_key == b"" else args.pool_key.hex(),
-            None if args.contract == "" else args.contract,
             root_path,
             log,
             args.connect_to_daemon,

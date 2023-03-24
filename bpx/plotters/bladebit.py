@@ -201,7 +201,7 @@ progress_bladebit_disk = {
 }
 
 
-def plot_bladebit(args, chia_root_path, root_path):
+def plot_bladebit(args, bpx_root_path, root_path):
     (found, version_or_exception) = get_bladebit_version(root_path)
     if found is None:
         print(f"Error: {version_or_exception}")
@@ -225,8 +225,7 @@ def plot_bladebit(args, chia_root_path, root_path):
             None if args.farmerkey == b"" else args.farmerkey.hex(),
             None,
             None if args.pool_key == b"" else args.pool_key.hex(),
-            None if args.contract == "" else args.contract,
-            chia_root_path,
+            bpx_root_path,
             log,
             args.connect_to_daemon,
         )
@@ -240,13 +239,10 @@ def plot_bladebit(args, chia_root_path, root_path):
         str(args.count),
         "--farmer-key",
         bytes(plot_keys.farmer_public_key).hex(),
+        "--pool-key",
+        bytes(plot_keys.pool_public_key).hex(),
     ]
-    if plot_keys.pool_public_key is not None:
-        call_args.append("--pool-key")
-        call_args.append(bytes(plot_keys.pool_public_key).hex())
-    if plot_keys.pool_contract_address is not None:
-        call_args.append("--pool-contract")
-        call_args.append(plot_keys.pool_contract_address)
+    
     if args.warmstart:
         call_args.append("--warm-start")
     if args.id is not None and args.id != b"":
@@ -302,7 +298,7 @@ def plot_bladebit(args, chia_root_path, root_path):
 
     try:
         progress = progress_bladebit_ram if plot_type == "ramplot" else progress_bladebit_disk
-        asyncio.run(run_plotter(chia_root_path, args.plotter, call_args, progress))
+        asyncio.run(run_plotter(bpx_root_path, args.plotter, call_args, progress))
     except Exception as e:
         print(f"Exception while plotting: {e} {type(e)}")
         print(f"Traceback: {traceback.format_exc()}")
