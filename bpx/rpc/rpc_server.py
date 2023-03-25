@@ -14,8 +14,8 @@ from typing_extensions import Protocol, final
 
 from bpx.rpc.util import wrap_http_handler
 from bpx.server.outbound_message import NodeType
-from bpx.server.server import ChiaServer, ssl_context_for_client, ssl_context_for_server
-from bpx.server.ws_connection import WSChiaConnection
+from bpx.server.server import BpxServer, ssl_context_for_client, ssl_context_for_server
+from bpx.server.ws_connection import WSBpxConnection
 from bpx.types.peer_info import PeerInfo
 from bpx.util.byte_types import hexstr_to_bytes
 from bpx.util.config import str2bool
@@ -46,21 +46,21 @@ class RpcServiceProtocol(Protocol):
     """
 
     @property
-    def server(self) -> ChiaServer:
+    def server(self) -> BpxServer:
         """The server object that handles the common server behavior for the RPC."""
-        # a property so as to be read only which allows ChiaServer to satisfy
-        # Optional[ChiaServer]
+        # a property so as to be read only which allows BpxServer to satisfy
+        # Optional[BpxServer]
         ...
 
     def get_connections(self, request_node_type: Optional[NodeType]) -> List[Dict[str, Any]]:
         """Report the active connections for the service.
 
         A default implementation is available and can be called as
-        chia.rpc.rpc_server.default_get_connections()
+        bpx.rpc.rpc_server.default_get_connections()
         """
         ...
 
-    async def on_connect(self, peer: WSChiaConnection) -> None:
+    async def on_connect(self, peer: WSBpxConnection) -> None:
         """Called when a new connection is established to the server."""
         ...
 
@@ -114,7 +114,7 @@ class RpcApiProtocol(Protocol):
         ...
 
 
-def default_get_connections(server: ChiaServer, request_node_type: Optional[NodeType]) -> List[Dict[str, Any]]:
+def default_get_connections(server: BpxServer, request_node_type: Optional[NodeType]) -> List[Dict[str, Any]]:
     connections = server.get_connections(request_node_type)
     con_info = [
         {

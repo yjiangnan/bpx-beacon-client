@@ -9,14 +9,6 @@ from bpx.util.misc import dataclass_to_json_dict
 
 
 class FarmerRpcClient(RpcClient):
-    """
-    Client to Chia RPC, connects to a local farmer. Uses HTTP/JSON, and converts back from
-    JSON into native python objects before returning. All api calls use POST requests.
-    Note that this is not the same as the peer protocol, or wallet protocol (which run Chia's
-    protocol on top of TCP), it's a separate protocol on top of HTTP that provides easy access
-    to the beacon client.
-    """
-
     async def get_signage_point(self, sp_hash: bytes32) -> Optional[Dict[str, Any]]:
         try:
             return await self.fetch("get_signage_point", {"sp_hash": sp_hash.hex()})
@@ -53,13 +45,6 @@ class FarmerRpcClient(RpcClient):
             request["pool_target"] = pool_target
         return await self.fetch("set_reward_targets", request)
 
-    async def get_pool_state(self) -> Dict[str, Any]:
-        return await self.fetch("get_pool_state", {})
-
-    async def set_payout_instructions(self, launcher_id: bytes32, payout_instructions: str) -> Dict[str, Any]:
-        request = {"launcher_id": launcher_id.hex(), "payout_instructions": payout_instructions}
-        return await self.fetch("set_payout_instructions", request)
-
     async def get_harvesters(self) -> Dict[str, Any]:
         return await self.fetch("get_harvesters", {})
 
@@ -77,10 +62,3 @@ class FarmerRpcClient(RpcClient):
 
     async def get_harvester_plots_duplicates(self, request: PlotPathRequestData) -> Dict[str, Any]:
         return await self.fetch("get_harvester_plots_duplicates", dataclass_to_json_dict(request))
-
-    async def get_pool_login_link(self, launcher_id: bytes32) -> Optional[str]:
-        try:
-            result = await self.fetch("get_pool_login_link", {"launcher_id": launcher_id.hex()})
-            return cast(Optional[str], result["login_link"])
-        except ValueError:
-            return None
