@@ -12,15 +12,14 @@ from typing import Any, Dict, List, Optional, Tuple
 import aiosqlite
 
 from bpx.consensus.constants import ConsensusConstants
-from bpx.beacon.coin_store import CoinStore
 from bpx.beacon.beacon_api import BeaconAPI
 from bpx.protocols import beacon_protocol
 from bpx.rpc.rpc_server import StateChangedProtocol, default_get_connections
 from bpx.seeder.crawl_store import CrawlStore
 from bpx.seeder.peer_record import PeerRecord, PeerReliability
 from bpx.server.outbound_message import NodeType
-from bpx.server.server import ChiaServer
-from bpx.server.ws_connection import WSChiaConnection
+from bpx.server.server import BpxServer
+from bpx.server.ws_connection import WSBpxConnection
 from bpx.types.peer_info import PeerInfo
 from bpx.util.ints import uint32, uint64
 from bpx.util.network import get_host_addr
@@ -31,7 +30,6 @@ log = logging.getLogger(__name__)
 
 class Crawler:
     sync_store: Any
-    coin_store: CoinStore
     connection: aiosqlite.Connection
     config: Dict
     _server: Optional[ChiaServer]
@@ -45,7 +43,7 @@ class Crawler:
     minimum_version_count: int
 
     @property
-    def server(self) -> ChiaServer:
+    def server(self) -> BpxServer:
         # This is a stop gap until the class usage is refactored such the values of
         # integral attributes are known at creation of the instance.
         if self._server is None:
@@ -100,7 +98,7 @@ class Crawler:
         return await self.server.start_client(peer_info, on_connect)
 
     async def connect_task(self, peer):
-        async def peer_action(peer: WSChiaConnection):
+        async def peer_action(peer: WSBpxConnection):
             peer_info = peer.get_peer_info()
             version = peer.get_version()
             if peer_info is not None and version is not None:
@@ -345,14 +343,14 @@ class Crawler:
         except Exception as e:
             self.log.error(f"Exception: {e}. Traceback: {traceback.format_exc()}.")
 
-    def set_server(self, server: ChiaServer):
+    def set_server(self, server: BpxServer):
         self._server = server
 
     def _state_changed(self, change: str, change_data: Optional[Dict[str, Any]] = None):
         if self.state_changed_callback is not None:
             self.state_changed_callback(change, change_data)
 
-    async def new_peak(self, request: beacon_protocol.NewPeak, peer: WSChiaConnection):
+    async def new_peak(self, request: beacon_protocol.NewPeak, peer: WSBpxConnection):
         try:
             peer_info = peer.get_peer_info()
             tls_version = peer.get_tls_version()
@@ -367,7 +365,7 @@ class Crawler:
         except Exception as e:
             self.log.error(f"Exception: {e}. Traceback: {traceback.format_exc()}.")
 
-    async def on_connect(self, connection: WSChiaConnection):
+    async def on_connect(self, connection: WSBpxConnection):
         pass
 
     def _close(self):

@@ -12,7 +12,7 @@ from typing import Any, Dict, List
 import aiosqlite
 from dnslib import AAAA, CNAME, MX, NS, QTYPE, RR, SOA, A, DNSHeader, DNSRecord
 
-from bpx.util.chia_logging import initialize_logging
+from bpx.util.bpx_logging import initialize_logging
 from bpx.util.config import load_config
 from bpx.util.default_root import DEFAULT_ROOT_PATH
 from bpx.util.path import path_from_root
