@@ -17,20 +17,23 @@ from bpx.util.ssl_check import DEFAULT_PERMISSIONS_CERT_FILE, DEFAULT_PERMISSION
 
 _all_private_node_names: List[str] = [
     "beacon",
-    "wallet",
     "farmer",
     "harvester",
     "timelord",
     "crawler",
-    "data_layer",
     "daemon",
 ]
-_all_public_node_names: List[str] = ["beacon", "wallet", "farmer", "introducer", "timelord", "data_layer"]
+_all_public_node_names: List[str] = [
+	"beacon",
+	"farmer",
+	"introducer",
+	"timelord",
+]
 
 
-def get_chia_ca_crt_key() -> Tuple[Any, Any]:
-    crt = pkg_resources.resource_string(__name__, "chia_ca.crt")
-    key = pkg_resources.resource_string(__name__, "chia_ca.key")
+def get_bpx_ca_crt_key() -> Tuple[Any, Any]:
+    crt = pkg_resources.resource_string(__name__, "bpx_ca.crt")
+    key = pkg_resources.resource_string(__name__, "bpx_ca.key")
     return crt, key
 
 
@@ -71,9 +74,9 @@ def generate_ca_signed_cert(ca_crt: bytes, ca_key: bytes, cert_out: Path, key_ou
     cert_key = rsa.generate_private_key(public_exponent=65537, key_size=2048, backend=default_backend())
     new_subject = x509.Name(
         [
-            x509.NameAttribute(NameOID.COMMON_NAME, "Chia"),
-            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Chia"),
-            x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, "Organic Farming Division"),
+            x509.NameAttribute(NameOID.COMMON_NAME, "BPX"),
+            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "BPX"),
+            x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, "Beacon Chain"),
         ]
     )
 
@@ -84,9 +87,9 @@ def generate_ca_signed_cert(ca_crt: bytes, ca_key: bytes, cert_out: Path, key_ou
         .public_key(cert_key.public_key())
         .serial_number(x509.random_serial_number())
         .not_valid_before(datetime.datetime.today() - one_day)
-        .not_valid_after(datetime.datetime(2100, 8, 2))
+        .not_valid_after(datetime.datetime(2100, 1, 1))
         .add_extension(
-            x509.SubjectAlternativeName([x509.DNSName("chia.net")]),
+            x509.SubjectAlternativeName([x509.DNSName("bpxchain.cc")]),
             critical=False,
         )
         .sign(root_key, hashes.SHA256(), default_backend())
@@ -106,9 +109,9 @@ def make_ca_cert(cert_path: Path, key_path: Path):
     root_key = rsa.generate_private_key(public_exponent=65537, key_size=2048, backend=default_backend())
     subject = issuer = x509.Name(
         [
-            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Chia"),
-            x509.NameAttribute(NameOID.COMMON_NAME, "Chia CA"),
-            x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, "Organic Farming Division"),
+            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "BPX"),
+            x509.NameAttribute(NameOID.COMMON_NAME, "BPX CA"),
+            x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, "Beacon Chain"),
         ]
     )
     root_cert = (
@@ -142,27 +145,17 @@ def create_all_ssl(
     public_node_names: List[str] = _all_public_node_names,
     overwrite: bool = True,
 ):
-    # remove old key and crt
     config_dir = root_path / "config"
-    old_key_path = config_dir / "trusted.key"
-    old_crt_path = config_dir / "trusted.crt"
-    if old_key_path.exists():
-        print(f"Old key not needed anymore, deleting {old_key_path}")
-        os.remove(old_key_path)
-    if old_crt_path.exists():
-        print(f"Old crt not needed anymore, deleting {old_crt_path}")
-        os.remove(old_crt_path)
-
     ssl_dir = config_dir / "ssl"
     ca_dir = ssl_dir / "ca"
     ensure_ssl_dirs([ssl_dir, ca_dir])
 
     private_ca_key_path = ca_dir / "private_ca.key"
     private_ca_crt_path = ca_dir / "private_ca.crt"
-    chia_ca_crt, chia_ca_key = get_chia_ca_crt_key()
-    chia_ca_crt_path = ca_dir / "chia_ca.crt"
-    chia_ca_key_path = ca_dir / "chia_ca.key"
-    write_ssl_cert_and_key(chia_ca_crt_path, chia_ca_crt, chia_ca_key_path, chia_ca_key, overwrite=overwrite)
+    bpx_ca_crt, bpx_ca_key = get_bpx_ca_crt_key()
+    bpx_ca_crt_path = ca_dir / "bpx_ca.crt"
+    bpx_ca_key_path = ca_dir / "bpx_ca.key"
+    write_ssl_cert_and_key(bpx_ca_crt_path, bpx_ca_crt, bpx_ca_key_path, bpx_ca_key, overwrite=overwrite)
 
     # If Private CA crt/key are passed-in, write them out
     if private_ca_crt_and_key is not None:
@@ -200,11 +193,11 @@ def create_all_ssl(
             overwrite=overwrite,
         )
 
-    chia_ca_crt, chia_ca_key = get_chia_ca_crt_key()
+    bpx_ca_crt, bpx_ca_key = get_bpx_ca_crt_key()
     generate_ssl_for_nodes(
         ssl_dir,
-        chia_ca_crt,
-        chia_ca_key,
+        bpx_ca_crt,
+        bpx_ca_key,
         prefix="public",
         nodes=public_node_names,
         overwrite=False,
@@ -241,7 +234,7 @@ def generate_ssl_for_nodes(
 
 
 def main():
-    return make_ca_cert(Path("./chia_ca.crt"), Path("./chia_ca.key"))
+    return make_ca_cert(Path("./bpx_ca.crt"), Path("./bpx_ca.key"))
 
 
 if __name__ == "__main__":
