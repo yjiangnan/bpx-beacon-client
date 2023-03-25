@@ -196,18 +196,6 @@ def stream_plot_info_pk(
     return data
 
 
-def stream_plot_info_ph(
-    pool_contract_puzzle_hash: bytes32,
-    farmer_public_key: G1Element,
-    local_master_sk: PrivateKey,
-):
-    # There are two ways to stream plot info: with a pool public key, or with a pool contract puzzle hash.
-    # This one streams the pool contract puzzle hash, into bytes
-    data = pool_contract_puzzle_hash + bytes(farmer_public_key) + bytes(local_master_sk)
-    assert len(data) == (32 + 48 + 32)
-    return data
-
-
 def find_duplicate_plot_IDs(all_filenames=None) -> None:
     if all_filenames is None:
         all_filenames = []

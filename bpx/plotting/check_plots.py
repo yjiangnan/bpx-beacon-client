@@ -18,7 +18,6 @@ from bpx.plotting.util import (
     get_plot_filenames,
     parse_plot_info,
 )
-from bpx.util.bech32m import encode_puzzle_hash
 from bpx.util.config import load_config
 from bpx.util.hash import std_hash
 from bpx.util.ints import uint32
@@ -41,7 +40,6 @@ def check_plots(
     debug_show_memo: bool,
 ) -> None:
     config = load_config(root_path, "config.yaml")
-    address_prefix = config["network_overrides"]["config"][config["selected_network"]]["address_prefix"]
     plot_refresh_parameter: PlotsRefreshParameter = PlotsRefreshParameter(batch_sleep_milliseconds=uint32(0))
     plot_manager: PlotManager = PlotManager(
         root_path,
@@ -116,8 +114,7 @@ def check_plots(
             if plot_info.pool_public_key is not None:
                 log.info(f"\t{'Pool public key:':<23} {plot_info.pool_public_key}")
             if plot_info.pool_contract_puzzle_hash is not None:
-                pca: str = encode_puzzle_hash(plot_info.pool_contract_puzzle_hash, address_prefix)
-                log.info(f"\t{'Pool contract address:':<23} {pca}")
+                log.info(f"\t{'Pool contract address:':<23} {plot_info.pool_contract_puzzle_hash}")
 
             # Look up local_sk from plot to save locked memory
             (
@@ -204,7 +201,7 @@ def check_plots(
         log.warning(
             f"There are {len(plot_manager.no_key_filenames)} plots with a farmer or pool public key that "
             f"is not on this machine. The farmer private key must be in the keychain in order to "
-            f"farm them, use 'chia keys' to transfer keys. The pool public keys must be in the config.yaml"
+            f"farm them, use 'bpx keys' to transfer keys. The pool public keys must be in the config.yaml"
         )
 
     if debug_show_memo:
