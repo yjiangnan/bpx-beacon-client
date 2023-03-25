@@ -18,14 +18,6 @@ _T_RpcClient = TypeVar("_T_RpcClient", bound="RpcClient")
 
 
 class RpcClient:
-    """
-    Client to Chia RPC, connects to a local service. Uses HTTP/JSON, and converts back from
-    JSON into native python objects before returning. All api calls use POST requests.
-    Note that this is not the same as the peer protocol, or wallet protocol (which run Chia's
-    protocol on top of TCP), it's a separate protocol on top of HTTP that provides easy access
-    to the beacon client.
-    """
-
     url: str
     session: aiohttp.ClientSession
     closing_task: Optional[asyncio.Task]
