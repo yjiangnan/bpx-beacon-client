@@ -73,18 +73,15 @@ class RateLimiter:
 
         try:
             limits: RLSettings = rate_limits["default_settings"]
-            if message_type in rate_limits["rate_limits_tx"]:
-                limits = rate_limits["rate_limits_tx"][message_type]
-            elif message_type in rate_limits["rate_limits_other"]:
-                limits = rate_limits["rate_limits_other"][message_type]
-                non_tx_freq = rate_limits["non_tx_freq"]
-                non_tx_max_total_size = rate_limits["non_tx_max_total_size"]
-                new_non_tx_count = self.non_tx_message_counts + 1
-                new_non_tx_size = self.non_tx_cumulative_size + len(message.data)
-                if new_non_tx_count > non_tx_freq * proportion_of_limit:
-                    return False
-                if new_non_tx_size > non_tx_max_total_size * proportion_of_limit:
-                    return False
+            limits = rate_limits["rate_limits_other"][message_type]
+            non_tx_freq = rate_limits["non_tx_freq"]
+            non_tx_max_total_size = rate_limits["non_tx_max_total_size"]
+            new_non_tx_count = self.non_tx_message_counts + 1
+            new_non_tx_size = self.non_tx_cumulative_size + len(message.data)
+            if new_non_tx_count > non_tx_freq * proportion_of_limit:
+                return False
+            if new_non_tx_size > non_tx_max_total_size * proportion_of_limit:
+                return False
             else:
                 log.warning(f"Message type {message_type} not found in rate limits")
 

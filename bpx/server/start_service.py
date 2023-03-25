@@ -11,15 +11,15 @@ from pathlib import Path
 from types import FrameType
 from typing import Any, Awaitable, Callable, Coroutine, Dict, Generic, List, Optional, Tuple, Type, TypeVar
 
-from bpx.cmds.init_funcs import chia_full_version_str
+from bpx.cmds.init_funcs import bpx_full_version_str
 from bpx.daemon.server import service_launch_lock_path
 from bpx.rpc.rpc_server import RpcApiProtocol, RpcServer, RpcServiceProtocol, start_rpc_server
-from bpx.server.chia_policy import set_chia_policy
+from bpx.server.bpx_policy import set_bpx_policy
 from bpx.server.outbound_message import NodeType
-from bpx.server.server import ChiaServer
-from bpx.server.ssl_context import chia_ssl_ca_paths, private_ssl_ca_paths
+from bpx.server.server import BpxServer
+from bpx.server.ssl_context import bpx_ssl_ca_paths, private_ssl_ca_paths
 from bpx.server.upnp import UPnP
-from bpx.server.ws_connection import WSChiaConnection
+from bpx.server.ws_connection import WSBpxConnection
 from bpx.types.peer_info import PeerInfo
 from bpx.util.ints import uint16
 from bpx.util.lock import Lockfile, LockfileError
@@ -57,7 +57,7 @@ class Service(Generic[_T_RpcServiceProtocol]):
         upnp_ports: List[int] = [],
         server_listen_ports: List[int] = [],
         connect_peers: List[PeerInfo] = [],
-        on_connect_callback: Optional[Callable[[WSChiaConnection], Awaitable[None]]] = None,
+        on_connect_callback: Optional[Callable[[WSBpxConnection], Awaitable[None]]] = None,
         rpc_info: Optional[RpcInfo] = None,
         connect_to_daemon: bool = True,
         max_request_body_size: Optional[int] = None,
@@ -79,13 +79,13 @@ class Service(Generic[_T_RpcServiceProtocol]):
 
         self._log = logging.getLogger(service_name)
         self._log.info(f"Starting service {self._service_name} ...")
-        self._log.info(f"chia-blockchain version: {chia_full_version_str()}")
+        self._log.info(f"bpx-blockchain version: {bpx_full_version_str()}")
 
         self.service_config = self.config[service_name]
 
         self._rpc_info = rpc_info
         private_ca_crt, private_ca_key = private_ssl_ca_paths(root_path, self.config)
-        chia_ca_crt, chia_ca_key = chia_ssl_ca_paths(root_path, self.config)
+        bpx_ca_crt, bpx_ca_key = bpx_ssl_ca_paths(root_path, self.config)
         inbound_rlp = self.config.get("inbound_rate_limit_percent")
         outbound_rlp = self.config.get("outbound_rate_limit_percent")
         if node_type == NodeType.WALLET:
@@ -96,7 +96,7 @@ class Service(Generic[_T_RpcServiceProtocol]):
             capabilities_to_use = override_capabilities
 
         assert inbound_rlp and outbound_rlp
-        self._server = ChiaServer.create(
+        self._server = BpxServer.create(
             advertised_port,
             node,
             peer_api,
@@ -109,7 +109,7 @@ class Service(Generic[_T_RpcServiceProtocol]):
             root_path,
             self.service_config,
             (private_ca_crt, private_ca_key),
-            (chia_ca_crt, chia_ca_key),
+            (bpx_ca_crt, bpx_ca_key),
             name=f"{service_name}_server",
         )
         f = getattr(node, "set_server", None)
@@ -195,7 +195,7 @@ class Service(Generic[_T_RpcServiceProtocol]):
     async def setup_process_global_state(self) -> None:
         # Being async forces this to be run from within an active event loop as is
         # needed for the signal handler setup.
-        proctitle_name = f"chia_{self._service_name}"
+        proctitle_name = f"bpx_{self._service_name}"
         setproctitle(proctitle_name)
 
         global main_pid
@@ -258,7 +258,7 @@ class Service(Generic[_T_RpcServiceProtocol]):
 
         self._log.info("Waiting for socket to be closed (if opened)")
 
-        self._log.info("Waiting for ChiaServer to be closed")
+        self._log.info("Waiting for BpxServer to be closed")
         await self._server.await_closed()
 
         if self.rpc_server:
@@ -279,5 +279,5 @@ class Service(Generic[_T_RpcServiceProtocol]):
 
 def async_run(coro: Coroutine[object, object, T], connection_limit: Optional[int] = None) -> T:
     if connection_limit is not None:
-        set_chia_policy(connection_limit)
+        set_bpx_policy(connection_limit)
     return asyncio.run(coro)

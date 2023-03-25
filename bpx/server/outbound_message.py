@@ -15,8 +15,6 @@ class NodeType(IntEnum):
     FARMER = 3
     TIMELORD = 4
     INTRODUCER = 5
-    WALLET = 6
-    DATA_LAYER = 7
 
 
 @streamable

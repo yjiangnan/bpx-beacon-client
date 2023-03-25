@@ -20,8 +20,8 @@ from bpx.server.address_manager_sqlite_store import create_address_manager_from_
 from bpx.server.address_manager_store import AddressManagerStore
 from bpx.server.outbound_message import Message, NodeType, make_msg
 from bpx.server.peer_store_resolver import PeerStoreResolver
-from bpx.server.server import ChiaServer
-from bpx.server.ws_connection import WSChiaConnection
+from bpx.server.server import BpxServer
+from bpx.server.ws_connection import WSBpxConnection
 from bpx.types.peer_info import PeerInfo, TimestampedPeerInfo
 from bpx.util.hash import std_hash
 from bpx.util.ints import uint16, uint64
@@ -43,7 +43,7 @@ class BeaconDiscovery:
 
     def __init__(
         self,
-        server: ChiaServer,
+        server: BpxServer,
         target_outbound_count: int,
         peer_store_resolver: PeerStoreResolver,
         introducer_info: Optional[Dict[str, Any]],
@@ -53,17 +53,14 @@ class BeaconDiscovery:
         default_port: Optional[int],
         log: Logger,
     ) -> None:
-        self.server: ChiaServer = server
+        self.server: BpxServer = server
         self.is_closed = False
         self.target_outbound_count = target_outbound_count
-        self.legacy_peer_db_path = peer_store_resolver.legacy_peer_db_path
-        self.legacy_peer_db_migrated = False
         self.peers_file_path = peer_store_resolver.peers_file_path
         self.dns_servers = dns_servers
         random.shuffle(dns_servers)  # Don't always start with the same DNS server
         if introducer_info is not None:
-            # get_host_addr is blocking but this only gets called on startup or in the wallet after disconnecting from
-            # all trusted peers.
+            # get_host_addr is blocking but this only gets called on startup
             self.introducer_info: Optional[PeerInfo] = PeerInfo(
                 str(get_host_addr(introducer_info["host"], prefer_ipv6=False)),
                 introducer_info["port"],
@@ -92,30 +89,6 @@ class BeaconDiscovery:
         if default_port is None and selected_network in NETWORK_ID_DEFAULT_PORTS:
             self.default_port = NETWORK_ID_DEFAULT_PORTS[selected_network]
 
-    async def migrate_address_manager_if_necessary(self) -> None:
-        if (
-            self.legacy_peer_db_migrated
-            or self.peers_file_path.exists()
-            or self.legacy_peer_db_path is None
-            or not self.legacy_peer_db_path.exists()
-        ):
-            # No need for migration if:
-            #   - we've already migrated
-            #   - we have a peers file
-            #   - we don't have a legacy peer db
-            return
-        try:
-            self.log.info(f"Migrating legacy peer database from {self.legacy_peer_db_path}")
-            # Attempt to create an AddressManager from the legacy peer database
-            address_manager: Optional[AddressManager] = await create_address_manager_from_db(self.legacy_peer_db_path)
-            if address_manager is not None:
-                self.log.info(f"Writing migrated peer data to {self.peers_file_path}")
-                # Write the AddressManager data to the new peers file
-                await AddressManagerStore.serialize(address_manager, self.peers_file_path)
-                self.legacy_peer_db_migrated = True
-        except Exception:
-            self.log.exception("Error migrating legacy peer database")
-
     async def initialize_address_manager(self) -> None:
         self.address_manager = await AddressManagerStore.create_address_manager(self.peers_file_path)
         self.server.set_received_message_callback(self.update_peer_timestamp_on_message)
@@ -143,7 +116,7 @@ class BeaconDiscovery:
             except Exception as e:
                 self.log.error(f"Error while canceling task.{e} {task}")
 
-    async def on_connect(self, peer: WSChiaConnection) -> None:
+    async def on_connect(self, peer: WSBpxConnection) -> None:
         if (
             peer.is_outbound is False
             and peer.peer_server_port is not None
@@ -163,14 +136,14 @@ class BeaconDiscovery:
             peer.is_outbound
             and peer.peer_server_port is not None
             and peer.connection_type is NodeType.BEACON
-            and (self.server._local_type is NodeType.BEACON or self.server._local_type is NodeType.WALLET)
+            and self.server._local_type is NodeType.BEACON
             and self.address_manager is not None
         ):
             msg = make_msg(ProtocolMessageTypes.request_peers, RequestPeers())
             await peer.send_message(msg)
 
     # Updates timestamps each time we receive a message for outbound connections.
-    async def update_peer_timestamp_on_message(self, peer: WSChiaConnection) -> None:
+    async def update_peer_timestamp_on_message(self, peer: WSBpxConnection) -> None:
         if (
             peer.is_outbound
             and peer.peer_server_port is not None
@@ -208,7 +181,7 @@ class BeaconDiscovery:
         if self.introducer_info is None:
             return None
 
-        async def on_connect(peer: WSChiaConnection) -> None:
+        async def on_connect(peer: WSBpxConnection) -> None:
             msg = make_msg(ProtocolMessageTypes.request_peers_introducer, RequestPeersIntroducer())
             await peer.send_message(msg)
 
@@ -241,7 +214,7 @@ class BeaconDiscovery:
         except Exception as e:
             self.log.warning(f"querying DNS introducer failed: {e}")
 
-    async def on_connect_callback(self, peer: WSChiaConnection) -> None:
+    async def on_connect_callback(self, peer: WSBpxConnection) -> None:
         if self.server.on_connect is not None:
             await self.server.on_connect(peer)
         else:
@@ -518,7 +491,7 @@ class BeaconPeers(BeaconDiscovery):
 
     def __init__(
         self,
-        server: ChiaServer,
+        server: BpxServer,
         target_outbound_count: int,
         peer_store_resolver: PeerStoreResolver,
         introducer_info: Dict[str, Any],
@@ -544,7 +517,6 @@ class BeaconPeers(BeaconDiscovery):
         self.key = randbits(256)
 
     async def start(self) -> None:
-        await self.migrate_address_manager_if_necessary()
         await self.initialize_address_manager()
         self.self_advertise_task = asyncio.create_task(self._periodically_self_advertise_and_clean_data())
         self.address_relay_task = asyncio.create_task(self._address_relay())
@@ -693,45 +665,3 @@ class BeaconPeers(BeaconDiscovery):
             except Exception as e:
                 self.log.error(f"Exception in address relay: {e}")
                 self.log.error(f"Traceback: {traceback.format_exc()}")
-
-
-class WalletPeers(BeaconDiscovery):
-    def __init__(
-        self,
-        server: ChiaServer,
-        target_outbound_count: int,
-        peer_store_resolver: PeerStoreResolver,
-        introducer_info: Dict[str, Any],
-        dns_servers: List[str],
-        peer_connect_interval: int,
-        selected_network: str,
-        default_port: Optional[int],
-        log: Logger,
-    ) -> None:
-        super().__init__(
-            server,
-            target_outbound_count,
-            peer_store_resolver,
-            introducer_info,
-            dns_servers,
-            peer_connect_interval,
-            selected_network,
-            default_port,
-            log,
-        )
-
-    async def start(self) -> None:
-        self.initial_wait = 1
-        await self.migrate_address_manager_if_necessary()
-        await self.initialize_address_manager()
-        await self.start_tasks()
-
-    async def ensure_is_closed(self) -> None:
-        if self.is_closed:
-            return None
-        await self._close_common()
-
-    async def respond_peers(
-        self, request: Union[RespondPeers, RespondPeersIntroducer], peer_src: Optional[PeerInfo], is_beacon: bool
-    ) -> None:
-        await self._respond_peers_common(request, peer_src, is_beacon)

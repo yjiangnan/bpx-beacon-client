@@ -12,7 +12,7 @@ from bpx.rpc.farmer_rpc_api import FarmerRpcApi
 from bpx.server.outbound_message import NodeType
 from bpx.server.start_service import RpcInfo, Service, async_run
 from bpx.types.peer_info import PeerInfo
-from bpx.util.chia_logging import initialize_service_logging
+from bpx.util.bpx_logging import initialize_service_logging
 from bpx.util.config import load_config, load_config_cli
 from bpx.util.default_root import DEFAULT_ROOT_PATH
 from bpx.util.keychain import Keychain

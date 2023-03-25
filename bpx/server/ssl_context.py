@@ -25,8 +25,8 @@ def private_ssl_ca_paths(path: Path, config: Dict[str, Any]) -> Tuple[Path, Path
     )
 
 
-def chia_ssl_ca_paths(path: Path, config: Dict[str, Any]) -> Tuple[Path, Path]:
+def bpx_ssl_ca_paths(path: Path, config: Dict[str, Any]) -> Tuple[Path, Path]:
     return (
-        path / config["chia_ssl_ca"]["crt"],
-        path / config["chia_ssl_ca"]["key"],
+        path / config["bpx_ssl_ca"]["crt"],
+        path / config["bpx_ssl_ca"]["key"],
     )

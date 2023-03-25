@@ -67,7 +67,7 @@ from bpx.util import cached_bls
 from bpx.util.bech32m import encode_puzzle_hash
 from bpx.util.check_fork_next_block import check_fork_next_block
 from bpx.util.condition_tools import pkm_pairs
-from bpx.util.config import PEER_DB_PATH_KEY_DEPRECATED, process_config_start_method
+from bpx.util.config import process_config_start_method
 from bpx.util.db_synchronous import db_synchronous_on
 from bpx.util.db_version import lookup_db_version, set_db_version_async
 from bpx.util.db_wrapper import DBWrapper2, manage_connection
@@ -501,7 +501,6 @@ class Beacon:
                     self.config,
                     selected_network=network_name,
                     peers_file_path_key="peers_file_path",
-                    legacy_peer_db_path_key=PEER_DB_PATH_KEY_DEPRECATED,
                     default_peers_file_path="db/peers.dat",
                 ),
                 self.config["introducer_peer"],

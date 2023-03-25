@@ -3,11 +3,11 @@ from __future__ import annotations
 import asyncio
 from logging import Logger
 
-from bpx.server.server import ChiaServer
+from bpx.server.server import BpxServer
 from bpx.types.peer_info import PeerInfo
 
 
-def start_reconnect_task(server: ChiaServer, peer_info: PeerInfo, log: Logger) -> asyncio.Task[None]:
+def start_reconnect_task(server: BpxServer, peer_info: PeerInfo, log: Logger) -> asyncio.Task[None]:
     """
     Start a background task that checks connection and reconnects periodically to a peer.
     """

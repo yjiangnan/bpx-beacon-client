@@ -13,7 +13,7 @@ from bpx.server.start_service import RpcInfo, Service, async_run
 from bpx.timelord.timelord import Timelord
 from bpx.timelord.timelord_api import TimelordAPI
 from bpx.types.peer_info import PeerInfo
-from bpx.util.chia_logging import initialize_service_logging
+from bpx.util.bpx_logging import initialize_service_logging
 from bpx.util.config import load_config, load_config_cli
 from bpx.util.default_root import DEFAULT_ROOT_PATH
 from bpx.util.network import get_host_addr
