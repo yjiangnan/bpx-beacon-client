@@ -24,8 +24,8 @@ from bpx.plotting.util import (
 )
 from bpx.rpc.rpc_server import StateChangedProtocol, default_get_connections
 from bpx.server.outbound_message import NodeType
-from bpx.server.server import ChiaServer
-from bpx.server.ws_connection import WSChiaConnection
+from bpx.server.server import BpxServer
+from bpx.server.ws_connection import WSBpxConnection
 
 log = logging.getLogger(__name__)
 
@@ -40,10 +40,10 @@ class Harvester:
     constants: ConsensusConstants
     _refresh_lock: asyncio.Lock
     event_loop: asyncio.events.AbstractEventLoop
-    _server: Optional[ChiaServer]
+    _server: Optional[BpxServer]
 
     @property
-    def server(self) -> ChiaServer:
+    def server(self) -> BpxServer:
         # This is a stop gap until the class usage is refactored such the values of
         # integral attributes are known at creation of the instance.
         if self._server is None:
@@ -56,14 +56,6 @@ class Harvester:
         self.root_path = root_path
         # TODO, remove checks below later after some versions / time
         refresh_parameter: PlotsRefreshParameter = PlotsRefreshParameter()
-        if "plot_loading_frequency_seconds" in config:
-            self.log.info(
-                "`harvester.plot_loading_frequency_seconds` is deprecated. Consider replacing it with the new section "
-                "`harvester.plots_refresh_parameter`. See `initial-config.yaml`."
-            )
-            refresh_parameter = dataclasses.replace(
-                refresh_parameter, interval_seconds=config["plot_loading_frequency_seconds"]
-            )
         if "plots_refresh_parameter" in config:
             refresh_parameter = PlotsRefreshParameter.from_json_dict(config["plots_refresh_parameter"])
 
@@ -123,7 +115,7 @@ class Harvester:
         if event == PlotRefreshEvents.done:
             self.plot_sync_sender.sync_done(update_result.removed, update_result.duration)
 
-    def on_disconnect(self, connection: WSChiaConnection) -> None:
+    def on_disconnect(self, connection: WSBpxConnection) -> None:
         self.log.info(f"peer disconnected {connection.get_peer_logging()}")
         self.state_changed("close_connection")
         self.plot_sync_sender.stop()
@@ -178,5 +170,5 @@ class Harvester:
         self.plot_manager.trigger_refresh()
         return True
 
-    def set_server(self, server: ChiaServer) -> None:
+    def set_server(self, server: BpxServer) -> None:
         self._server = server

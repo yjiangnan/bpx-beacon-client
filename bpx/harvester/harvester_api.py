@@ -15,7 +15,7 @@ from bpx.protocols.farmer_protocol import FarmingInfo
 from bpx.protocols.harvester_protocol import Plot, PlotSyncResponse
 from bpx.protocols.protocol_message_types import ProtocolMessageTypes
 from bpx.server.outbound_message import Message, make_msg
-from bpx.server.ws_connection import WSChiaConnection
+from bpx.server.ws_connection import WSBpxConnection
 from bpx.types.blockchain_format.proof_of_space import (
     ProofOfSpace,
     calculate_pos_challenge,
@@ -36,7 +36,7 @@ class HarvesterAPI:
 
     @api_request(peer_required=True)
     async def harvester_handshake(
-        self, harvester_handshake: harvester_protocol.HarvesterHandshake, peer: WSChiaConnection
+        self, harvester_handshake: harvester_protocol.HarvesterHandshake, peer: WSBpxConnection
     ) -> None:
         """
         Handshake between the harvester and farmer. The harvester receives the pool public keys,
@@ -52,7 +52,7 @@ class HarvesterAPI:
 
     @api_request(peer_required=True)
     async def new_signage_point_harvester(
-        self, new_challenge: harvester_protocol.NewSignagePointHarvester, peer: WSChiaConnection
+        self, new_challenge: harvester_protocol.NewSignagePointHarvester, peer: WSBpxConnection
     ) -> None:
         """
         The harvester receives a new signage point from the farmer, this happens at the start of each slot.
@@ -105,14 +105,6 @@ class HarvesterAPI:
                 if quality_strings is not None:
                     difficulty = new_challenge.difficulty
                     sub_slot_iters = new_challenge.sub_slot_iters
-                    if plot_info.pool_contract_puzzle_hash is not None:
-                        # If we are pooling, override the difficulty and sub slot iters with the pool threshold info.
-                        # This will mean more proofs actually get found, but they are only submitted to the pool,
-                        # not the blockchain
-                        for pool_difficulty in new_challenge.pool_difficulties:
-                            if pool_difficulty.pool_contract_puzzle_hash == plot_info.pool_contract_puzzle_hash:
-                                difficulty = pool_difficulty.difficulty
-                                sub_slot_iters = pool_difficulty.sub_slot_iters
 
                     # Found proofs of space (on average 1 is expected per plot)
                     for index, quality_str in enumerate(quality_strings):
