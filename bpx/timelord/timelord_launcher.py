@@ -10,7 +10,7 @@ from typing import Dict, List
 
 import pkg_resources
 
-from bpx.util.chia_logging import initialize_logging
+from bpx.util.bpx_logging import initialize_logging
 from bpx.util.config import load_config
 from bpx.util.default_root import DEFAULT_ROOT_PATH
 from bpx.util.network import get_host_addr
@@ -119,7 +119,7 @@ def main():
         log.info("Timelord launcher not supported on Windows.")
         return
     root_path = DEFAULT_ROOT_PATH
-    setproctitle("chia_timelord_launcher")
+    setproctitle("bpx_timelord_launcher")
     net_config = load_config(root_path, "config.yaml")
     config = net_config["timelord_launcher"]
     initialize_logging("TLauncher", config["logging"], root_path)
