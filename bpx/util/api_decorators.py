@@ -18,7 +18,7 @@ S = TypeVar("S", bound=Streamable)
 Self = TypeVar("Self")
 
 
-metadata_attribute_name = "_chia_api_metadata"
+metadata_attribute_name = "_bpx_api_metadata"
 
 
 @dataclass

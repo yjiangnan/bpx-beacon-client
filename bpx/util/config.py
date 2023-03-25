@@ -26,7 +26,7 @@ def initial_config_file(filename: Union[str, Path]) -> str:
     return pkg_resources.resource_string(__name__, f"initial-{filename}").decode()
 
 
-def create_default_chia_config(root_path: Path, filenames=["config.yaml"]) -> None:
+def create_default_bpx_config(root_path: Path, filenames=["config.yaml"]) -> None:
     for filename in filenames:
         default_config_file_data: str = initial_config_file(filename)
         path: Path = config_path_for_filename(root_path, filename)
@@ -119,7 +119,7 @@ def _load_config_maybe_locked(
         if not exit_on_error:
             raise ValueError("Config not found")
         print(f"can't find {path}")
-        print("** please run `chia init` to migrate or create new config files **")
+        print("** please run `bpx init` to migrate or create new config files **")
         # TODO: fix this hack
         sys.exit(-1)
     # This loop should not be necessary due to the config lock, but it's kept here just in case
@@ -134,8 +134,6 @@ def _load_config_maybe_locked(
                 log.error(f"yaml.safe_load returned None: {path}")
                 time.sleep(i * 0.1)
                 continue
-            if fill_missing_services:
-                r.update(load_defaults_for_missing_services(config=r, config_name=path.name))
             if sub_config is not None:
                 r = r.get(sub_config)
             return r
@@ -291,34 +289,3 @@ def override_config(config: Dict[str, Any], config_overrides: Optional[Dict[str,
     for k, v in config_overrides.items():
         add_property(new_config, k, v)
     return new_config
-
-
-def selected_network_address_prefix(config: Dict[str, Any]) -> str:
-    address_prefix = config["network_overrides"]["config"][config["selected_network"]]["address_prefix"]
-    return address_prefix
-
-
-def load_defaults_for_missing_services(config: Dict[str, Any], config_name: str) -> Dict[str, Any]:
-    services = ["data_layer"]
-    missing_services = [service for service in services if service not in config]
-    defaulted = {}
-    if len(missing_services) > 0:
-        marshalled_default_config: str = initial_config_file(config_name)
-
-        unmarshalled_default_config = yaml.safe_load(marshalled_default_config)
-
-        for service in missing_services:
-            defaulted[service] = unmarshalled_default_config[service]
-
-            if "logging" in defaulted[service]:
-                to_be_referenced = config.get("logging")
-                if to_be_referenced is not None:
-                    defaulted[service]["logging"] = to_be_referenced
-
-            if "selected_network" in defaulted[service]:
-                to_be_referenced = config.get("selected_network")
-                if to_be_referenced is not None:
-                    # joining to hopefully force a new string of the same value
-                    defaulted[service]["selected_network"] = "".join(to_be_referenced)
-
-    return defaulted

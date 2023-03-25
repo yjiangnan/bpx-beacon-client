@@ -20,15 +20,13 @@ RESTRICT_MASK_KEY_FILE: int = (
 )  # 0o077
 
 CERT_CONFIG_KEY_PATHS = [
-    "chia_ssl_ca:crt",
+    "bpx_ssl_ca:crt",
     "daemon_ssl:private_crt",
     "farmer:ssl:private_crt",
     "farmer:ssl:public_crt",
     "beacon:ssl:private_crt",
     "beacon:ssl:public_crt",
-    "data_layer:ssl:private_crt",
-    "data_layer:ssl:public_crt",
-    "harvester:chia_ssl_ca:crt",
+    "harvester:bpx_ssl_ca:crt",
     "harvester:private_ssl_ca:crt",
     "harvester:ssl:private_crt",
     "introducer:ssl:public_crt",
@@ -36,17 +34,15 @@ CERT_CONFIG_KEY_PATHS = [
     "timelord:ssl:private_crt",
     "timelord:ssl:public_crt",
     "ui:daemon_ssl:private_crt",
-    "wallet:ssl:private_crt",
-    "wallet:ssl:public_crt",
 ]
 KEY_CONFIG_KEY_PATHS = [
-    "chia_ssl_ca:key",
+    "bpx_ssl_ca:key",
     "daemon_ssl:private_key",
     "farmer:ssl:private_key",
     "farmer:ssl:public_key",
     "beacon:ssl:private_key",
     "beacon:ssl:public_key",
-    "harvester:chia_ssl_ca:key",
+    "harvester:bpx_ssl_ca:key",
     "harvester:private_ssl_ca:key",
     "harvester:ssl:private_key",
     "introducer:ssl:public_key",
@@ -54,8 +50,6 @@ KEY_CONFIG_KEY_PATHS = [
     "timelord:ssl:private_key",
     "timelord:ssl:public_key",
     "ui:daemon_ssl:private_key",
-    "wallet:ssl:private_key",
-    "wallet:ssl:public_key",
 ]
 
 
@@ -151,7 +145,7 @@ def check_ssl(root_path: Path) -> None:
                 get_ssl_perm_warning(path, actual_permissions, expected_permissions)
             )  # lgtm [py/clear-text-logging-sensitive-data]
         print("One or more SSL files were found with permission issues.")
-        print("Run `chia init --fix-ssl-permissions` to fix issues.")
+        print("Run `bpx init --fix-ssl-permissions` to fix issues.")
 
 
 def check_and_fix_permissions_for_ssl_file(file: Path, mask: int, updated_mode: int) -> Tuple[bool, bool]:

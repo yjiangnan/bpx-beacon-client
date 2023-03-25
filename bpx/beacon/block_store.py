@@ -13,7 +13,7 @@ from bpx.types.blockchain_format.serialized_program import SerializedProgram
 from bpx.types.blockchain_format.sized_bytes import bytes32
 from bpx.types.full_block import FullBlock
 from bpx.types.weight_proof import SubEpochChallengeSegment, SubEpochSegments
-from bpx.util.db_wrapper import DBWrapper2, execute_fetchone
+from bpx.util.db_wrapper import DbWrapper, execute_fetchone
 from bpx.util.errors import Err
 from bpx.util.full_block_utils import GeneratorBlockInfo, block_info_from_block, generator_from_block
 from bpx.util.ints import uint32
@@ -26,11 +26,11 @@ log = logging.getLogger(__name__)
 @dataclasses.dataclass
 class BlockStore:
     block_cache: LRUCache[bytes32, FullBlock]
-    db_wrapper: DBWrapper2
+    db_wrapper: DbWrapper
     ses_challenge_cache: LRUCache[bytes32, List[SubEpochChallengeSegment]]
 
     @classmethod
-    async def create(cls, db_wrapper: DBWrapper2) -> BlockStore:
+    async def create(cls, db_wrapper: DbWrapper) -> BlockStore:
         self = cls(LRUCache(1000), db_wrapper, LRUCache(50))
 
         async with self.db_wrapper.writer_maybe_transaction() as conn:

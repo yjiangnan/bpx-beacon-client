@@ -72,7 +72,7 @@ def sql_trace_callback(req: str, file: TextIO, name: Optional[str] = None) -> No
 
 
 @final
-class DBWrapper2:
+class DbWrapper:
     db_version: int
     _lock: asyncio.Lock
     _read_connections: asyncio.Queue[aiosqlite.Connection]
@@ -119,7 +119,7 @@ class DBWrapper2:
         synchronous: Optional[str] = None,
         foreign_keys: bool = False,
         row_factory: Optional[Type[aiosqlite.Row]] = None,
-    ) -> DBWrapper2:
+    ) -> DbWrapper:
         if log_path is None:
             log_file = None
         else:

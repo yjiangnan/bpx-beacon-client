@@ -4,32 +4,27 @@ from typing import Generator, KeysView
 
 SERVICES_FOR_GROUP = {
     "all": [
-        "chia_harvester",
-        "chia_timelord_launcher",
-        "chia_timelord",
-        "chia_farmer",
-        "chia_beacon",
-        "chia_wallet",
-        "chia_data_layer",
-        "chia_data_layer_http",
+        "bpx_harvester",
+        "bpx_timelord_launcher",
+        "bpx_timelord",
+        "bpx_farmer",
+        "bpx_beacon",
+        "bpx_execution",
     ],
-    # TODO: should this be `data_layer`?
-    "data": ["chia_wallet", "chia_data_layer"],
-    "data_layer_http": ["chia_data_layer_http"],
-    "node": ["chia_beacon"],
-    "harvester": ["chia_harvester"],
-    "farmer": ["chia_harvester", "chia_farmer", "chia_beacon", "chia_wallet"],
-    "farmer-no-wallet": ["chia_harvester", "chia_farmer", "chia_beacon"],
-    "farmer-only": ["chia_farmer"],
-    "timelord": ["chia_timelord_launcher", "chia_timelord", "chia_beacon"],
-    "timelord-only": ["chia_timelord"],
-    "timelord-launcher-only": ["chia_timelord_launcher"],
-    "wallet": ["chia_wallet"],
-    "introducer": ["chia_introducer"],
-    "simulator": ["chia_beacon_simulator"],
-    "crawler": ["chia_crawler"],
-    "seeder": ["chia_crawler", "chia_seeder"],
-    "seeder-only": ["chia_seeder"],
+    "node": [
+        "bpx_beacon",
+        "bpx_execution"
+    ],
+    "harvester": ["bpx_harvester"],
+    "farmer": ["bpx_harvester", "bpx_farmer", "bpx_beacon", "bpx_execution"],
+    "farmer-only": ["bpx_farmer"],
+    "timelord": ["bpx_timelord_launcher", "bpx_timelord", "bpx_beacon", "bpx_execution"],
+    "timelord-only": ["bpx_timelord"],
+    "timelord-launcher-only": ["bpx_timelord_launcher"],
+    "introducer": ["bpx_introducer"],
+    "crawler": ["bpx_crawler"],
+    "seeder": ["bpx_crawler", "bpx_seeder"],
+    "seeder-only": ["bpx_seeder"],
 }
 
 

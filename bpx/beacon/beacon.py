@@ -70,7 +70,7 @@ from bpx.util.condition_tools import pkm_pairs
 from bpx.util.config import process_config_start_method
 from bpx.util.db_synchronous import db_synchronous_on
 from bpx.util.db_version import lookup_db_version, set_db_version_async
-from bpx.util.db_wrapper import DBWrapper2, manage_connection
+from bpx.util.db_wrapper import DbWrapper, manage_connection
 from bpx.util.errors import ConsensusError, Err, ValidationError
 from bpx.util.ints import uint8, uint32, uint64, uint128
 from bpx.util.limited_semaphore import LimitedSemaphore
@@ -116,7 +116,7 @@ class Beacon:
     _compact_vdf_sem: Optional[LimitedSemaphore]
     _new_peak_sem: Optional[LimitedSemaphore]
     _add_transaction_semaphore: Optional[asyncio.Semaphore]
-    _db_wrapper: Optional[DBWrapper2]
+    _db_wrapper: Optional[DbWrapper]
     _hint_store: Optional[HintStore]
     transaction_responses: List[Tuple[bytes32, MempoolInclusionStatus, Optional[Err]]]
     _block_store: Optional[BlockStore]
@@ -241,7 +241,7 @@ class Beacon:
         return self._transaction_queue
 
     @property
-    def db_wrapper(self) -> DBWrapper2:
+    def db_wrapper(self) -> DbWrapper:
         assert self._db_wrapper is not None
         return self._db_wrapper
 
@@ -316,7 +316,7 @@ class Beacon:
             self.log.info(f"logging SQL commands to {sql_log_path}")
 
         # create the store (db) and beacon client instance
-        # TODO: is this standardized and thus able to be handled by DBWrapper2?
+        # TODO: is this standardized and thus able to be handled by DbWrapper?
         async with manage_connection(self.db_path, log_path=sql_log_path, name="version_check") as db_connection:
             db_version = await lookup_db_version(db_connection)
         self.log.info(f"using blockchain database {self.db_path}, which is version {db_version}")
@@ -324,7 +324,7 @@ class Beacon:
         db_sync = db_synchronous_on(self.config.get("db_sync", "auto"))
         self.log.info(f"opening blockchain DB: synchronous={db_sync}")
 
-        self._db_wrapper = await DBWrapper2.create(
+        self._db_wrapper = await DbWrapper.create(
             self.db_path,
             db_version=db_version,
             reader_count=4,

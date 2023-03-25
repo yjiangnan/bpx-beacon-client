@@ -28,8 +28,8 @@ from bpx.util.keyring_wrapper import KeyringWrapper
 from bpx.util.streamable import Streamable, streamable
 
 CURRENT_KEY_VERSION = "1.8"
-DEFAULT_USER = f"user-chia-{CURRENT_KEY_VERSION}"  # e.g. user-chia-1.8
-DEFAULT_SERVICE = f"chia-{DEFAULT_USER}"  # e.g. chia-user-chia-1.8
+DEFAULT_USER = f"user-bpx-{CURRENT_KEY_VERSION}"  # e.g. user-bpx-1.8
+DEFAULT_SERVICE = f"bpx-{DEFAULT_USER}"  # e.g. bpx-user-bpx-1.8
 MAX_KEYS = 100
 MIN_PASSPHRASE_LEN = 8
 

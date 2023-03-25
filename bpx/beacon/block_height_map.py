@@ -9,7 +9,7 @@ import aiofiles
 
 from bpx.types.blockchain_format.sized_bytes import bytes32
 from bpx.types.blockchain_format.sub_epoch_summary import SubEpochSummary
-from bpx.util.db_wrapper import DBWrapper2
+from bpx.util.db_wrapper import DbWrapper
 from bpx.util.files import write_file_async
 from bpx.util.ints import uint32
 from bpx.util.streamable import Streamable, streamable
@@ -24,7 +24,7 @@ class SesCache(Streamable):
 
 
 class BlockHeightMap:
-    db: DBWrapper2
+    db: DbWrapper
 
     # the below dictionaries are loaded from the database, from the peak
     # and back in time on startup.
@@ -51,7 +51,7 @@ class BlockHeightMap:
     __ses_filename: Path
 
     @classmethod
-    async def create(cls, blockchain_dir: Path, db: DBWrapper2) -> "BlockHeightMap":
+    async def create(cls, blockchain_dir: Path, db: DbWrapper) -> "BlockHeightMap":
         self = BlockHeightMap()
         self.db = db
 
