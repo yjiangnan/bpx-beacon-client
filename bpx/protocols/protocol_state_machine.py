@@ -6,12 +6,9 @@ from bpx.protocols.protocol_message_types import ProtocolMessageTypes as pmt
 NO_REPLY_EXPECTED = [
     # beacon -> beacon messages
     pmt.new_peak,
-    pmt.new_transaction,
     pmt.new_unfinished_block,
     pmt.new_signage_point_or_end_of_sub_slot,
-    pmt.request_mempool_transactions,
     pmt.new_compact_vdf,
-    pmt.coin_state_update,
 ]
 
 """
@@ -23,28 +20,16 @@ A state machine can be built from this message map.
 
 VALID_REPLY_MESSAGE_MAP = {
     # messages for all services
-    # pmt.handshake is handled in WSChiaConnection.perform_handshake
+    # pmt.handshake is handled in WSBpxConnection.perform_handshake
     # beacon -> beacon protocol messages
-    pmt.request_transaction: [pmt.respond_transaction],
     pmt.request_proof_of_weight: [pmt.respond_proof_of_weight],
     pmt.request_block: [pmt.respond_block, pmt.reject_block],
     pmt.request_blocks: [pmt.respond_blocks, pmt.reject_blocks],
     pmt.request_unfinished_block: [pmt.respond_unfinished_block],
-    pmt.request_block_header: [pmt.respond_block_header, pmt.reject_header_request],
-    pmt.request_removals: [pmt.respond_removals, pmt.reject_removals_request],
-    pmt.request_additions: [pmt.respond_additions, pmt.reject_additions_request],
     pmt.request_signage_point_or_end_of_sub_slot: [pmt.respond_signage_point, pmt.respond_end_of_sub_slot],
     pmt.request_compact_vdf: [pmt.respond_compact_vdf],
     pmt.request_peers: [pmt.respond_peers],
-    pmt.request_header_blocks: [pmt.respond_header_blocks, pmt.reject_header_blocks, pmt.reject_block_headers],
-    pmt.register_interest_in_puzzle_hash: [pmt.respond_to_ph_update],
-    pmt.register_interest_in_coin: [pmt.respond_to_coin_update],
-    pmt.request_children: [pmt.respond_children],
-    pmt.request_ses_hashes: [pmt.respond_ses_hashes],
-    pmt.request_block_headers: [pmt.respond_block_headers, pmt.reject_block_headers, pmt.reject_header_blocks],
     pmt.request_peers_introducer: [pmt.respond_peers_introducer],
-    pmt.request_puzzle_solution: [pmt.respond_puzzle_solution, pmt.reject_puzzle_solution],
-    pmt.send_transaction: [pmt.transaction_ack],
 }
 
 

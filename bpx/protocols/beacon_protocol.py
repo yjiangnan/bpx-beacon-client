@@ -32,26 +32,6 @@ class NewPeak(Streamable):
 
 @streamable
 @dataclass(frozen=True)
-class NewTransaction(Streamable):
-    transaction_id: bytes32
-    cost: uint64
-    fees: uint64
-
-
-@streamable
-@dataclass(frozen=True)
-class RequestTransaction(Streamable):
-    transaction_id: bytes32
-
-
-@streamable
-@dataclass(frozen=True)
-class RespondTransaction(Streamable):
-    transaction: SpendBundle
-
-
-@streamable
-@dataclass(frozen=True)
 class RequestProofOfWeight(Streamable):
     total_number_of_blocks: uint32
     tip: bytes32
@@ -155,12 +135,6 @@ class RespondSignagePoint(Streamable):
 @dataclass(frozen=True)
 class RespondEndOfSubSlot(Streamable):
     end_of_slot_bundle: EndOfSubSlotBundle
-
-
-@streamable
-@dataclass(frozen=True)
-class RequestMempoolTransactions(Streamable):
-    filter: bytes
 
 
 @streamable

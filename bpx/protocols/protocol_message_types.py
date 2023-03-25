@@ -32,9 +32,6 @@ class ProtocolMessageTypes(Enum):
 
     # Beacon client protocol (beacon <-> beacon)
     new_peak = 20
-    new_transaction = 21
-    request_transaction = 22
-    respond_transaction = 23
     request_proof_of_weight = 24
     respond_proof_of_weight = 25
     request_block = 26
@@ -50,7 +47,6 @@ class ProtocolMessageTypes(Enum):
     request_signage_point_or_end_of_sub_slot = 36
     respond_signage_point = 37
     respond_end_of_sub_slot = 38
-    request_mempool_transactions = 39
     request_compact_vdf = 40
     respond_compact_vdf = 41
     new_compact_vdf = 42
@@ -58,32 +54,9 @@ class ProtocolMessageTypes(Enum):
     respond_peers = 44
     none_response = 91
 
-    # Wallet protocol (wallet <-> beacon)
-    request_puzzle_solution = 45
-    respond_puzzle_solution = 46
-    reject_puzzle_solution = 47
-    send_transaction = 48
-    transaction_ack = 49
-    new_peak_wallet = 50
-    request_block_header = 51
-    respond_block_header = 52
-    reject_header_request = 53
-    request_removals = 54
-    respond_removals = 55
-    reject_removals_request = 56
-    request_additions = 57
-    respond_additions = 58
-    reject_additions_request = 59
-    request_header_blocks = 60
-    reject_header_blocks = 61
-    respond_header_blocks = 62
-
     # Introducer protocol (introducer <-> beacon)
     request_peers_introducer = 63
     respond_peers_introducer = 64
-
-    # Simulator protocol
-    farm_new_block = 65
 
     # New harvester protocol
     new_signage_point_harvester = 66
@@ -97,19 +70,3 @@ class ProtocolMessageTypes(Enum):
     plot_sync_duplicates = 83
     plot_sync_done = 84
     plot_sync_response = 85
-
-    # More wallet protocol
-    coin_state_update = 69
-    register_interest_in_puzzle_hash = 70
-    respond_to_ph_update = 71
-    register_interest_in_coin = 72
-    respond_to_coin_update = 73
-    request_children = 74
-    respond_children = 75
-    request_ses_hashes = 76
-    respond_ses_hashes = 77
-    request_block_headers = 86
-    reject_block_headers = 87
-    respond_block_headers = 88
-    request_fee_estimates = 89
-    respond_fee_estimates = 90
