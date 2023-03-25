@@ -6,8 +6,6 @@ from typing import Any
 
 from aiohttp import web
 
-from bpx.wallet.util.wallet_types import WalletType
-
 
 class EnhancedJSONEncoder(json.JSONEncoder):
     """
@@ -17,8 +15,6 @@ class EnhancedJSONEncoder(json.JSONEncoder):
     def default(self, o: Any):
         if dataclasses.is_dataclass(o):
             return o.to_json_dict()
-        elif isinstance(o, WalletType):
-            return o.name
         elif hasattr(type(o), "__bytes__"):
             return f"0x{bytes(o).hex()}"
         elif isinstance(o, bytes):

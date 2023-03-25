@@ -105,8 +105,6 @@ kwargs = dict(
         "bpx.types.blockchain_format",
         "bpx.types",
         "bpx.util",
-        "bpx.wallet",
-        "bpx.wallet.util",
         "bpx.ssl",
         "mozilla-ca",
     ],

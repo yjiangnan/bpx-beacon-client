@@ -17,7 +17,7 @@ from bpx.types.blockchain_format.sized_bytes import bytes32
 from bpx.util.ints import uint16, uint64
 from bpx.util.misc import VersionedBlob
 from bpx.util.streamable import Streamable, streamable
-from bpx.wallet.derive_keys import master_sk_to_local_sk
+from bpx.util.derive_keys import master_sk_to_local_sk
 
 log = logging.getLogger(__name__)
 

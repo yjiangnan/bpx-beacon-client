@@ -17,7 +17,7 @@ from bpx.types.blockchain_format.proof_of_space import (
 )
 from bpx.types.blockchain_format.sized_bytes import bytes32
 from bpx.util.keychain import Keychain
-from bpx.wallet.derive_keys import master_sk_to_farmer_sk, master_sk_to_local_sk, master_sk_to_pool_sk
+from bpx.util.derive_keys import master_sk_to_farmer_sk, master_sk_to_local_sk, master_sk_to_pool_sk
 
 log = logging.getLogger(__name__)
 

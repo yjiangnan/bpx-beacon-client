@@ -31,7 +31,7 @@ from bpx.util.hash import std_hash
 from bpx.util.ints import uint8, uint16, uint64
 from bpx.util.keychain import Keychain
 from bpx.util.logging import TimedDuplicateFilter
-from bpx.wallet.derive_keys import (
+from bpx.util.derive_keys import (
     find_authentication_sk,
     find_owner_sk,
     master_sk_to_farmer_sk,

@@ -118,10 +118,6 @@ def class_for_type(type: NodeType) -> Any:
         from bpx.beacon.beacon_api import BeaconAPI
 
         return BeaconAPI
-    elif type is NodeType.WALLET:
-        from bpx.wallet.wallet_node_api import WalletNodeAPI
-
-        return WalletNodeAPI
     elif type is NodeType.INTRODUCER:
         from bpx.introducer.introducer_api import IntroducerAPI
 

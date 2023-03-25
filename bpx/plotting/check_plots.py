@@ -22,7 +22,7 @@ from bpx.util.config import load_config
 from bpx.util.hash import std_hash
 from bpx.util.ints import uint32
 from bpx.util.keychain import Keychain
-from bpx.wallet.derive_keys import master_sk_to_farmer_sk, master_sk_to_local_sk
+from bpx.util.derive_keys import master_sk_to_farmer_sk, master_sk_to_local_sk
 
 log = logging.getLogger(__name__)
 

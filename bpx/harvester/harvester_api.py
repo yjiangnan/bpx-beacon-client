@@ -25,7 +25,7 @@ from bpx.types.blockchain_format.proof_of_space import (
 from bpx.types.blockchain_format.sized_bytes import bytes32
 from bpx.util.api_decorators import api_request
 from bpx.util.ints import uint8, uint32, uint64
-from bpx.wallet.derive_keys import master_sk_to_local_sk
+from bpx.util.derive_keys import master_sk_to_local_sk
 
 
 class HarvesterAPI:

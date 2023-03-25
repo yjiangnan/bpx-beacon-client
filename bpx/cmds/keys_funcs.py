@@ -19,7 +19,7 @@ from bpx.util.file_keyring import MAX_LABEL_LENGTH
 from bpx.util.ints import uint32
 from bpx.util.keychain import Keychain, KeyData, bytes_to_mnemonic, generate_mnemonic, mnemonic_to_seed
 from bpx.util.keyring_wrapper import KeyringWrapper
-from bpx.wallet.derive_keys import (
+from bpx.util.derive_keys import (
     master_sk_to_farmer_sk,
     master_sk_to_pool_sk,
     master_sk_to_wallet_sk,
