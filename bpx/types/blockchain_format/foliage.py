@@ -5,35 +5,10 @@ from typing import List, Optional
 
 from blspy import G2Element
 
-from bpx.types.blockchain_format.coin import Coin
 from bpx.types.blockchain_format.pool_target import PoolTarget
 from bpx.types.blockchain_format.sized_bytes import bytes32
 from bpx.util.ints import uint64
 from bpx.util.streamable import Streamable, streamable
-
-
-@streamable
-@dataclass(frozen=True)
-class TransactionsInfo(Streamable):
-    # Information that goes along with each transaction block
-    generator_root: bytes32  # sha256 of the block generator in this block
-    generator_refs_root: bytes32  # sha256 of the concatenation of the generator ref list entries
-    aggregated_signature: G2Element
-    fees: uint64  # This only includes user fees, not block rewards
-    cost: uint64  # This is the total cost of this block, including CLVM cost, cost of program size and conditions
-    reward_claims_incorporated: List[Coin]  # These can be in any order
-
-
-@streamable
-@dataclass(frozen=True)
-class FoliageTransactionBlock(Streamable):
-    # Information that goes along with each transaction block that is relevant for light clients
-    prev_transaction_block_hash: bytes32
-    timestamp: uint64
-    filter_hash: bytes32
-    additions_root: bytes32
-    removals_root: bytes32
-    transactions_info_hash: bytes32
 
 
 @streamable
@@ -57,5 +32,3 @@ class Foliage(Streamable):
     reward_block_hash: bytes32
     foliage_block_data: FoliageBlockData
     foliage_block_data_signature: G2Element
-    foliage_transaction_block_hash: Optional[bytes32]
-    foliage_transaction_block_signature: Optional[G2Element]

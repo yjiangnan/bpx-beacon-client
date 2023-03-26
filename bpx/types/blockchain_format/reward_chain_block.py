@@ -41,7 +41,6 @@ class RewardChainBlock(Streamable):
     reward_chain_sp_signature: G2Element
     reward_chain_ip_vdf: VDFInfo
     infused_challenge_chain_ip_vdf: Optional[VDFInfo]  # Iff deficit < 16
-    is_transaction_block: bool
 
     def get_unfinished(self) -> RewardChainBlockUnfinished:
         return RewardChainBlockUnfinished(
