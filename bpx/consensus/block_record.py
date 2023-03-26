@@ -8,7 +8,6 @@ from typing_extensions import Protocol
 from bpx.consensus.constants import ConsensusConstants
 from bpx.consensus.pot_iterations import calculate_ip_iters, calculate_sp_iters
 from bpx.types.blockchain_format.classgroup import ClassgroupElement
-from bpx.types.blockchain_format.coin import Coin
 from bpx.types.blockchain_format.sized_bytes import bytes32
 from bpx.types.blockchain_format.sub_epoch_summary import SubEpochSummary
 from bpx.util.ints import uint8, uint32, uint64, uint128
@@ -27,18 +26,6 @@ class BlockRecordProtocol(Protocol):
     @property
     def timestamp(self) -> Optional[uint64]:
         ...
-
-    @property
-    def prev_transaction_block_height(self) -> uint32:
-        ...
-
-    @property
-    def prev_transaction_block_hash(self) -> Optional[bytes32]:
-        ...
-
-    @property
-    def is_transaction_block(self) -> bool:
-        return self.timestamp is not None
 
 
 @streamable
@@ -68,13 +55,6 @@ class BlockRecord(Streamable):
     required_iters: uint64  # The number of iters required for this proof of space
     deficit: uint8  # A deficit of 16 is an overflow block after an infusion. Deficit of 15 is a challenge block
     overflow: bool
-    prev_transaction_block_height: uint32
-
-    # Transaction block (present iff is_transaction_block)
-    timestamp: Optional[uint64]
-    prev_transaction_block_hash: Optional[bytes32]  # Header hash of the previous transaction block
-    fees: Optional[uint64]
-    reward_claims_incorporated: Optional[List[Coin]]
 
     # Slot (present iff this is the first SB in sub slot)
     finished_challenge_slot_hashes: Optional[List[bytes32]]
@@ -83,10 +63,6 @@ class BlockRecord(Streamable):
 
     # Sub-epoch (present iff this is the first SB after sub-epoch)
     sub_epoch_summary_included: Optional[SubEpochSummary]
-
-    @property
-    def is_transaction_block(self) -> bool:
-        return self.timestamp is not None
 
     @property
     def first_in_sub_slot(self) -> bool:

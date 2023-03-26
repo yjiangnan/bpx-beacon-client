@@ -42,7 +42,6 @@ def validate_unfinished_header_block(
     constants: ConsensusConstants,
     blocks: BlockchainInterface,
     header_block: UnfinishedHeaderBlock,
-    check_filter: bool,
     expected_difficulty: uint64,
     expected_sub_slot_iters: uint64,
     skip_overflow_last_ss_validation: bool = False,
@@ -689,29 +688,6 @@ def validate_unfinished_header_block(
     ):
         return None, ValidationError(Err.INVALID_CC_SIGNATURE, "invalid cc sp sig")
 
-    # 15. Check is_transaction_block
-    if genesis_block:
-        if header_block.foliage.foliage_transaction_block_hash is None:
-            return None, ValidationError(Err.INVALID_IS_TRANSACTION_BLOCK, "invalid genesis")
-    else:
-        assert prev_b is not None
-        # Finds the previous block
-        curr = prev_b
-        while not curr.is_transaction_block:
-            curr = blocks.block_record(curr.prev_hash)
-
-        # The first block to have an sp > the last tx block's infusion iters, is a tx block
-        if overflow:
-            our_sp_total_iters: uint128 = uint128(total_iters - ip_iters + sp_iters - expected_sub_slot_iters)
-        else:
-            our_sp_total_iters = uint128(total_iters - ip_iters + sp_iters)
-        if (our_sp_total_iters > curr.total_iters) != (header_block.foliage.foliage_transaction_block_hash is not None):
-            return None, ValidationError(Err.INVALID_IS_TRANSACTION_BLOCK)
-        if (our_sp_total_iters > curr.total_iters) != (
-            header_block.foliage.foliage_transaction_block_signature is not None
-        ):
-            return None, ValidationError(Err.INVALID_IS_TRANSACTION_BLOCK)
-
     # 16. Check foliage block signature by plot key
     if not AugSchemeMPL.verify(
         header_block.reward_chain_block.proof_of_space.plot_public_key,
@@ -719,15 +695,6 @@ def validate_unfinished_header_block(
         header_block.foliage.foliage_block_data_signature,
     ):
         return None, ValidationError(Err.INVALID_PLOT_SIGNATURE)
-
-    # 17. Check foliage block signature by plot key
-    if header_block.foliage.foliage_transaction_block_hash is not None:
-        if not AugSchemeMPL.verify(
-            header_block.reward_chain_block.proof_of_space.plot_public_key,
-            header_block.foliage.foliage_transaction_block_hash,
-            header_block.foliage.foliage_transaction_block_signature,
-        ):
-            return None, ValidationError(Err.INVALID_PLOT_SIGNATURE)
 
     # 18. Check unfinished reward chain block hash
     if (
@@ -776,54 +743,7 @@ def validate_unfinished_header_block(
                 return None, ValidationError(Err.INVALID_POOL_TARGET)
 
     # 21. Check extension data if applicable. None for mainnet.
-    # 22. Check if foliage block is present
-    if (header_block.foliage.foliage_transaction_block_hash is not None) != (
-        header_block.foliage_transaction_block is not None
-    ):
-        return None, ValidationError(Err.INVALID_FOLIAGE_BLOCK_PRESENCE)
-
-    if (header_block.foliage.foliage_transaction_block_signature is not None) != (
-        header_block.foliage_transaction_block is not None
-    ):
-        return None, ValidationError(Err.INVALID_FOLIAGE_BLOCK_PRESENCE)
-
-    if header_block.foliage_transaction_block is not None:
-        # 23. Check foliage block hash
-        if header_block.foliage_transaction_block.get_hash() != header_block.foliage.foliage_transaction_block_hash:
-            return None, ValidationError(Err.INVALID_FOLIAGE_BLOCK_HASH)
-
-        if genesis_block:
-            # 24a. Check prev block hash for genesis
-            if header_block.foliage_transaction_block.prev_transaction_block_hash != constants.GENESIS_CHALLENGE:
-                return None, ValidationError(Err.INVALID_PREV_BLOCK_HASH)
-        else:
-            assert prev_b is not None
-            # 24b. Check prev block hash for non-genesis
-            curr_b: BlockRecord = prev_b
-            while not curr_b.is_transaction_block:
-                curr_b = blocks.block_record(curr_b.prev_hash)
-            if not header_block.foliage_transaction_block.prev_transaction_block_hash == curr_b.header_hash:
-                log.error(
-                    f"Prev BH: {header_block.foliage_transaction_block.prev_transaction_block_hash} "
-                    f"{curr_b.header_hash} curr sb: {curr_b}"
-                )
-                return None, ValidationError(Err.INVALID_PREV_BLOCK_HASH)
-
-        # 25. The filter hash in the Foliage Block must be the hash of the filter
-        if check_filter:
-            if header_block.foliage_transaction_block.filter_hash != std_hash(header_block.transactions_filter):
-                return None, ValidationError(Err.INVALID_TRANSACTIONS_FILTER_HASH)
-
-        # 26a. The timestamp in Foliage Block must not be over 5 minutes in the future
-        if header_block.foliage_transaction_block.timestamp > int(time.time() + constants.MAX_FUTURE_TIME):
-            return None, ValidationError(Err.TIMESTAMP_TOO_FAR_IN_FUTURE)
-
-        if prev_b is not None:
-            # 26b. The timestamp must be greater than the previous transaction block timestamp
-            prev_transaction_b = blocks.block_record(header_block.foliage_transaction_block.prev_transaction_block_hash)
-            assert prev_transaction_b.timestamp is not None
-            if header_block.foliage_transaction_block.timestamp <= prev_transaction_b.timestamp:
-                return None, ValidationError(Err.TIMESTAMP_TOO_FAR_IN_PAST)
+    
     return required_iters, None  # Valid unfinished header block
 
 
