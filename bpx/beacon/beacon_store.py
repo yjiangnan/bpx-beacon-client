@@ -22,7 +22,6 @@ from bpx.types.blockchain_format.sub_epoch_summary import SubEpochSummary
 from bpx.types.blockchain_format.vdf import VDFInfo
 from bpx.types.end_of_slot_bundle import EndOfSubSlotBundle
 from bpx.types.full_block import FullBlock
-from bpx.types.generator_types import CompressorArg
 from bpx.types.unfinished_block import UnfinishedBlock
 from bpx.util.ints import uint8, uint32, uint64, uint128
 from bpx.util.lru_cache import LRUCache
@@ -80,10 +79,6 @@ class BeaconStore:
     # Partial hashes of unfinished blocks we are requesting
     requesting_unfinished_blocks: Set[bytes32]
 
-    previous_generator: Optional[CompressorArg]
-    pending_tx_request: Dict[bytes32, bytes32]  # tx_id: peer_id
-    peers_with_tx: Dict[bytes32, Set[bytes32]]  # tx_id: Set[peer_ids}
-    tx_fetch_tasks: Dict[bytes32, asyncio.Task[None]]  # Task id: task
     serialized_wp_message: Optional[Message]
     serialized_wp_message_tip: Optional[bytes32]
 
@@ -99,14 +94,10 @@ class BeaconStore:
         self.recent_signage_points = LRUCache(500)
         self.recent_eos = LRUCache(50)
         self.requesting_unfinished_blocks = set()
-        self.previous_generator = None
         self.future_cache_key_times = {}
         self.constants = constants
         self.clear_slots()
         self.initialize_genesis_sub_slot()
-        self.pending_tx_request = {}
-        self.peers_with_tx = {}
-        self.tx_fetch_tasks = {}
         self.serialized_wp_message = None
         self.serialized_wp_message_tip = None
 

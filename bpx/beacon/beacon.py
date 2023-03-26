@@ -20,53 +20,37 @@ from bpx.consensus.block_record import BlockRecord
 from bpx.consensus.blockchain import Blockchain, ReceiveBlockResult, StateChangeSummary
 from bpx.consensus.blockchain_interface import BlockchainInterface
 from bpx.consensus.constants import ConsensusConstants
-from bpx.consensus.cost_calculator import NPCResult
 from bpx.consensus.difficulty_adjustment import get_next_sub_slot_iters_and_difficulty
 from bpx.consensus.make_sub_epoch_summary import next_sub_epoch_summary
 from bpx.consensus.multiprocess_validation import PreValidationResult
 from bpx.consensus.pot_iterations import calculate_sp_iters
 from bpx.beacon.block_store import BlockStore
-from bpx.beacon.bundle_tools import detect_potential_template_generator
-from bpx.beacon.coin_store import CoinStore
 from bpx.beacon.beacon_api import BeaconAPI
 from bpx.beacon.beacon_store import BeaconStore, BeaconStorePeakResult
-from bpx.beacon.hint_management import get_hints_and_subscription_coin_ids
-from bpx.beacon.hint_store import HintStore
 from bpx.beacon.lock_queue import LockClient, LockQueue
-from bpx.beacon.mempool_manager import MempoolManager
 from bpx.beacon.signage_point import SignagePoint
-from bpx.beacon.subscriptions import PeerSubscriptions
 from bpx.beacon.sync_store import SyncStore
-from bpx.beacon.tx_processing_queue import TransactionQueue
 from bpx.beacon.weight_proof import WeightProofHandler
-from bpx.protocols import farmer_protocol, beacon_protocol, timelord_protocol, wallet_protocol
+from bpx.protocols import farmer_protocol, beacon_protocol, timelord_protocol
 from bpx.protocols.beacon_protocol import RequestBlocks, RespondBlock, RespondBlocks, RespondSignagePoint
 from bpx.protocols.protocol_message_types import ProtocolMessageTypes
-from bpx.protocols.wallet_protocol import CoinState, CoinStateUpdate
 from bpx.rpc.rpc_server import StateChangedProtocol
 from bpx.server.node_discovery import BeaconPeers
 from bpx.server.outbound_message import Message, NodeType, make_msg
 from bpx.server.peer_store_resolver import PeerStoreResolver
-from bpx.server.server import ChiaServer
-from bpx.server.ws_connection import WSChiaConnection
+from bpx.server.server import BpxServer
+from bpx.server.ws_connection import WSBpxConnection
 from bpx.types.blockchain_format.classgroup import ClassgroupElement
 from bpx.types.blockchain_format.pool_target import PoolTarget
 from bpx.types.blockchain_format.sized_bytes import bytes32
 from bpx.types.blockchain_format.sub_epoch_summary import SubEpochSummary
 from bpx.types.blockchain_format.vdf import CompressibleVDFField, VDFInfo, VDFProof
-from bpx.types.coin_record import CoinRecord
 from bpx.types.end_of_slot_bundle import EndOfSubSlotBundle
 from bpx.types.full_block import FullBlock
-from bpx.types.generator_types import BlockGenerator
 from bpx.types.header_block import HeaderBlock
-from bpx.types.mempool_inclusion_status import MempoolInclusionStatus
-from bpx.types.spend_bundle import SpendBundle
-from bpx.types.transaction_queue_entry import TransactionQueueEntry
 from bpx.types.unfinished_block import UnfinishedBlock
 from bpx.util import cached_bls
-from bpx.util.bech32m import encode_puzzle_hash
 from bpx.util.check_fork_next_block import check_fork_next_block
-from bpx.util.condition_tools import pkm_pairs
 from bpx.util.config import process_config_start_method
 from bpx.util.db_synchronous import db_synchronous_on
 from bpx.util.db_version import lookup_db_version, set_db_version_async
@@ -82,10 +66,7 @@ from bpx.util.safe_cancel_task import cancel_task_safe
 # This is the result of calling peak_post_processing, which is then fed into peak_post_processing_2
 @dataclasses.dataclass
 class PeakPostProcessingResult:
-    mempool_peak_result: List[Tuple[SpendBundle, NPCResult, bytes32]]  # The result of calling MempoolManager.new_peak
     fns_peak_result: BeaconStorePeakResult  # The result of calling BeaconStore.new_peak
-    hints: List[Tuple[bytes32, bytes]]  # The hints added to the DB
-    lookup_coin_ids: List[bytes32]  # The coin IDs that we need to look up to notify wallets of changes
 
 
 class Beacon:
@@ -108,20 +89,11 @@ class Beacon:
     multiprocessing_context: Optional[BaseContext]
     _ui_tasks: Set[asyncio.Task[None]]
     db_path: Path
-    subscriptions: PeerSubscriptions
-    _transaction_queue_task: Optional[asyncio.Task[None]]
-    simulator_transaction_callback: Optional[Callable[[bytes32], Awaitable[None]]]
     _sync_task: Optional[asyncio.Task[None]]
-    _transaction_queue: Optional[TransactionQueue]
     _compact_vdf_sem: Optional[LimitedSemaphore]
     _new_peak_sem: Optional[LimitedSemaphore]
-    _add_transaction_semaphore: Optional[asyncio.Semaphore]
     _db_wrapper: Optional[DbWrapper]
-    _hint_store: Optional[HintStore]
-    transaction_responses: List[Tuple[bytes32, MempoolInclusionStatus, Optional[Err]]]
     _block_store: Optional[BlockStore]
-    _coin_store: Optional[CoinStore]
-    _mempool_manager: Optional[MempoolManager]
     _init_weight_proof: Optional[asyncio.Task[None]]
     _blockchain: Optional[Blockchain]
     _timelord_lock: Optional[asyncio.Lock]
@@ -131,7 +103,7 @@ class Beacon:
     _maybe_blockchain_lock_low_priority: Optional[LockClient]
 
     @property
-    def server(self) -> ChiaServer:
+    def server(self) -> BpxServer:
         # This is a stop gap until the class usage is refactored such the values of
         # integral attributes are known at creation of the instance.
         if self._server is None:
@@ -171,22 +143,13 @@ class Beacon:
 
         db_path_replaced: str = config["database_path"].replace("CHALLENGE", config["selected_network"])
         self.db_path = path_from_root(root_path, db_path_replaced)
-        self.subscriptions = PeerSubscriptions()
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._transaction_queue_task = None
-        self.simulator_transaction_callback = None
 
         self._sync_task = None
-        self._transaction_queue = None
         self._compact_vdf_sem = None
         self._new_peak_sem = None
-        self._add_transaction_semaphore = None
         self._db_wrapper = None
-        self._hint_store = None
-        self.transaction_responses = []
         self._block_store = None
-        self._coin_store = None
-        self._mempool_manager = None
         self._init_weight_proof = None
         self._blockchain = None
         self._timelord_lock = None
@@ -216,39 +179,14 @@ class Beacon:
         return self._timelord_lock
 
     @property
-    def mempool_manager(self) -> MempoolManager:
-        assert self._mempool_manager is not None
-        return self._mempool_manager
-
-    @property
     def blockchain(self) -> Blockchain:
         assert self._blockchain is not None
         return self._blockchain
 
     @property
-    def coin_store(self) -> CoinStore:
-        assert self._coin_store is not None
-        return self._coin_store
-
-    @property
-    def add_transaction_semaphore(self) -> asyncio.Semaphore:
-        assert self._add_transaction_semaphore is not None
-        return self._add_transaction_semaphore
-
-    @property
-    def transaction_queue(self) -> TransactionQueue:
-        assert self._transaction_queue is not None
-        return self._transaction_queue
-
-    @property
     def db_wrapper(self) -> DbWrapper:
         assert self._db_wrapper is not None
         return self._db_wrapper
-
-    @property
-    def hint_store(self) -> HintStore:
-        assert self._hint_store is not None
-        return self._hint_store
 
     @property
     def new_peak_sem(self) -> LimitedSemaphore:
@@ -307,9 +245,6 @@ class Beacon:
         # multiple peers and re-validate.
         self._new_peak_sem = LimitedSemaphore.create(active_limit=2, waiting_limit=20)
 
-        # These many respond_transaction tasks can be active at any point in time
-        self._add_transaction_semaphore = asyncio.Semaphore(200)
-
         sql_log_path: Optional[Path] = None
         if self.config.get("log_sqlite_cmds", False):
             sql_log_path = path_from_root(self.root_path, "log/sql.log")
@@ -332,26 +267,7 @@ class Beacon:
             synchronous=db_sync,
         )
 
-        if self.db_wrapper.db_version != 2:
-            async with self.db_wrapper.reader_no_transaction() as conn:
-                async with conn.execute(
-                    "SELECT name FROM sqlite_master WHERE type='table' AND name='full_blocks'"
-                ) as cur:
-                    if len(list(await cur.fetchall())) == 0:
-                        try:
-                            # this is a new DB file. Make it v2
-                            async with self.db_wrapper.writer_maybe_transaction() as w_conn:
-                                await set_db_version_async(w_conn, 2)
-                                self.db_wrapper.db_version = 2
-                                self.log.info("blockchain database is empty, configuring as v2")
-                        except sqlite3.OperationalError:
-                            # it could be a database created with "chia init", which is
-                            # empty except it has the database_version table
-                            pass
-
         self._block_store = await BlockStore.create(self.db_wrapper)
-        self._hint_store = await HintStore.create(self.db_wrapper)
-        self._coin_store = await CoinStore.create(self.db_wrapper)
         self.log.info("Initializing blockchain from disk")
         start_time = time.time()
         reserved_cores = self.config.get("reserved_cores", 0)
@@ -359,7 +275,6 @@ class Beacon:
         multiprocessing_start_method = process_config_start_method(config=self.config, log=self.log)
         self.multiprocessing_context = multiprocessing.get_context(method=multiprocessing_start_method)
         self._blockchain = await Blockchain.create(
-            coin_store=self.coin_store,
             block_store=self.block_store,
             consensus_constants=self.constants,
             blockchain_dir=self.db_path.parent,
@@ -368,24 +283,10 @@ class Beacon:
             single_threaded=single_threaded,
         )
 
-        self._mempool_manager = MempoolManager(
-            get_coin_record=self.coin_store.get_coin_record,
-            consensus_constants=self.constants,
-            multiprocessing_context=self.multiprocessing_context,
-            single_threaded=single_threaded,
-        )
-
-        # Blocks are validated under high priority, and transactions under low priority. This guarantees blocks will
-        # be validated first.
         blockchain_lock_queue = LockQueue(self.blockchain.lock)
         self._blockchain_lock_queue = blockchain_lock_queue
         self._maybe_blockchain_lock_high_priority = LockClient(0, blockchain_lock_queue)
         self._maybe_blockchain_lock_low_priority = LockClient(1, blockchain_lock_queue)
-
-        # Transactions go into this queue from the server, and get sent to respond_transaction
-        self._transaction_queue = TransactionQueue(1000, self.log)
-        self._transaction_queue_task: asyncio.Task[None] = asyncio.create_task(self._handle_transactions())
-        self.transaction_responses = []
 
         self._init_weight_proof = asyncio.create_task(self.initialize_weight_proof())
 
@@ -399,22 +300,12 @@ class Beacon:
         peak: Optional[BlockRecord] = self.blockchain.get_peak()
         if peak is None:
             self.log.info(f"Initialized with empty blockchain time taken: {int(time_taken)}s")
-            num_unspent = await self.coin_store.num_unspent()
-            if num_unspent > 0:
-                self.log.error(
-                    f"Inconsistent blockchain DB file! Could not find peak block but found {num_unspent} coins! "
-                    "This is a fatal error. The blockchain database may be corrupt"
-                )
-                raise RuntimeError("corrupt blockchain DB")
         else:
             self.log.info(
                 f"Blockchain initialized to peak {peak.header_hash} height"
                 f" {peak.height}, "
                 f"time taken: {int(time_taken)}s"
             )
-            async with self._blockchain_lock_high_priority:
-                pending_tx = await self.mempool_manager.new_peak(peak, None)
-            assert len(pending_tx) == 0  # no pending transactions when starting up
 
             full_peak: Optional[FullBlock] = await self.blockchain.get_full_peak()
             assert full_peak is not None
@@ -439,35 +330,6 @@ class Beacon:
         if self.beacon_peers is not None:
             asyncio.create_task(self.beacon_peers.start())
 
-    async def _handle_one_transaction(self, entry: TransactionQueueEntry) -> None:
-        peer = entry.peer
-        try:
-            inc_status, err = await self.add_transaction(entry.transaction, entry.spend_name, peer, entry.test)
-            self.transaction_responses.append((entry.spend_name, inc_status, err))
-            if len(self.transaction_responses) > 50:
-                self.transaction_responses = self.transaction_responses[1:]
-        except asyncio.CancelledError:
-            error_stack = traceback.format_exc()
-            self.log.debug(f"Cancelling _handle_one_transaction, closing: {error_stack}")
-        except Exception:
-            error_stack = traceback.format_exc()
-            self.log.error(f"Error in _handle_one_transaction, closing: {error_stack}")
-            if peer is not None:
-                await peer.close()
-        finally:
-            self.add_transaction_semaphore.release()
-
-    async def _handle_transactions(self) -> None:
-        try:
-            while not self._shut_down:
-                # We use a semaphore to make sure we don't send more than 200 concurrent calls of respond_transaction.
-                # However, doing them one at a time would be slow, because they get sent to other processes.
-                await self.add_transaction_semaphore.acquire()
-                item: TransactionQueueEntry = await self.transaction_queue.pop()
-                asyncio.create_task(self._handle_one_transaction(item))
-        except asyncio.CancelledError:
-            raise
-
     async def initialize_weight_proof(self) -> None:
         self.weight_proof_handler = WeightProofHandler(
             constants=self.constants,
@@ -478,7 +340,7 @@ class Beacon:
         if peak is not None:
             await self.weight_proof_handler.create_sub_epoch_segments()
 
-    def set_server(self, server: ChiaServer) -> None:
+    def set_server(self, server: BpxServer) -> None:
         self._server = server
         dns_servers: List[str] = []
         network_name = self.config["selected_network"]
@@ -520,7 +382,7 @@ class Beacon:
         if self.state_changed_callback is not None:
             self.state_changed_callback(change, change_data)
 
-    async def short_sync_batch(self, peer: WSChiaConnection, start_height: uint32, target_height: uint32) -> bool:
+    async def short_sync_batch(self, peer: WSBpxConnection, start_height: uint32, target_height: uint32) -> bool:
         """
         Tries to sync to a chain which is not too far in the future, by downloading batches of blocks. If the first
         block that we download is not connected to our chain, we return False and do an expensive long sync instead.
@@ -604,8 +466,8 @@ class Beacon:
         self.sync_store.batch_syncing.remove(peer.peer_node_id)
         return True
 
-    async def short_sync_backtrack(
-        self, peer: WSChiaConnection, peak_height: uint32, target_height: uint32, target_unf_hash: bytes32
+    async def short_sync_backtrack( # done here
+        self, peer: WSBpxConnection, peak_height: uint32, target_height: uint32, target_unf_hash: bytes32
     ) -> bool:
         """
         Performs a backtrack sync, where blocks are downloaded one at a time from newest to oldest. If we do not

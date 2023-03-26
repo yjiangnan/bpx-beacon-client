@@ -12,50 +12,28 @@ from secrets import token_bytes
 from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 
 from blspy import AugSchemeMPL, G1Element, G2Element
-from chiabip158 import PyBIP158
 
 from bpx.consensus.block_creation import create_unfinished_block
 from bpx.consensus.block_record import BlockRecord
 from bpx.consensus.pot_iterations import calculate_ip_iters, calculate_iterations_quality, calculate_sp_iters
-from bpx.beacon.bundle_tools import best_solution_generator_from_template, simple_solution_generator
-from bpx.beacon.fee_estimate import FeeEstimate, FeeEstimateGroup, fee_rate_v2_to_v1
-from bpx.beacon.fee_estimator_interface import FeeEstimatorInterface
-from bpx.beacon.mempool_check_conditions import get_name_puzzle_conditions, get_puzzle_and_solution_for_coin
 from bpx.beacon.signage_point import SignagePoint
-from bpx.beacon.tx_processing_queue import TransactionQueueFull
-from bpx.protocols import farmer_protocol, beacon_protocol, introducer_protocol, timelord_protocol, wallet_protocol
+from bpx.protocols import farmer_protocol, beacon_protocol, introducer_protocol, timelord_protocol
 from bpx.protocols.beacon_protocol import RejectBlock, RejectBlocks
 from bpx.protocols.protocol_message_types import ProtocolMessageTypes
-from bpx.protocols.wallet_protocol import (
-    CoinState,
-    PuzzleSolutionResponse,
-    RejectBlockHeaders,
-    RejectHeaderBlocks,
-    RejectHeaderRequest,
-    RespondFeeEstimates,
-    RespondSESInfo,
-)
 from bpx.server.outbound_message import Message, make_msg
-from bpx.server.server import ChiaServer
-from bpx.server.ws_connection import WSChiaConnection
+from bpx.server.server import BpxServer
+from bpx.server.ws_connection import WSBpxConnection
 from bpx.types.block_protocol import BlockInfo
-from bpx.types.blockchain_format.coin import Coin, hash_coin_ids
 from bpx.types.blockchain_format.pool_target import PoolTarget
 from bpx.types.blockchain_format.proof_of_space import verify_and_get_quality_string
 from bpx.types.blockchain_format.sized_bytes import bytes32
 from bpx.types.blockchain_format.sub_epoch_summary import SubEpochSummary
-from bpx.types.coin_record import CoinRecord
 from bpx.types.end_of_slot_bundle import EndOfSubSlotBundle
 from bpx.types.full_block import FullBlock
-from bpx.types.generator_types import BlockGenerator
-from bpx.types.mempool_inclusion_status import MempoolInclusionStatus
 from bpx.types.peer_info import PeerInfo
-from bpx.types.spend_bundle import SpendBundle
-from bpx.types.transaction_queue_entry import TransactionQueueEntry
 from bpx.types.unfinished_block import UnfinishedBlock
 from bpx.util.api_decorators import api_request
 from bpx.util.full_block_utils import header_block_from_block
-from bpx.util.generator_tools import get_block_header, tx_removals_and_additions
 from bpx.util.hash import std_hash
 from bpx.util.ints import uint8, uint32, uint64, uint128
 from bpx.util.limited_semaphore import LimitedSemaphoreFullError
@@ -76,7 +54,7 @@ class BeaconAPI:
         self.executor = ThreadPoolExecutor(max_workers=1)
 
     @property
-    def server(self) -> ChiaServer:
+    def server(self) -> BpxServer:
         assert self.beacon.server is not None
         return self.beacon.server
 
@@ -90,7 +68,7 @@ class BeaconAPI:
 
     @api_request(peer_required=True, reply_types=[ProtocolMessageTypes.respond_peers])
     async def request_peers(
-        self, _request: beacon_protocol.RequestPeers, peer: WSChiaConnection
+        self, _request: beacon_protocol.RequestPeers, peer: WSBpxConnection
     ) -> Optional[Message]:
         if peer.peer_server_port is None:
             return None
@@ -102,7 +80,7 @@ class BeaconAPI:
 
     @api_request(peer_required=True)
     async def respond_peers(
-        self, request: beacon_protocol.RespondPeers, peer: WSChiaConnection
+        self, request: beacon_protocol.RespondPeers, peer: WSBpxConnection
     ) -> Optional[Message]:
         self.log.debug(f"Received {len(request.peer_list)} peers")
         if self.beacon.beacon_peers is not None:
@@ -111,7 +89,7 @@ class BeaconAPI:
 
     @api_request(peer_required=True)
     async def respond_peers_introducer(
-        self, request: introducer_protocol.RespondPeersIntroducer, peer: WSChiaConnection
+        self, request: introducer_protocol.RespondPeersIntroducer, peer: WSBpxConnection
     ) -> Optional[Message]:
         self.log.debug(f"Received {len(request.peer_list)} peers from introducer")
         if self.beacon.beacon_peers is not None:
@@ -121,7 +99,7 @@ class BeaconAPI:
         return None
 
     @api_request(peer_required=True, execute_task=True)
-    async def new_peak(self, request: beacon_protocol.NewPeak, peer: WSChiaConnection) -> None:
+    async def new_peak(self, request: beacon_protocol.NewPeak, peer: WSBpxConnection) -> None:
         """
         A peer notifies us that they have added a new peak to their blockchain. If we don't have it,
         we can ask for it.
@@ -134,132 +112,6 @@ class BeaconAPI:
         except LimitedSemaphoreFullError:
             return None
 
-        return None
-
-    @api_request(peer_required=True)
-    async def new_transaction(
-        self, transaction: beacon_protocol.NewTransaction, peer: WSChiaConnection
-    ) -> Optional[Message]:
-        """
-        A peer notifies us of a new transaction.
-        Requests a full transaction if we haven't seen it previously, and if the fees are enough.
-        """
-        # Ignore if syncing
-        if self.beacon.sync_store.get_sync_mode():
-            return None
-        if not (await self.beacon.synced()):
-            return None
-
-        # Ignore if already seen
-        if self.beacon.mempool_manager.seen(transaction.transaction_id):
-            return None
-
-        if self.beacon.mempool_manager.is_fee_enough(transaction.fees, transaction.cost):
-            # If there's current pending request just add this peer to the set of peers that have this tx
-            if transaction.transaction_id in self.beacon.beacon_store.pending_tx_request:
-                if transaction.transaction_id in self.beacon.beacon_store.peers_with_tx:
-                    current_set = self.beacon.beacon_store.peers_with_tx[transaction.transaction_id]
-                    if peer.peer_node_id in current_set:
-                        return None
-                    current_set.add(peer.peer_node_id)
-                    return None
-                else:
-                    new_set = set()
-                    new_set.add(peer.peer_node_id)
-                    self.beacon.beacon_store.peers_with_tx[transaction.transaction_id] = new_set
-                    return None
-
-            self.beacon.beacon_store.pending_tx_request[transaction.transaction_id] = peer.peer_node_id
-            new_set = set()
-            new_set.add(peer.peer_node_id)
-            self.beacon.beacon_store.peers_with_tx[transaction.transaction_id] = new_set
-
-            async def tx_request_and_timeout(beacon: Beacon, transaction_id: bytes32, task_id: bytes32) -> None:
-                counter = 0
-                try:
-                    while True:
-                        # Limit to asking a few peers, it's possible that this tx got included on chain already
-                        # Highly unlikely that the peers that advertised a tx don't respond to a request. Also, if we
-                        # drop some transactions, we don't want to re-fetch too many times
-                        if counter == 5:
-                            break
-                        if transaction_id not in beacon.beacon_store.peers_with_tx:
-                            break
-                        peers_with_tx: Set[bytes32] = beacon.beacon_store.peers_with_tx[transaction_id]
-                        if len(peers_with_tx) == 0:
-                            break
-                        peer_id = peers_with_tx.pop()
-                        assert beacon.server is not None
-                        if peer_id not in beacon.server.all_connections:
-                            continue
-                        random_peer = beacon.server.all_connections[peer_id]
-                        request_tx = beacon_protocol.RequestTransaction(transaction.transaction_id)
-                        msg = make_msg(ProtocolMessageTypes.request_transaction, request_tx)
-                        await random_peer.send_message(msg)
-                        await asyncio.sleep(5)
-                        counter += 1
-                        if beacon.mempool_manager.seen(transaction_id):
-                            break
-                except asyncio.CancelledError:
-                    pass
-                finally:
-                    # Always Cleanup
-                    if transaction_id in beacon.beacon_store.peers_with_tx:
-                        beacon.beacon_store.peers_with_tx.pop(transaction_id)
-                    if transaction_id in beacon.beacon_store.pending_tx_request:
-                        beacon.beacon_store.pending_tx_request.pop(transaction_id)
-                    if task_id in beacon.beacon_store.tx_fetch_tasks:
-                        beacon.beacon_store.tx_fetch_tasks.pop(task_id)
-
-            task_id: bytes32 = bytes32(token_bytes(32))
-            fetch_task = asyncio.create_task(
-                tx_request_and_timeout(self.beacon, transaction.transaction_id, task_id)
-            )
-            self.beacon.beacon_store.tx_fetch_tasks[task_id] = fetch_task
-            return None
-        return None
-
-    @api_request(reply_types=[ProtocolMessageTypes.respond_transaction])
-    async def request_transaction(self, request: beacon_protocol.RequestTransaction) -> Optional[Message]:
-        """Peer has requested a full transaction from us."""
-        # Ignore if syncing
-        if self.beacon.sync_store.get_sync_mode():
-            return None
-        spend_bundle = self.beacon.mempool_manager.get_spendbundle(request.transaction_id)
-        if spend_bundle is None:
-            return None
-
-        transaction = beacon_protocol.RespondTransaction(spend_bundle)
-
-        msg = make_msg(ProtocolMessageTypes.respond_transaction, transaction)
-        return msg
-
-    @api_request(peer_required=True, bytes_required=True)
-    async def respond_transaction(
-        self,
-        tx: beacon_protocol.RespondTransaction,
-        peer: WSChiaConnection,
-        tx_bytes: bytes = b"",
-        test: bool = False,
-    ) -> Optional[Message]:
-        """
-        Receives a full transaction from peer.
-        If tx is added to mempool, send tx_id to others. (new_transaction)
-        """
-        assert tx_bytes != b""
-        spend_name = std_hash(tx_bytes)
-        if spend_name in self.beacon.beacon_store.pending_tx_request:
-            self.beacon.beacon_store.pending_tx_request.pop(spend_name)
-        if spend_name in self.beacon.beacon_store.peers_with_tx:
-            self.beacon.beacon_store.peers_with_tx.pop(spend_name)
-
-        # TODO: Use fee in priority calculation, to prioritize high fee TXs
-        try:
-            await self.beacon.transaction_queue.put(
-                TransactionQueueEntry(tx.transaction, tx_bytes, spend_name, peer, test), peer.peer_node_id
-            )
-        except TransactionQueueFull:
-            pass  # we can't do anything here, the tx will be dropped. We might do something in the future.
         return None
 
     @api_request(reply_types=[ProtocolMessageTypes.respond_proof_of_weight])
@@ -319,8 +171,6 @@ class BeaconAPI:
 
         block: Optional[FullBlock] = await self.beacon.block_store.get_full_block(header_hash)
         if block is not None:
-            if not request.include_transaction_block and block.transactions_generator is not None:
-                block = dataclasses.replace(block, transactions_generator=None)
             return make_msg(ProtocolMessageTypes.respond_block, beacon_protocol.RespondBlock(block))
         return make_msg(ProtocolMessageTypes.reject_block, RejectBlock(request.height))
 
@@ -339,47 +189,28 @@ class BeaconAPI:
                 msg = make_msg(ProtocolMessageTypes.reject_blocks, reject)
                 return msg
 
-        if not request.include_transaction_block:
-            blocks: List[FullBlock] = []
-            for i in range(request.start_height, request.end_height + 1):
-                header_hash_i: Optional[bytes32] = self.beacon.blockchain.height_to_hash(uint32(i))
-                if header_hash_i is None:
-                    reject = RejectBlocks(request.start_height, request.end_height)
-                    return make_msg(ProtocolMessageTypes.reject_blocks, reject)
+        blocks_bytes: List[bytes] = []
+        for i in range(request.start_height, request.end_height + 1):
+            header_hash_i = self.beacon.blockchain.height_to_hash(uint32(i))
+            if header_hash_i is None:
+                reject = RejectBlocks(request.start_height, request.end_height)
+                return make_msg(ProtocolMessageTypes.reject_blocks, reject)
+            block_bytes: Optional[bytes] = await self.beacon.block_store.get_full_block_bytes(header_hash_i)
+            if block_bytes is None:
+                reject = RejectBlocks(request.start_height, request.end_height)
+                msg = make_msg(ProtocolMessageTypes.reject_blocks, reject)
+                return msg
 
-                block: Optional[FullBlock] = await self.beacon.block_store.get_full_block(header_hash_i)
-                if block is None:
-                    reject = RejectBlocks(request.start_height, request.end_height)
-                    return make_msg(ProtocolMessageTypes.reject_blocks, reject)
-                block = dataclasses.replace(block, transactions_generator=None)
-                blocks.append(block)
-            msg = make_msg(
-                ProtocolMessageTypes.respond_blocks,
-                beacon_protocol.RespondBlocks(request.start_height, request.end_height, blocks),
-            )
-        else:
-            blocks_bytes: List[bytes] = []
-            for i in range(request.start_height, request.end_height + 1):
-                header_hash_i = self.beacon.blockchain.height_to_hash(uint32(i))
-                if header_hash_i is None:
-                    reject = RejectBlocks(request.start_height, request.end_height)
-                    return make_msg(ProtocolMessageTypes.reject_blocks, reject)
-                block_bytes: Optional[bytes] = await self.beacon.block_store.get_full_block_bytes(header_hash_i)
-                if block_bytes is None:
-                    reject = RejectBlocks(request.start_height, request.end_height)
-                    msg = make_msg(ProtocolMessageTypes.reject_blocks, reject)
-                    return msg
+            blocks_bytes.append(block_bytes)
 
-                blocks_bytes.append(block_bytes)
-
-            respond_blocks_manually_streamed: bytes = (
-                bytes(uint32(request.start_height))
-                + bytes(uint32(request.end_height))
-                + len(blocks_bytes).to_bytes(4, "big", signed=False)
-            )
-            for block_bytes in blocks_bytes:
-                respond_blocks_manually_streamed += block_bytes
-            msg = make_msg(ProtocolMessageTypes.respond_blocks, respond_blocks_manually_streamed)
+        respond_blocks_manually_streamed: bytes = (
+            bytes(uint32(request.start_height))
+            + bytes(uint32(request.end_height))
+            + len(blocks_bytes).to_bytes(4, "big", signed=False)
+        )
+        for block_bytes in blocks_bytes:
+            respond_blocks_manually_streamed += block_bytes
+        msg = make_msg(ProtocolMessageTypes.respond_blocks, respond_blocks_manually_streamed)
 
         return msg
 
@@ -400,7 +231,7 @@ class BeaconAPI:
     async def respond_block(
         self,
         respond_block: beacon_protocol.RespondBlock,
-        peer: WSChiaConnection,
+        peer: WSBpxConnection,
     ) -> Optional[Message]:
         """
         Receive a full block from a peer beacon client (or ourselves).
@@ -460,7 +291,7 @@ class BeaconAPI:
     async def respond_unfinished_block(
         self,
         respond_unfinished_block: beacon_protocol.RespondUnfinishedBlock,
-        peer: WSChiaConnection,
+        peer: WSBpxConnection,
         respond_unfinished_block_bytes: bytes = b"",
     ) -> Optional[Message]:
         if self.beacon.sync_store.get_sync_mode():
@@ -472,7 +303,7 @@ class BeaconAPI:
 
     @api_request(peer_required=True)
     async def new_signage_point_or_end_of_sub_slot(
-        self, new_sp: beacon_protocol.NewSignagePointOrEndOfSubSlot, peer: WSChiaConnection
+        self, new_sp: beacon_protocol.NewSignagePointOrEndOfSubSlot, peer: WSBpxConnection
     ) -> Optional[Message]:
         # Ignore if syncing
         if self.beacon.sync_store.get_sync_mode():
@@ -598,7 +429,7 @@ class BeaconAPI:
 
     @api_request(peer_required=True)
     async def respond_signage_point(
-        self, request: beacon_protocol.RespondSignagePoint, peer: WSChiaConnection
+        self, request: beacon_protocol.RespondSignagePoint, peer: WSBpxConnection
     ) -> Optional[Message]:
         if self.beacon.sync_store.get_sync_mode():
             return None
@@ -652,33 +483,17 @@ class BeaconAPI:
 
     @api_request(peer_required=True)
     async def respond_end_of_sub_slot(
-        self, request: beacon_protocol.RespondEndOfSubSlot, peer: WSChiaConnection
+        self, request: beacon_protocol.RespondEndOfSubSlot, peer: WSBpxConnection
     ) -> Optional[Message]:
         if self.beacon.sync_store.get_sync_mode():
             return None
         msg, _ = await self.beacon.add_end_of_sub_slot(request.end_of_slot_bundle, peer)
         return msg
 
-    @api_request(peer_required=True)
-    async def request_mempool_transactions(
-        self,
-        request: beacon_protocol.RequestMempoolTransactions,
-        peer: WSChiaConnection,
-    ) -> Optional[Message]:
-        received_filter = PyBIP158(bytearray(request.filter))
-
-        items: List[SpendBundle] = self.beacon.mempool_manager.get_items_not_in_filter(received_filter)
-
-        for item in items:
-            transaction = beacon_protocol.RespondTransaction(item)
-            msg = make_msg(ProtocolMessageTypes.respond_transaction, transaction)
-            await peer.send_message(msg)
-        return None
-
     # FARMER PROTOCOL
     @api_request(peer_required=True)
     async def declare_proof_of_space(
-        self, request: farmer_protocol.DeclareProofOfSpace, peer: WSChiaConnection
+        self, request: farmer_protocol.DeclareProofOfSpace, peer: WSBpxConnection
     ) -> Optional[Message]:
         """
         Creates a block body and header, with the proof of space, coinbase, and fee targets provided
@@ -732,43 +547,6 @@ class BeaconAPI:
                 request.proof_of_space, self.beacon.constants, cc_challenge_hash, request.challenge_chain_sp
             )
             assert quality_string is not None and len(quality_string) == 32
-
-            # Grab best transactions from Mempool for given tip target
-            aggregate_signature: G2Element = G2Element()
-            block_generator: Optional[BlockGenerator] = None
-            additions: Optional[List[Coin]] = []
-            removals: Optional[List[Coin]] = []
-            async with self.beacon._blockchain_lock_high_priority:
-                peak: Optional[BlockRecord] = self.beacon.blockchain.get_peak()
-                if peak is not None:
-                    # Finds the last transaction block before this one
-                    curr_l_tb: BlockRecord = peak
-                    while not curr_l_tb.is_transaction_block:
-                        curr_l_tb = self.beacon.blockchain.block_record(curr_l_tb.prev_hash)
-                    try:
-                        mempool_bundle = self.beacon.mempool_manager.create_bundle_from_mempool(
-                            curr_l_tb.header_hash
-                        )
-                    except Exception as e:
-                        self.log.error(f"Traceback: {traceback.format_exc()}")
-                        self.beacon.log.error(f"Error making spend bundle {e} peak: {peak}")
-                        mempool_bundle = None
-                    if mempool_bundle is not None:
-                        spend_bundle = mempool_bundle[0]
-                        additions = mempool_bundle[1]
-                        removals = mempool_bundle[2]
-                        self.beacon.log.info(f"Add rem: {len(additions)} {len(removals)}")
-                        aggregate_signature = spend_bundle.aggregated_signature
-                        if self.beacon.beacon_store.previous_generator is not None:
-                            self.log.info(
-                                f"Using previous generator for height "
-                                f"{self.beacon.beacon_store.previous_generator}"
-                            )
-                            block_generator = best_solution_generator_from_template(
-                                self.beacon.beacon_store.previous_generator, spend_bundle
-                            )
-                        else:
-                            block_generator = simple_solution_generator(spend_bundle)
 
             def get_plot_sig(to_sign: bytes32, _extra: G1Element) -> G2Element:
                 if to_sign == request.challenge_chain_sp:
@@ -880,8 +658,6 @@ class BeaconAPI:
             # The block's timestamp must be greater than the previous transaction block's timestamp
             timestamp = uint64(int(time.time()))
             curr: Optional[BlockRecord] = prev_b
-            while curr is not None and not curr.is_transaction_block and curr.height != 0:
-                curr = self.beacon.blockchain.try_block_record(curr.prev_hash)
             if curr is not None:
                 assert curr.timestamp is not None
                 if timestamp <= curr.timestamp:
@@ -905,10 +681,6 @@ class BeaconAPI:
                 timestamp,
                 self.beacon.blockchain,
                 b"",
-                block_generator,
-                aggregate_signature,
-                additions,
-                removals,
                 prev_b,
                 finished_sub_slots,
             )
@@ -920,54 +692,17 @@ class BeaconAPI:
             self.beacon.beacon_store.add_candidate_block(quality_string, height, unfinished_block)
 
             foliage_sb_data_hash = unfinished_block.foliage.foliage_block_data.get_hash()
-            if unfinished_block.is_transaction_block():
-                foliage_transaction_block_hash = unfinished_block.foliage.foliage_transaction_block_hash
-            else:
-                foliage_transaction_block_hash = bytes32([0] * 32)
-            assert foliage_transaction_block_hash is not None
-
             message = farmer_protocol.RequestSignedValues(
                 quality_string,
                 foliage_sb_data_hash,
-                foliage_transaction_block_hash,
             )
             await peer.send_message(make_msg(ProtocolMessageTypes.request_signed_values, message))
 
-            # Adds backup in case the first one fails
-            if unfinished_block.is_transaction_block() and unfinished_block.transactions_generator is not None:
-                unfinished_block_backup = create_unfinished_block(
-                    self.beacon.constants,
-                    total_iters_pos_slot,
-                    sub_slot_iters,
-                    request.signage_point_index,
-                    sp_iters,
-                    ip_iters,
-                    request.proof_of_space,
-                    cc_challenge_hash,
-                    farmer_ph,
-                    pool_target,
-                    get_plot_sig,
-                    get_pool_sig,
-                    sp_vdfs,
-                    timestamp,
-                    self.beacon.blockchain,
-                    b"",
-                    None,
-                    G2Element(),
-                    None,
-                    None,
-                    prev_b,
-                    finished_sub_slots,
-                )
-
-                self.beacon.beacon_store.add_candidate_block(
-                    quality_string, height, unfinished_block_backup, backup=True
-                )
         return None
 
     @api_request(peer_required=True)
     async def signed_values(
-        self, farmer_request: farmer_protocol.SignedValues, peer: WSChiaConnection
+        self, farmer_request: farmer_protocol.SignedValues, peer: WSBpxConnection
     ) -> Optional[Message]:
         """
         Signature of header hash, by the harvester. This is enough to create an unfinished
@@ -995,10 +730,6 @@ class BeaconAPI:
             candidate.foliage,
             foliage_block_data_signature=farmer_request.foliage_block_data_signature,
         )
-        if candidate.is_transaction_block():
-            fsb2 = dataclasses.replace(
-                fsb2, foliage_transaction_block_signature=farmer_request.foliage_transaction_block_signature
-            )
 
         new_candidate = dataclasses.replace(candidate, foliage=fsb2)
         if not self.beacon.has_valid_pool_sig(new_candidate):
@@ -1009,30 +740,14 @@ class BeaconAPI:
         try:
             await self.beacon.add_unfinished_block(new_candidate, None, True)
         except Exception as e:
-            # If we have an error with this block, try making an empty block
-            self.beacon.log.error(f"Error farming block {e} {new_candidate}")
-            candidate_tuple = self.beacon.beacon_store.get_candidate_block(
-                farmer_request.quality_string, backup=True
-            )
-            if candidate_tuple is not None:
-                height, unfinished_block = candidate_tuple
-                self.beacon.beacon_store.add_candidate_block(
-                    farmer_request.quality_string, height, unfinished_block, False
-                )
-                # All unfinished blocks that we create will have the foliage transaction block and hash
-                assert unfinished_block.foliage.foliage_transaction_block_hash is not None
-                message = farmer_protocol.RequestSignedValues(
-                    farmer_request.quality_string,
-                    unfinished_block.foliage.foliage_block_data.get_hash(),
-                    unfinished_block.foliage.foliage_transaction_block_hash,
-                )
-                await peer.send_message(make_msg(ProtocolMessageTypes.request_signed_values, message))
+            pass
+            
         return None
 
     # TIMELORD PROTOCOL
     @api_request(peer_required=True)
     async def new_infusion_point_vdf(
-        self, request: timelord_protocol.NewInfusionPointVDF, peer: WSChiaConnection
+        self, request: timelord_protocol.NewInfusionPointVDF, peer: WSBpxConnection
     ) -> Optional[Message]:
         if self.beacon.sync_store.get_sync_mode():
             return None
@@ -1042,7 +757,7 @@ class BeaconAPI:
 
     @api_request(peer_required=True)
     async def new_signage_point_vdf(
-        self, request: timelord_protocol.NewSignagePointVDF, peer: WSChiaConnection
+        self, request: timelord_protocol.NewSignagePointVDF, peer: WSBpxConnection
     ) -> None:
         if self.beacon.sync_store.get_sync_mode():
             return None
@@ -1058,7 +773,7 @@ class BeaconAPI:
 
     @api_request(peer_required=True)
     async def new_end_of_sub_slot_vdf(
-        self, request: timelord_protocol.NewEndOfSubSlotVDF, peer: WSChiaConnection
+        self, request: timelord_protocol.NewEndOfSubSlotVDF, peer: WSBpxConnection
     ) -> Optional[Message]:
         if self.beacon.sync_store.get_sync_mode():
             return None
@@ -1081,328 +796,6 @@ class BeaconAPI:
             return msg
 
     @api_request()
-    async def request_block_header(self, request: wallet_protocol.RequestBlockHeader) -> Optional[Message]:
-        header_hash = self.beacon.blockchain.height_to_hash(request.height)
-        if header_hash is None:
-            msg = make_msg(ProtocolMessageTypes.reject_header_request, RejectHeaderRequest(request.height))
-            return msg
-        block: Optional[FullBlock] = await self.beacon.block_store.get_full_block(header_hash)
-        if block is None:
-            return None
-
-        tx_removals: List[bytes32] = []
-        tx_additions: List[Coin] = []
-
-        if block.transactions_generator is not None:
-            block_generator: Optional[BlockGenerator] = await self.beacon.blockchain.get_block_generator(block)
-            # get_block_generator() returns None in case the block we specify
-            # does not have a generator (i.e. is not a transaction block).
-            # in this case we've already made sure `block` does have a
-            # transactions_generator, so the block_generator should always be set
-            assert block_generator is not None, "failed to get block_generator for tx-block"
-
-            npc_result = await asyncio.get_running_loop().run_in_executor(
-                self.executor,
-                functools.partial(
-                    get_name_puzzle_conditions,
-                    block_generator,
-                    self.beacon.constants.MAX_BLOCK_COST_CLVM,
-                    cost_per_byte=self.beacon.constants.COST_PER_BYTE,
-                    mempool_mode=False,
-                    height=request.height,
-                ),
-            )
-
-            tx_removals, tx_additions = tx_removals_and_additions(npc_result.conds)
-        header_block = get_block_header(block, tx_additions, tx_removals)
-        msg = make_msg(
-            ProtocolMessageTypes.respond_block_header,
-            wallet_protocol.RespondBlockHeader(header_block),
-        )
-        return msg
-
-    @api_request()
-    async def request_additions(self, request: wallet_protocol.RequestAdditions) -> Optional[Message]:
-        if request.header_hash is None:
-            header_hash: Optional[bytes32] = self.beacon.blockchain.height_to_hash(request.height)
-        else:
-            header_hash = request.header_hash
-        if header_hash is None:
-            raise ValueError(f"Block at height {request.height} not found")
-
-        # Note: this might return bad data if there is a reorg in this time
-        additions = await self.beacon.coin_store.get_coins_added_at_height(request.height)
-
-        if self.beacon.blockchain.height_to_hash(request.height) != header_hash:
-            raise ValueError(f"Block {header_hash} no longer in chain, or invalid header_hash")
-
-        puzzlehash_coins_map: Dict[bytes32, List[Coin]] = {}
-        for coin_record in additions:
-            if coin_record.coin.puzzle_hash in puzzlehash_coins_map:
-                puzzlehash_coins_map[coin_record.coin.puzzle_hash].append(coin_record.coin)
-            else:
-                puzzlehash_coins_map[coin_record.coin.puzzle_hash] = [coin_record.coin]
-
-        coins_map: List[Tuple[bytes32, List[Coin]]] = []
-        proofs_map: List[Tuple[bytes32, bytes, Optional[bytes]]] = []
-
-        if request.puzzle_hashes is None:
-            for puzzle_hash, coins in puzzlehash_coins_map.items():
-                coins_map.append((puzzle_hash, coins))
-            response = wallet_protocol.RespondAdditions(request.height, header_hash, coins_map, None)
-        else:
-            # Create addition Merkle set
-            addition_merkle_set = MerkleSet()
-            # Addition Merkle set contains puzzlehash and hash of all coins with that puzzlehash
-            for puzzle, coins in puzzlehash_coins_map.items():
-                addition_merkle_set.add_already_hashed(puzzle)
-                addition_merkle_set.add_already_hashed(hash_coin_ids([c.name() for c in coins]))
-
-            for puzzle_hash in request.puzzle_hashes:
-                # This is a proof of inclusion if it's in (result==True), or exclusion of it's not in
-                result, proof = addition_merkle_set.is_included_already_hashed(puzzle_hash)
-                if puzzle_hash in puzzlehash_coins_map:
-                    coins_map.append((puzzle_hash, puzzlehash_coins_map[puzzle_hash]))
-                    hash_coin_str = hash_coin_ids([c.name() for c in puzzlehash_coins_map[puzzle_hash]])
-                    # This is a proof of inclusion of all coin ids that have this ph
-                    result_2, proof_2 = addition_merkle_set.is_included_already_hashed(hash_coin_str)
-                    assert result
-                    assert result_2
-                    proofs_map.append((puzzle_hash, proof, proof_2))
-                else:
-                    coins_map.append((puzzle_hash, []))
-                    assert not result
-                    proofs_map.append((puzzle_hash, proof, None))
-            response = wallet_protocol.RespondAdditions(request.height, header_hash, coins_map, proofs_map)
-        return make_msg(ProtocolMessageTypes.respond_additions, response)
-
-    @api_request()
-    async def request_removals(self, request: wallet_protocol.RequestRemovals) -> Optional[Message]:
-        block: Optional[FullBlock] = await self.beacon.block_store.get_full_block(request.header_hash)
-
-        # We lock so that the coin store does not get modified
-        peak_height = self.beacon.blockchain.get_peak_height()
-        if (
-            block is None
-            or block.is_transaction_block() is False
-            or block.height != request.height
-            or (peak_height is not None and block.height > peak_height)
-            or self.beacon.blockchain.height_to_hash(block.height) != request.header_hash
-        ):
-            reject = wallet_protocol.RejectRemovalsRequest(request.height, request.header_hash)
-            msg = make_msg(ProtocolMessageTypes.reject_removals_request, reject)
-            return msg
-
-        assert block is not None and block.foliage_transaction_block is not None
-
-        # Note: this might return bad data if there is a reorg in this time
-        all_removals: List[CoinRecord] = await self.beacon.coin_store.get_coins_removed_at_height(block.height)
-
-        if self.beacon.blockchain.height_to_hash(block.height) != request.header_hash:
-            raise ValueError(f"Block {block.header_hash} no longer in chain")
-
-        all_removals_dict: Dict[bytes32, Coin] = {}
-        for coin_record in all_removals:
-            all_removals_dict[coin_record.coin.name()] = coin_record.coin
-
-        coins_map: List[Tuple[bytes32, Optional[Coin]]] = []
-        proofs_map: List[Tuple[bytes32, bytes]] = []
-
-        # If there are no transactions, respond with empty lists
-        if block.transactions_generator is None:
-            proofs: Optional[List[Tuple[bytes32, bytes]]]
-            if request.coin_names is None:
-                proofs = None
-            else:
-                proofs = []
-            response = wallet_protocol.RespondRemovals(block.height, block.header_hash, [], proofs)
-        elif request.coin_names is None or len(request.coin_names) == 0:
-            for removed_name, removed_coin in all_removals_dict.items():
-                coins_map.append((removed_name, removed_coin))
-            response = wallet_protocol.RespondRemovals(block.height, block.header_hash, coins_map, None)
-        else:
-            assert block.transactions_generator
-            removal_merkle_set = MerkleSet()
-            for removed_name, removed_coin in all_removals_dict.items():
-                removal_merkle_set.add_already_hashed(removed_name)
-            assert removal_merkle_set.get_root() == block.foliage_transaction_block.removals_root
-            for coin_name in request.coin_names:
-                result, proof = removal_merkle_set.is_included_already_hashed(coin_name)
-                proofs_map.append((coin_name, proof))
-                if coin_name in all_removals_dict:
-                    removed_coin = all_removals_dict[coin_name]
-                    coins_map.append((coin_name, removed_coin))
-                    assert result
-                else:
-                    coins_map.append((coin_name, None))
-                    assert not result
-            response = wallet_protocol.RespondRemovals(block.height, block.header_hash, coins_map, proofs_map)
-
-        msg = make_msg(ProtocolMessageTypes.respond_removals, response)
-        return msg
-
-    @api_request()
-    async def send_transaction(
-        self, request: wallet_protocol.SendTransaction, *, test: bool = False
-    ) -> Optional[Message]:
-        spend_name = request.transaction.name()
-        if self.beacon.mempool_manager.get_spendbundle(spend_name) is not None:
-            self.beacon.mempool_manager.remove_seen(spend_name)
-            response = wallet_protocol.TransactionAck(spend_name, uint8(MempoolInclusionStatus.SUCCESS), None)
-            return make_msg(ProtocolMessageTypes.transaction_ack, response)
-
-        await self.beacon.transaction_queue.put(
-            TransactionQueueEntry(request.transaction, None, spend_name, None, test), peer_id=None, high_priority=True
-        )
-        # Waits for the transaction to go into the mempool, times out after 45 seconds.
-        status, error = None, None
-        sleep_time = 0.01
-        for i in range(int(45 / sleep_time)):
-            await asyncio.sleep(sleep_time)
-            for potential_name, potential_status, potential_error in self.beacon.transaction_responses:
-                if spend_name == potential_name:
-                    status = potential_status
-                    error = potential_error
-                    break
-            if status is not None:
-                break
-        if status is None:
-            response = wallet_protocol.TransactionAck(spend_name, uint8(MempoolInclusionStatus.PENDING), None)
-        else:
-            error_name = error.name if error is not None else None
-            if status == MempoolInclusionStatus.SUCCESS:
-                response = wallet_protocol.TransactionAck(spend_name, uint8(status.value), error_name)
-            else:
-                # If if failed/pending, but it previously succeeded (in mempool), this is idempotence, return SUCCESS
-                if self.beacon.mempool_manager.get_spendbundle(spend_name) is not None:
-                    response = wallet_protocol.TransactionAck(
-                        spend_name, uint8(MempoolInclusionStatus.SUCCESS.value), None
-                    )
-                else:
-                    response = wallet_protocol.TransactionAck(spend_name, uint8(status.value), error_name)
-        return make_msg(ProtocolMessageTypes.transaction_ack, response)
-
-    @api_request()
-    async def request_puzzle_solution(self, request: wallet_protocol.RequestPuzzleSolution) -> Optional[Message]:
-        coin_name = request.coin_name
-        height = request.height
-        coin_record = await self.beacon.coin_store.get_coin_record(coin_name)
-        reject = wallet_protocol.RejectPuzzleSolution(coin_name, height)
-        reject_msg = make_msg(ProtocolMessageTypes.reject_puzzle_solution, reject)
-        if coin_record is None or coin_record.spent_block_index != height:
-            return reject_msg
-
-        header_hash: Optional[bytes32] = self.beacon.blockchain.height_to_hash(height)
-        if header_hash is None:
-            return reject_msg
-
-        block: Optional[BlockInfo] = await self.beacon.block_store.get_block_info(header_hash)
-
-        if block is None or block.transactions_generator is None:
-            return reject_msg
-
-        block_generator: Optional[BlockGenerator] = await self.beacon.blockchain.get_block_generator(block)
-        assert block_generator is not None
-        error, puzzle, solution = await asyncio.get_running_loop().run_in_executor(
-            self.executor, get_puzzle_and_solution_for_coin, block_generator, coin_record.coin
-        )
-
-        if error is not None:
-            return reject_msg
-
-        assert puzzle is not None
-        assert solution is not None
-
-        wrapper = PuzzleSolutionResponse(coin_name, height, puzzle, solution)
-        response = wallet_protocol.RespondPuzzleSolution(wrapper)
-        response_msg = make_msg(ProtocolMessageTypes.respond_puzzle_solution, response)
-        return response_msg
-
-    @api_request()
-    async def request_block_headers(self, request: wallet_protocol.RequestBlockHeaders) -> Optional[Message]:
-        """Returns header blocks by directly streaming bytes into Message
-
-        This method should be used instead of RequestHeaderBlocks
-        """
-        reject = RejectBlockHeaders(request.start_height, request.end_height)
-
-        if request.end_height < request.start_height or request.end_height - request.start_height > 128:
-            return make_msg(ProtocolMessageTypes.reject_block_headers, reject)
-        if self.beacon.block_store.db_wrapper.db_version == 2:
-            try:
-                blocks_bytes = await self.beacon.block_store.get_block_bytes_in_range(
-                    request.start_height, request.end_height
-                )
-            except ValueError:
-                return make_msg(ProtocolMessageTypes.reject_block_headers, reject)
-
-        else:
-            height_to_hash = self.beacon.blockchain.height_to_hash
-            header_hashes: List[bytes32] = []
-            for i in range(request.start_height, request.end_height + 1):
-                header_hash: Optional[bytes32] = height_to_hash(uint32(i))
-                if header_hash is None:
-                    return make_msg(ProtocolMessageTypes.reject_header_blocks, reject)
-                header_hashes.append(header_hash)
-
-            blocks_bytes = await self.beacon.block_store.get_block_bytes_by_hash(header_hashes)
-        if len(blocks_bytes) != (request.end_height - request.start_height + 1):  # +1 because interval is inclusive
-            return make_msg(ProtocolMessageTypes.reject_block_headers, reject)
-        return_filter = request.return_filter
-        header_blocks_bytes: List[bytes] = [header_block_from_block(memoryview(b), return_filter) for b in blocks_bytes]
-
-        # we're building the RespondHeaderBlocks manually to avoid cost of
-        # dynamic serialization
-        # ---
-        # we start building RespondBlockHeaders response (start_height, end_height)
-        # and then need to define size of list object
-        respond_header_blocks_manually_streamed: bytes = (
-            bytes(uint32(request.start_height))
-            + bytes(uint32(request.end_height))
-            + len(header_blocks_bytes).to_bytes(4, "big", signed=False)
-        )
-        # and now stream the whole list in bytes
-        respond_header_blocks_manually_streamed += b"".join(header_blocks_bytes)
-        return make_msg(ProtocolMessageTypes.respond_block_headers, respond_header_blocks_manually_streamed)
-
-    @api_request()
-    async def request_header_blocks(self, request: wallet_protocol.RequestHeaderBlocks) -> Optional[Message]:
-        """DEPRECATED: please use RequestBlockHeaders"""
-        if (
-            request.end_height < request.start_height
-            or request.end_height - request.start_height > self.beacon.constants.MAX_BLOCK_COUNT_PER_REQUESTS
-        ):
-            return None
-        height_to_hash = self.beacon.blockchain.height_to_hash
-        header_hashes: List[bytes32] = []
-        for i in range(request.start_height, request.end_height + 1):
-            header_hash: Optional[bytes32] = height_to_hash(uint32(i))
-            if header_hash is None:
-                reject = RejectHeaderBlocks(request.start_height, request.end_height)
-                msg = make_msg(ProtocolMessageTypes.reject_header_blocks, reject)
-                return msg
-            header_hashes.append(header_hash)
-
-        blocks: List[FullBlock] = await self.beacon.block_store.get_blocks_by_hash(header_hashes)
-        header_blocks = []
-        for block in blocks:
-            added_coins_records_coroutine = self.beacon.coin_store.get_coins_added_at_height(block.height)
-            removed_coins_records_coroutine = self.beacon.coin_store.get_coins_removed_at_height(block.height)
-            added_coins_records, removed_coins_records = await asyncio.gather(
-                added_coins_records_coroutine, removed_coins_records_coroutine
-            )
-            added_coins = [record.coin for record in added_coins_records if not record.coinbase]
-            removal_names = [record.coin.name() for record in removed_coins_records]
-            header_block = get_block_header(block, added_coins, removal_names)
-            header_blocks.append(header_block)
-
-        msg = make_msg(
-            ProtocolMessageTypes.respond_header_blocks,
-            wallet_protocol.RespondHeaderBlocks(request.start_height, request.end_height, header_blocks),
-        )
-        return msg
-
-    @api_request()
     async def respond_compact_proof_of_time(self, request: timelord_protocol.RespondCompactProofOfTime) -> None:
         if self.beacon.sync_store.get_sync_mode():
             return None
@@ -1411,7 +804,7 @@ class BeaconAPI:
 
     @api_request(peer_required=True, bytes_required=True, execute_task=True)
     async def new_compact_vdf(
-        self, request: beacon_protocol.NewCompactVDF, peer: WSChiaConnection, request_bytes: bytes = b""
+        self, request: beacon_protocol.NewCompactVDF, peer: WSBpxConnection, request_bytes: bytes = b""
     ) -> None:
         if self.beacon.sync_store.get_sync_mode():
             return None
@@ -1437,178 +830,15 @@ class BeaconAPI:
         return None
 
     @api_request(peer_required=True, reply_types=[ProtocolMessageTypes.respond_compact_vdf])
-    async def request_compact_vdf(self, request: beacon_protocol.RequestCompactVDF, peer: WSChiaConnection) -> None:
+    async def request_compact_vdf(self, request: beacon_protocol.RequestCompactVDF, peer: WSBpxConnection) -> None:
         if self.beacon.sync_store.get_sync_mode():
             return None
         await self.beacon.request_compact_vdf(request, peer)
         return None
 
     @api_request(peer_required=True)
-    async def respond_compact_vdf(self, request: beacon_protocol.RespondCompactVDF, peer: WSChiaConnection) -> None:
+    async def respond_compact_vdf(self, request: beacon_protocol.RespondCompactVDF, peer: WSBpxConnection) -> None:
         if self.beacon.sync_store.get_sync_mode():
             return None
         await self.beacon.add_compact_vdf(request, peer)
         return None
-
-    @api_request(peer_required=True)
-    async def register_interest_in_puzzle_hash(
-        self, request: wallet_protocol.RegisterForPhUpdates, peer: WSChiaConnection
-    ) -> Message:
-        trusted = self.is_trusted(peer)
-        if trusted:
-            max_subscriptions = self.beacon.config.get("trusted_max_subscribe_items", 2000000)
-            max_items = self.beacon.config.get("trusted_max_subscribe_response_items", 500000)
-        else:
-            max_subscriptions = self.beacon.config.get("max_subscribe_items", 200000)
-            max_items = self.beacon.config.get("max_subscribe_response_items", 100000)
-
-        # the returned puzzle hashes are the ones we ended up subscribing to.
-        # It will have filtered duplicates and ones exceeding the subscription
-        # limit.
-        puzzle_hashes = self.beacon.subscriptions.add_ph_subscriptions(
-            peer.peer_node_id, request.puzzle_hashes, max_subscriptions
-        )
-
-        start_time = time.monotonic()
-
-        # Note that coin state updates may arrive out-of-order on the client side.
-        # We add the subscription before we're done collecting all the coin
-        # state that goes into the response. CoinState updates may be sent
-        # before we send the response
-
-        # Send all coins with requested puzzle hash that have been created after the specified height
-        states: List[CoinState] = await self.beacon.coin_store.get_coin_states_by_puzzle_hashes(
-            include_spent_coins=True, puzzle_hashes=puzzle_hashes, min_height=request.min_height, max_items=max_items
-        )
-        max_items -= len(states)
-
-        hint_coin_ids: Set[bytes32] = set()
-        if max_items > 0:
-            for puzzle_hash in puzzle_hashes:
-                ph_hint_coins = await self.beacon.hint_store.get_coin_ids(puzzle_hash, max_items=max_items)
-                hint_coin_ids.update(ph_hint_coins)
-                max_items -= len(ph_hint_coins)
-                if max_items <= 0:
-                    break
-
-        hint_states: List[CoinState] = []
-        if len(hint_coin_ids) > 0:
-            hint_states = await self.beacon.coin_store.get_coin_states_by_ids(
-                include_spent_coins=True,
-                coin_ids=list(hint_coin_ids),
-                min_height=request.min_height,
-                max_items=len(hint_coin_ids),
-            )
-            states.extend(hint_states)
-
-        end_time = time.monotonic()
-
-        truncated = max_items <= 0
-
-        if truncated or end_time - start_time > 5:
-            self.log.log(
-                logging.WARNING if trusted and truncated else logging.INFO,
-                "RegisterForPhUpdates resulted in %d coin states. "
-                "Request had %d (unique) puzzle hashes and matched %d hints. %s"
-                "The request took %0.2fs",
-                len(states),
-                len(puzzle_hashes),
-                len(hint_states),
-                "The response was truncated. " if truncated else "",
-                end_time - start_time,
-            )
-
-        response = wallet_protocol.RespondToPhUpdates(request.puzzle_hashes, request.min_height, states)
-        msg = make_msg(ProtocolMessageTypes.respond_to_ph_update, response)
-        return msg
-
-    @api_request(peer_required=True)
-    async def register_interest_in_coin(
-        self, request: wallet_protocol.RegisterForCoinUpdates, peer: WSChiaConnection
-    ) -> Message:
-        if self.is_trusted(peer):
-            max_subscriptions = self.beacon.config.get("trusted_max_subscribe_items", 2000000)
-            max_items = self.beacon.config.get("trusted_max_subscribe_response_items", 500000)
-        else:
-            max_subscriptions = self.beacon.config.get("max_subscribe_items", 200000)
-            max_items = self.beacon.config.get("max_subscribe_response_items", 100000)
-
-        # TODO: apparently we have tests that expect to receive a
-        # RespondToCoinUpdates even when subscribing to the same coin multiple
-        # times, so we can't optimize away such DB lookups (yet)
-        self.beacon.subscriptions.add_coin_subscriptions(peer.peer_node_id, request.coin_ids, max_subscriptions)
-
-        states: List[CoinState] = await self.beacon.coin_store.get_coin_states_by_ids(
-            include_spent_coins=True, coin_ids=request.coin_ids, min_height=request.min_height, max_items=max_items
-        )
-
-        response = wallet_protocol.RespondToCoinUpdates(request.coin_ids, request.min_height, states)
-        msg = make_msg(ProtocolMessageTypes.respond_to_coin_update, response)
-        return msg
-
-    @api_request()
-    async def request_children(self, request: wallet_protocol.RequestChildren) -> Optional[Message]:
-        coin_records: List[CoinRecord] = await self.beacon.coin_store.get_coin_records_by_parent_ids(
-            True, [request.coin_name]
-        )
-        states = [record.coin_state for record in coin_records]
-        response = wallet_protocol.RespondChildren(states)
-        msg = make_msg(ProtocolMessageTypes.respond_children, response)
-        return msg
-
-    @api_request()
-    async def request_ses_hashes(self, request: wallet_protocol.RequestSESInfo) -> Message:
-        """Returns the start and end height of a sub-epoch for the height specified in request"""
-
-        ses_height = self.beacon.blockchain.get_ses_heights()
-        start_height = request.start_height
-        end_height = request.end_height
-        ses_hash_heights = []
-        ses_reward_hashes = []
-
-        for idx, ses_start_height in enumerate(ses_height):
-            if idx == len(ses_height) - 1:
-                break
-
-            next_ses_height = ses_height[idx + 1]
-            # start_ses_hash
-            if ses_start_height <= start_height < next_ses_height:
-                ses_hash_heights.append([ses_start_height, next_ses_height])
-                ses: SubEpochSummary = self.beacon.blockchain.get_ses(ses_start_height)
-                ses_reward_hashes.append(ses.reward_chain_hash)
-                if ses_start_height < end_height < next_ses_height:
-                    break
-                else:
-                    if idx == len(ses_height) - 2:
-                        break
-                    # else add extra ses as request start <-> end spans two ses
-                    next_next_height = ses_height[idx + 2]
-                    ses_hash_heights.append([next_ses_height, next_next_height])
-                    nex_ses: SubEpochSummary = self.beacon.blockchain.get_ses(next_ses_height)
-                    ses_reward_hashes.append(nex_ses.reward_chain_hash)
-                    break
-
-        response = RespondSESInfo(ses_reward_hashes, ses_hash_heights)
-        msg = make_msg(ProtocolMessageTypes.respond_ses_hashes, response)
-        return msg
-
-    @api_request(peer_required=True, reply_types=[ProtocolMessageTypes.respond_fee_estimates])
-    async def request_fee_estimates(self, request: wallet_protocol.RequestFeeEstimates) -> Message:
-        def get_fee_estimates(est: FeeEstimatorInterface, req_times: List[uint64]) -> List[FeeEstimate]:
-            now = datetime.now(timezone.utc)
-            utc_time = now.replace(tzinfo=timezone.utc)
-            utc_now = int(utc_time.timestamp())
-            deltas = [max(0, req_ts - utc_now) for req_ts in req_times]
-            fee_rates = [est.estimate_fee_rate(time_offset_seconds=d) for d in deltas]
-            v1_fee_rates = [fee_rate_v2_to_v1(est) for est in fee_rates]
-            return [FeeEstimate(None, req_ts, fee_rate) for req_ts, fee_rate in zip(req_times, v1_fee_rates)]
-
-        fee_estimates: List[FeeEstimate] = get_fee_estimates(
-            self.beacon.mempool_manager.mempool.fee_estimator, request.time_targets
-        )
-        response = RespondFeeEstimates(FeeEstimateGroup(error=None, estimates=fee_estimates))
-        msg = make_msg(ProtocolMessageTypes.respond_fee_estimates, response)
-        return msg
-
-    def is_trusted(self, peer: WSChiaConnection) -> bool:
-        return self.server.is_trusted_peer(peer, self.beacon.config.get("trusted_peers", {}))
