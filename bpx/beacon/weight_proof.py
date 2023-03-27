@@ -50,7 +50,7 @@ log = logging.getLogger(__name__)
 
 
 def _create_shutdown_file() -> IO:
-    return tempfile.NamedTemporaryFile(prefix="chia_beacon_weight_proof_handler_executor_shutdown_trigger")
+    return tempfile.NamedTemporaryFile(prefix="bpx_beacon_weight_proof_handler_executor_shutdown_trigger")
 
 
 class WeightProofHandler:
@@ -190,7 +190,7 @@ class WeightProofHandler:
                 min_height = ses_height - 1
                 break
         log.debug(f"start {min_height} end {tip_height}")
-        headers = await self.blockchain.get_header_blocks_in_range(min_height, tip_height, tx_filter=False)
+        headers = await self.blockchain.get_header_blocks_in_range(min_height, tip_height)
         blocks = await self.blockchain.get_block_records_in_range(min_height, tip_height)
         ses_count = 0
         curr_height = tip_height
@@ -295,7 +295,7 @@ class WeightProofHandler:
             start_height, ses_block.height + self.constants.MAX_SUB_SLOT_BLOCKS
         )
         header_blocks = await self.blockchain.get_header_blocks_in_range(
-            start_height, ses_block.height + self.constants.MAX_SUB_SLOT_BLOCKS, tx_filter=False
+            start_height, ses_block.height + self.constants.MAX_SUB_SLOT_BLOCKS
         )
         curr: Optional[HeaderBlock] = header_blocks[se_start.header_hash]
         height = se_start.height
@@ -1218,7 +1218,7 @@ def validate_recent_blocks(
         if summary.new_difficulty is not None:
             diff = summary.new_difficulty
 
-    ses_blocks, sub_slots, transaction_blocks = 0, 0, 0
+    ses_blocks, sub_slots = 0, 0
     challenge, prev_challenge = recent_chain.recent_chain_data[0].reward_chain_block.pos_ss_cc_challenge_hash, None
     tip_height = recent_chain.recent_chain_data[-1].height
     prev_block_record: Optional[BlockRecord] = None
@@ -1253,7 +1253,7 @@ def validate_recent_blocks(
                 adjusted = True
             deficit = get_deficit(constants, deficit, prev_block_record, overflow, len(block.finished_sub_slots))
             log.debug(f"wp, validate block {block.height}")
-            if sub_slots > 2 and transaction_blocks > 11 and (tip_height - block.height < last_blocks_to_validate):
+            if sub_slots > 2 and (tip_height - block.height < last_blocks_to_validate):
                 caluclated_required_iters, error = validate_finished_header_block(
                     constants, sub_blocks, block, False, diff, ssi, ses_blocks > 2
                 )
@@ -1278,8 +1278,6 @@ def validate_recent_blocks(
 
         if block.first_in_sub_slot:
             sub_slots += 1
-        if block.is_transaction_block:
-            transaction_blocks += 1
         if ses:
             ses_blocks += 1
         prev_block_record = block_record

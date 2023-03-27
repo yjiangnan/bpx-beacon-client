@@ -655,7 +655,7 @@ class BeaconAPI:
                 required_iters,
             )
 
-            # The block's timestamp must be greater than the previous transaction block's timestamp
+            # The block's timestamp must be greater than the previous block's timestamp
             timestamp = uint64(int(time.time()))
             curr: Optional[BlockRecord] = prev_b
             if curr is not None:
