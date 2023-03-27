@@ -221,7 +221,7 @@ class RpcServer:
                     "get_connections",
                     data,
                     self.service_name,
-                    "wallet_ui",
+                    "ui",
                 )
                 payloads.append(payload)
         for payload in payloads:

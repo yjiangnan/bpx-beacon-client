@@ -112,7 +112,7 @@ class FarmerRpcApi:
                     "new_signage_point",
                     data,
                     self.service_name,
-                    "wallet_ui",
+                    "ui",
                 )
             )
             payloads.append(
@@ -129,7 +129,7 @@ class FarmerRpcApi:
                     "new_farming_info",
                     change_data,
                     self.service_name,
-                    "wallet_ui",
+                    "ui",
                 )
             )
             payloads.append(
@@ -146,7 +146,7 @@ class FarmerRpcApi:
                     "harvester_update",
                     change_data,
                     self.service_name,
-                    "wallet_ui",
+                    "ui",
                 )
             )
             payloads.append(
@@ -163,7 +163,7 @@ class FarmerRpcApi:
                     "harvester_removed",
                     change_data,
                     self.service_name,
-                    "wallet_ui",
+                    "ui",
                 )
             )
             payloads.append(

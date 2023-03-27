@@ -53,7 +53,7 @@ class BeaconRpcApi:
                     "get_blockchain_state",
                     data,
                     self.service_name,
-                    "wallet_ui",
+                    "ui",
                 )
             )
             payloads.append(

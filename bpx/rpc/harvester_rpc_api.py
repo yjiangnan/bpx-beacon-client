@@ -30,7 +30,7 @@ class HarvesterRpcApi:
 
         if change == "plots":
             data = await self.get_plots({})
-            payload = create_payload_dict("get_plots", data, self.service_name, "wallet_ui")
+            payload = create_payload_dict("get_plots", data, self.service_name, "ui")
             payloads.append(payload)
 
         if change == "farming_info":

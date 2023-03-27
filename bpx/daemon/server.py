@@ -435,7 +435,7 @@ class WebSocketServer:
                 Keychain.set_cached_master_passphrase(key)
                 success = True
                 # Inform the GUI of keyring status changes
-                self.keyring_status_changed(await self.keyring_status(), "wallet_ui")
+                self.keyring_status_changed(await self.keyring_status(), "ui")
             else:
                 error = "bad passphrase"
         except Exception as e:
@@ -511,7 +511,7 @@ class WebSocketServer:
         else:
             success = True
             # Inform the GUI of keyring status changes
-            self.keyring_status_changed(await self.keyring_status(), "wallet_ui")
+            self.keyring_status_changed(await self.keyring_status(), "ui")
 
         response: Dict[str, Any] = {"success": success, "error": error}
         return response
@@ -538,7 +538,7 @@ class WebSocketServer:
         else:
             success = True
             # Inform the GUI of keyring status changes
-            self.keyring_status_changed(await self.keyring_status(), "wallet_ui")
+            self.keyring_status_changed(await self.keyring_status(), "ui")
 
         response: Dict[str, Any] = {"success": success, "error": error}
         return response
@@ -561,7 +561,7 @@ class WebSocketServer:
         Attempt to communicate with the GUI to inform it of any keyring status changes
         (e.g. keyring becomes unlocked)
         """
-        websockets = self.connections.get("wallet_ui", None)
+        websockets = self.connections.get("ui", None)
 
         if websockets is None:
             return None
@@ -628,7 +628,7 @@ class WebSocketServer:
         if message is None:
             return None
 
-        response = create_payload("state_changed", message, service, "wallet_ui")
+        response = create_payload("state_changed", message, service, "ui")
 
         for websocket in websockets.copy():
             try:
