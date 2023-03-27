@@ -102,7 +102,7 @@ def configure(
                 testnet_introducer = "introducer.testnet.bpxchain.cc"
                 testnet_dns_introducer = "dns-introducer.testnet.bpxchain.cc"
                 bootstrap_peers = ["node.testnet.bpxchain.cc"]
-                testnet = "testnet10"
+                testnet = "testnet"
                 config["beacon"]["port"] = int(testnet_port)
                 if config["beacon"]["introducer_peer"] is None:
                     config["beacon"]["introducer_peer"] = {}

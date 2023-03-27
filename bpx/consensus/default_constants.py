@@ -28,7 +28,7 @@ default_kwargs = {
     "MAX_FUTURE_TIME": 5 * 60,  # The next block can have a timestamp of at most these many seconds in the future
     "NUMBER_OF_TIMESTAMPS": 11,  # Than the average of the last NUMBER_OF_TIMESTAMPS blocks
     # Used as the initial cc rc challenges, as well as first block back pointers, and first SES back pointer
-    # We override this value based on the chain being run (testnet0, testnet1, mainnet, etc)
+    # We override this value based on the chain being run (testnet, mainnet, etc)
     # Default used for tests is std_hash(b'')
     "GENESIS_CHALLENGE": bytes.fromhex("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
     "GENESIS_PRE_FARM_POOL_PUZZLE_HASH": bytes.fromhex(
