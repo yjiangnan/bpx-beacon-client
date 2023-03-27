@@ -46,7 +46,6 @@ Remove-Item packages\api -Recurse -Force
 Remove-Item packages\api-react -Recurse -Force
 Remove-Item packages\core -Recurse -Force
 Remove-Item packages\icons -Recurse -Force
-Remove-Item packages\wallets -Recurse -Force
 
 # Remove unused fat npm modules from the gui package
 Set-Location -Path ".\packages\gui\node_modules" -PassThru

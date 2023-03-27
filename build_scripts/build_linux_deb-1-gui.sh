@@ -35,7 +35,6 @@ rm -rf packages/api
 rm -rf packages/api-react
 rm -rf packages/core
 rm -rf packages/icons
-rm -rf packages/wallets
 
 # Remove unused fat npm modules from the gui package
 cd ./packages/gui/node_modules || exit 1

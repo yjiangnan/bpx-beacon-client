@@ -23,7 +23,6 @@ from bpx.cmds.rpc import rpc_cmd
 from bpx.cmds.show import show_cmd
 from bpx.cmds.start import start_cmd
 from bpx.cmds.stop import stop_cmd
-from bpx.cmds.wallet import wallet_cmd
 from bpx.util.default_root import DEFAULT_KEYS_ROOT_PATH, DEFAULT_ROOT_PATH
 from bpx.util.errors import KeychainCurrentPassphraseIsInvalid
 from bpx.util.keychain import Keychain, set_keys_root_path

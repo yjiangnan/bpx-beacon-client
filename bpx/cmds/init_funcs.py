@@ -36,8 +36,6 @@ from bpx.util.derive_keys import (
     _derive_path,
     _derive_path_unhardened,
     master_sk_to_pool_sk,
-    master_sk_to_wallet_sk_intermediate,
-    master_sk_to_wallet_sk_unhardened_intermediate,
 )
 
 

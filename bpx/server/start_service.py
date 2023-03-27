@@ -88,9 +88,6 @@ class Service(Generic[_T_RpcServiceProtocol]):
         bpx_ca_crt, bpx_ca_key = bpx_ssl_ca_paths(root_path, self.config)
         inbound_rlp = self.config.get("inbound_rate_limit_percent")
         outbound_rlp = self.config.get("outbound_rate_limit_percent")
-        if node_type == NodeType.WALLET:
-            inbound_rlp = self.service_config.get("inbound_rate_limit_percent", inbound_rlp)
-            outbound_rlp = 60
         capabilities_to_use: List[Tuple[uint16, str]] = capabilities
         if override_capabilities is not None:
             capabilities_to_use = override_capabilities

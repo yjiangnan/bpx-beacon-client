@@ -143,7 +143,7 @@ def get_private_key_user(user: str, index: int) -> str:
     """
     Returns the keychain user string for a key index.
     """
-    return f"wallet-{user}-{index}"
+    return f"user-{user}-{index}"
 
 
 @final
