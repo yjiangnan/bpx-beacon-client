@@ -99,9 +99,9 @@ def configure(
             if testnet == "true" or testnet == "t":
                 print("Setting Testnet")
                 testnet_port = "58444"
-                testnet_introducer = "introducer-testnet10.chia.net"
-                testnet_dns_introducer = "dns-introducer-testnet10.chia.net"
-                bootstrap_peers = ["testnet10-node.chia.net"]
+                testnet_introducer = "introducer.testnet.bpxchain.cc"
+                testnet_dns_introducer = "dns-introducer.testnet.bpxchain.cc"
+                bootstrap_peers = ["node.testnet.bpxchain.cc"]
                 testnet = "testnet10"
                 config["beacon"]["port"] = int(testnet_port)
                 if config["beacon"]["introducer_peer"] is None:
@@ -134,9 +134,9 @@ def configure(
             elif testnet == "false" or testnet == "f":
                 print("Setting Mainnet")
                 mainnet_port = "8444"
-                mainnet_introducer = "introducer.chia.net"
-                mainnet_dns_introducer = "dns-introducer.chia.net"
-                bootstrap_peers = ["node.chia.net"]
+                mainnet_introducer = "introducer.mainnet.bpxchain.cc"
+                mainnet_dns_introducer = "dns-introducer.mainnet.bpxchain.cc"
+                bootstrap_peers = ["node.mainnet.bpxchain.cc"]
                 net = "mainnet"
                 config["beacon"]["port"] = int(mainnet_port)
                 config["beacon"]["introducer_peer"]["port"] = int(mainnet_port)
