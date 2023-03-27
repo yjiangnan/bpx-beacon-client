@@ -98,7 +98,6 @@ async def print_block_from_hash(
     from bpx.consensus.block_record import BlockRecord
     from bpx.types.blockchain_format.sized_bytes import bytes32
     from bpx.types.full_block import FullBlock
-    from bpx.util.bech32m import encode_puzzle_hash
     from bpx.util.byte_types import hexstr_to_bytes
 
     block: Optional[BlockRecord] = await node_client.get_block_record(hexstr_to_bytes(block_by_header_hash))

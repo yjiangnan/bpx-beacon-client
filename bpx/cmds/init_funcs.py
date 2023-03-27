@@ -12,7 +12,6 @@ from bpx import __version__
 from bpx.cmds.configure import configure
 from bpx.consensus.coinbase import create_puzzlehash_for_pk
 from bpx.ssl.create_ssl import create_all_ssl
-from bpx.util.bech32m import encode_puzzle_hash
 from bpx.util.config import (
     create_default_bpx_config,
     initial_config_file,
