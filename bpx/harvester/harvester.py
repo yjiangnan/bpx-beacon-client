@@ -89,7 +89,7 @@ class Harvester:
     def get_connections(self, request_node_type: Optional[NodeType]) -> List[Dict[str, Any]]:
         return default_get_connections(server=self.server, request_node_type=request_node_type)
 
-    async def on_connect(self, connection: WSChiaConnection) -> None:
+    async def on_connect(self, connection: WSBpxConnection) -> None:
         self.state_changed("add_connection")
 
     def _set_state_changed_callback(self, callback: StateChangedProtocol) -> None:

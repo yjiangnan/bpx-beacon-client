@@ -32,7 +32,7 @@ class Crawler:
     sync_store: Any
     connection: aiosqlite.Connection
     config: Dict
-    _server: Optional[ChiaServer]
+    _server: Optional[BpxServer]
     crawl_store: Optional[CrawlStore]
     log: logging.Logger
     constants: ConsensusConstants

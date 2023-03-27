@@ -10,7 +10,7 @@ from bpx.util.ints import uint32
 async def check_fork_next_block(
     blockchain: BlockchainInterface,
     fork_point_height: uint32,
-    peers_with_peak: List[WSChiaConnection],
+    peers_with_peak: List[WSBpxConnection],
     check_block_future: Callable[[WSBpxConnection, uint32, BlockchainInterface], Awaitable[bool]],
 ) -> uint32:
     our_peak_height = blockchain.get_peak_height()

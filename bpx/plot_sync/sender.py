@@ -25,7 +25,7 @@ from bpx.protocols.harvester_protocol import (
 )
 from bpx.protocols.protocol_message_types import ProtocolMessageTypes
 from bpx.server.outbound_message import NodeType, make_msg
-from bpx.server.ws_connection import WSChiaConnection
+from bpx.server.ws_connection import WSBpxConnection
 from bpx.util.generator_tools import list_to_batches
 from bpx.util.ints import int16, uint32, uint64
 
@@ -90,7 +90,7 @@ class ExpectedResponse:
 
 class Sender:
     _plot_manager: PlotManager
-    _connection: Optional[WSChiaConnection]
+    _connection: Optional[WSBpxConnection]
     _sync_id: uint64
     _next_message_id: uint64
     _messages: List[MessageGenerator[PayloadType]]
@@ -133,7 +133,7 @@ class Sender:
         self._reset()
         self._stop_requested = False
 
-    def set_connection(self, connection: WSChiaConnection) -> None:
+    def set_connection(self, connection: WSBpxConnection) -> None:
         assert connection.connection_type is not None
         if connection.connection_type != NodeType.FARMER:
             raise InvalidConnectionTypeError(connection.connection_type, NodeType.HARVESTER)

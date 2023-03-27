@@ -9,7 +9,7 @@ from bpx.rpc.rpc_server import StateChangedProtocol, default_get_connections
 from bpx.server.introducer_peers import VettedPeer
 from bpx.server.outbound_message import NodeType
 from bpx.server.server import BpxServer
-from bpx.server.ws_connection import WSChiaConnection
+from bpx.server.ws_connection import WSBpxConnection
 from bpx.util.ints import uint64
 
 

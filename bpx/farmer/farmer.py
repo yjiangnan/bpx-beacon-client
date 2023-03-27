@@ -19,7 +19,7 @@ from bpx.protocols import farmer_protocol, harvester_protocol
 from bpx.protocols.protocol_message_types import ProtocolMessageTypes
 from bpx.rpc.rpc_server import StateChangedProtocol, default_get_connections
 from bpx.server.outbound_message import NodeType, make_msg
-from bpx.server.server import ChiaServer, ssl_context_for_root
+from bpx.server.server import BpxServer, ssl_context_for_root
 from bpx.server.ws_connection import WSBpxConnection
 from bpx.ssl.create_ssl import get_mozilla_ca_crt
 from bpx.types.blockchain_format.proof_of_space import ProofOfSpace
@@ -210,14 +210,14 @@ class Farmer:
             self.plot_sync_receivers[peer.peer_node_id] = Receiver(peer, self.plot_sync_callback)
             self.harvester_handshake_task = asyncio.create_task(handshake_task())
 
-    def set_server(self, server: ChiaServer) -> None:
+    def set_server(self, server: BpxServer) -> None:
         self.server = server
 
     def state_changed(self, change: str, data: Dict[str, Any]) -> None:
         if self.state_changed_callback is not None:
             self.state_changed_callback(change, data)
 
-    def on_disconnect(self, connection: WSChiaConnection) -> None:
+    def on_disconnect(self, connection: WSBpxConnection) -> None:
         self.log.info(f"peer disconnected {connection.get_peer_logging()}")
         self.state_changed("close_connection", {})
         if connection.connection_type is NodeType.HARVESTER:

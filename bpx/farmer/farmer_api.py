@@ -22,7 +22,7 @@ from bpx.protocols.harvester_protocol import (
 from bpx.protocols.protocol_message_types import ProtocolMessageTypes
 from bpx.server.outbound_message import NodeType, make_msg
 from bpx.server.server import ssl_context_for_root
-from bpx.server.ws_connection import WSChiaConnection
+from bpx.server.ws_connection import WSBpxConnection
 from bpx.ssl.create_ssl import get_mozilla_ca_crt
 from bpx.types.blockchain_format.pool_target import PoolTarget
 from bpx.types.blockchain_format.proof_of_space import (
@@ -51,7 +51,7 @@ class FarmerAPI:
         self.farmer = farmer
 
     @api_request(peer_required=True)
-    async def new_proof_of_space(self, new_proof_of_space: harvester_protocol.NewProofOfSpace, peer: WSChiaConnection):
+    async def new_proof_of_space(self, new_proof_of_space: harvester_protocol.NewProofOfSpace, peer: WSBpxConnection):
         """
         This is a response from the harvester, for a NewChallenge. Here we check if the proof
         of space is sufficiently good, and if so, we ask for the whole proof.
