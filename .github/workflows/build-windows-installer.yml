@@ -196,5 +196,5 @@ jobs:
       run: |
         Remove-Item .\bpx-gui\packages\gui\dist -Recurse -Force
         Remove-Item .\bpx-gui\packages\gui\daemon -Recurse -Force
-        Remove-Item .\bpx-gui\Chia-win32-x64 -Recurse -Force
+        Remove-Item .\bpx-gui\BPX-win32-x64 -Recurse -Force
         Remove-Item .\bpx-gui\release-builds -Recurse -Force
