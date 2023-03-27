@@ -5,8 +5,6 @@ from dataclasses import dataclass
 from typing import Callable, List, Optional, Tuple
 
 from blspy import G1Element, G2Element
-from chia_rs import serialized_length
-from chiabip158 import PyBIP158
 
 from bpx.types.blockchain_format.coin import Coin
 from bpx.types.blockchain_format.foliage import TransactionsInfo

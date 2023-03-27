@@ -67,10 +67,6 @@ vdf_bench
 # Attest Files
 *.attest
 
-# Compiled CLVM
-main.sym
-*.recompiled
-
 # Profiling
 *.prof
 *.pstats

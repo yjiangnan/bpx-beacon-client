@@ -10,12 +10,7 @@ dependencies = [
     "anyio==3.6.2",
     "blspy==1.0.16",  # Signature library
     "chiavdf==1.0.8",  # timelord and vdf verification
-    "chiabip158==1.2",  # bip158-style wallet filters
     "chiapos==1.0.11",  # proof of space
-    "clvm==0.9.7",
-    "clvm_tools==0.4.6",  # Currying, Program.to, other conveniences
-    "chia_rs==0.2.4",
-    "clvm-tools-rs==0.1.30",  # Rust implementation of clvm_tools' compiler
     "aiohttp==3.8.4",  # HTTP server for beacon client rpc
     "aiosqlite==0.17.0",  # asyncio wrapper for sqlite, to store blocks
     "bitstring==4.0.1",  # Binary data management library

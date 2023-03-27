@@ -7,8 +7,6 @@ from typing import Callable, Dict, List, Optional, Tuple
 
 import blspy
 from blspy import G1Element, G2Element
-from chia_rs import compute_merkle_set_root
-from chiabip158 import PyBIP158
 
 from bpx.consensus.block_record import BlockRecord
 from bpx.consensus.blockchain_interface import BlockchainInterface

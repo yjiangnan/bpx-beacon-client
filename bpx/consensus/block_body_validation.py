@@ -4,8 +4,6 @@ import collections
 import logging
 from typing import Awaitable, Callable, Dict, List, Optional, Set, Tuple, Union
 
-from chiabip158 import PyBIP158
-
 from bpx.consensus.block_record import BlockRecord
 from bpx.consensus.block_root_validation import validate_block_merkle_roots
 from bpx.consensus.blockchain_interface import BlockchainInterface
