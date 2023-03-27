@@ -330,7 +330,7 @@ def bpx_init(
     try:
         # create new v2 db file
         with sqlite3.connect(db_path) as connection:
-            set_db_version(connection, 2)
+            set_db_version(connection, 1)
     except sqlite3.OperationalError:
         # db already exists, so we're good
         pass
