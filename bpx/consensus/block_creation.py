@@ -13,7 +13,6 @@ from bpx.consensus.blockchain_interface import BlockchainInterface
 from bpx.consensus.constants import ConsensusConstants
 from bpx.beacon.signage_point import SignagePoint
 from bpx.types.blockchain_format.foliage import Foliage, FoliageBlockData
-from bpx.types.blockchain_format.pool_target import PoolTarget
 from bpx.types.blockchain_format.proof_of_space import ProofOfSpace
 from bpx.types.blockchain_format.reward_chain_block import RewardChainBlock, RewardChainBlockUnfinished
 from bpx.types.blockchain_format.sized_bytes import bytes32

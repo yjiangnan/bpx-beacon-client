@@ -24,7 +24,6 @@ from bpx.server.outbound_message import NodeType, make_msg
 from bpx.server.server import ssl_context_for_root
 from bpx.server.ws_connection import WSBpxConnection
 from bpx.ssl.create_ssl import get_mozilla_ca_crt
-from bpx.types.blockchain_format.pool_target import PoolTarget
 from bpx.types.blockchain_format.proof_of_space import (
     generate_plot_public_key,
     generate_taproot_sk,

@@ -24,7 +24,6 @@ from bpx.server.outbound_message import Message, make_msg
 from bpx.server.server import BpxServer
 from bpx.server.ws_connection import WSBpxConnection
 from bpx.types.block_protocol import BlockInfo
-from bpx.types.blockchain_format.pool_target import PoolTarget
 from bpx.types.blockchain_format.proof_of_space import verify_and_get_quality_string
 from bpx.types.blockchain_format.sized_bytes import bytes32
 from bpx.types.blockchain_format.sub_epoch_summary import SubEpochSummary
@@ -555,9 +554,6 @@ class BeaconAPI:
                     return request.reward_chain_sp_signature
                 return G2Element()
 
-            def get_pool_sig(_1: PoolTarget, _2: Optional[G1Element]) -> Optional[G2Element]:
-                return request.pool_signature
-
             prev_b: Optional[BlockRecord] = peak
 
             # Finds the previous block from the signage point, ensuring that the reward chain VDF is correct
@@ -614,19 +610,6 @@ class BeaconAPI:
             except ValueError as e:
                 self.log.warning(f"Value Error: {e}")
                 return None
-            if prev_b is None:
-                pool_target = PoolTarget(
-                    self.beacon.constants.GENESIS_PRE_FARM_POOL_PUZZLE_HASH,
-                    uint32(0),
-                )
-                farmer_ph = self.beacon.constants.GENESIS_PRE_FARM_FARMER_PUZZLE_HASH
-            else:
-                farmer_ph = request.farmer_puzzle_hash
-                if request.proof_of_space.pool_contract_puzzle_hash is not None:
-                    pool_target = PoolTarget(request.proof_of_space.pool_contract_puzzle_hash, uint32(0))
-                else:
-                    assert request.pool_target is not None
-                    pool_target = request.pool_target
 
             if peak is None or peak.height <= self.beacon.constants.MAX_SUB_SLOT_BLOCKS:
                 difficulty = self.beacon.constants.DIFFICULTY_STARTING
@@ -673,10 +656,7 @@ class BeaconAPI:
                 ip_iters,
                 request.proof_of_space,
                 cc_challenge_hash,
-                farmer_ph,
-                pool_target,
                 get_plot_sig,
-                get_pool_sig,
                 sp_vdfs,
                 timestamp,
                 self.beacon.blockchain,
@@ -732,9 +712,6 @@ class BeaconAPI:
         )
 
         new_candidate = dataclasses.replace(candidate, foliage=fsb2)
-        if not self.beacon.has_valid_pool_sig(new_candidate):
-            self.log.warning("Trying to make a pre-farm block but height is not 0")
-            return None
 
         # Propagate to ourselves (which validates and does further propagations)
         try:

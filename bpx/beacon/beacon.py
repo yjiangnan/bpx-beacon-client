@@ -41,7 +41,6 @@ from bpx.server.peer_store_resolver import PeerStoreResolver
 from bpx.server.server import BpxServer
 from bpx.server.ws_connection import WSBpxConnection
 from bpx.types.blockchain_format.classgroup import ClassgroupElement
-from bpx.types.blockchain_format.pool_target import PoolTarget
 from bpx.types.blockchain_format.sized_bytes import bytes32
 from bpx.types.blockchain_format.sub_epoch_summary import SubEpochSummary
 from bpx.types.blockchain_format.vdf import CompressibleVDFField, VDFInfo, VDFProof
@@ -1072,21 +1071,6 @@ class Beacon:
             await self.weight_proof_handler.get_proof_of_weight(peak.header_hash)
             self._state_changed("block")
 
-    def has_valid_pool_sig(self, block: Union[UnfinishedBlock, FullBlock]) -> bool:
-        if (
-            block.foliage.foliage_block_data.pool_target
-            == PoolTarget(self.constants.GENESIS_PRE_FARM_POOL_PUZZLE_HASH, uint32(0))
-            and block.foliage.prev_block_hash != self.constants.GENESIS_CHALLENGE
-            and block.reward_chain_block.proof_of_space.pool_public_key is not None
-        ):
-            if not AugSchemeMPL.verify(
-                block.reward_chain_block.proof_of_space.pool_public_key,
-                bytes(block.foliage.foliage_block_data.pool_target),
-                block.foliage.foliage_block_data.pool_signature,
-            ):
-                return False
-        return True
-
     async def signage_point_post_processing(
         self,
         request: beacon_protocol.RespondSignagePoint,
@@ -1656,9 +1640,6 @@ class Beacon:
             sp_total_iters,
             difficulty,
         )
-        if not self.has_valid_pool_sig(block):
-            self.log.warning("Trying to make a pre-farm block but height is not 0")
-            return None
         try:
             await self.add_block(block, raise_on_disconnected=True)
         except Exception as e:
