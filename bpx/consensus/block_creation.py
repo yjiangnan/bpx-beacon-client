@@ -36,7 +36,6 @@ def create_foliage(
     total_iters_sp: uint128,
     timestamp: uint64,
     get_plot_signature: Callable[[bytes32, G1Element], G2Element],
-    get_pool_signature: Callable[[PoolTarget, Optional[G1Element]], Optional[G2Element]],
     seed: bytes = b"",
 ) -> Foliage:
     """
@@ -51,7 +50,6 @@ def create_foliage(
         total_iters_sp: total iters at the signage point
         timestamp: timestamp to put into the foliage block
         get_plot_signature: retrieve the signature corresponding to the plot public key
-        get_pool_signature: retrieve the signature corresponding to the pool public key
         seed: seed to randomize block
 
     """
@@ -63,10 +61,6 @@ def create_foliage(
         height: uint32 = uint32(0)
     else:
         height = uint32(prev_block.height + 1)
-
-    pool_target_signature: Optional[G2Element] = get_pool_signature(
-        pool_target, reward_block_unfinished.proof_of_space.pool_public_key
-    )
 
     foliage_data = FoliageBlockData(
         reward_block_unfinished.get_hash(),
@@ -105,7 +99,6 @@ def create_unfinished_block(
     proof_of_space: ProofOfSpace,
     slot_cc_challenge: bytes32,
     get_plot_signature: Callable[[bytes32, G1Element], G2Element],
-    get_pool_signature: Callable[[PoolTarget, Optional[G1Element]], Optional[G2Element]],
     signage_point: SignagePoint,
     timestamp: uint64,
     blocks: BlockchainInterface,
@@ -127,7 +120,6 @@ def create_unfinished_block(
         proof_of_space: proof of space of the block to create
         slot_cc_challenge: challenge hash at the sp sub-slot
         get_plot_signature: function that returns signature corresponding to plot public key
-        get_pool_signature: function that returns signature corresponding to pool public key
         signage_point: signage point information (VDFs)
         timestamp: timestamp to add to the foliage block, if created
         seed: seed to randomize chain
@@ -198,7 +190,6 @@ def create_unfinished_block(
         total_iters_sp,
         timestamp,
         get_plot_signature,
-        get_pool_signature,
         seed,
     )
     return UnfinishedBlock(
