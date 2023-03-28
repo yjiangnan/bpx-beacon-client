@@ -98,7 +98,7 @@ def configure(
         if testnet:
             if testnet == "true" or testnet == "t":
                 print("Setting Testnet")
-                testnet_port = "58444"
+                testnet_port = "6201"
                 testnet_introducer = "introducer.testnet.bpxchain.cc"
                 testnet_dns_introducer = "dns-introducer.testnet.bpxchain.cc"
                 bootstrap_peers = ["node.testnet.bpxchain.cc"]
@@ -133,7 +133,7 @@ def configure(
 
             elif testnet == "false" or testnet == "f":
                 print("Setting Mainnet")
-                mainnet_port = "8444"
+                mainnet_port = "6201"
                 mainnet_introducer = "introducer.mainnet.bpxchain.cc"
                 mainnet_dns_introducer = "dns-introducer.mainnet.bpxchain.cc"
                 bootstrap_peers = ["node.mainnet.bpxchain.cc"]

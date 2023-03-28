@@ -4,7 +4,7 @@ min_mainnet_k_size: 32
 ping_interval: 120
 self_hostname: &self_hostname "localhost"
 prefer_ipv6: False
-daemon_port: 55400
+daemon_port: 8200
 daemon_max_message_size: 50000000 # maximum size of RPC message in bytes
 daemon_heartbeat: 300 # sets the heartbeat for ping/ping interval and timeouts
 inbound_rate_limit_percent: 100
@@ -22,9 +22,9 @@ network_overrides: &network_overrides
       GENESIS_PRE_FARM_POOL_PUZZLE_HASH: d23da14695a188ae5708dd152263c4db883eb27edeb936178d4d988b8f3ce5fc
   config:
     mainnet:
-      default_beacon_port: 8444
+      default_beacon_port: 6201
     testnet:
-      default_beacon_port: 58444
+      default_beacon_port: 6201
 
 selected_network: &selected_network "mainnet"
 
@@ -58,9 +58,9 @@ logging: &logging
 
 seeder:
   # The fake beacon client used for crawling will run on this port.
-  port: 8444
-  # Most beacon clients on the network run on this port. (i.e. 8444 for mainnet, 58444 for testnet).
-  other_peers_port: 8444
+  port: 6201
+  # Most beacon clients on the network run on this port.
+  other_peers_port: 6201
   # This will override the default beacon.peer_connect_timeout for the crawler beacon client
   peer_connect_timeout: 2
   # Path to crawler DB. Defaults to $BPX_ROOT/crawler.db
@@ -88,21 +88,21 @@ seeder:
   # Crawler is its own standalone service within the seeder component
   crawler:
     start_rpc_server: True
-    rpc_port: 8561
+    rpc_port: 8206
     ssl:
       private_crt: "config/ssl/crawler/private_crawler.crt"
       private_key: "config/ssl/crawler/private_crawler.key"
 
 harvester:
   # The harvester server (if run) will run on this port
-  port: 8448
+  port: 6205
   farmer_peer:
     host: *self_hostname
-    port: 8447
+    port: 6204
 
   # If True, starts an RPC server at the following port
   start_rpc_server: True
-  rpc_port: 8560
+  rpc_port: 8205
   num_threads: 30
   plots_refresh_parameter:
     interval_seconds: 120 # The interval in seconds to refresh the plot file manager
@@ -136,20 +136,20 @@ harvester:
 
 farmer:
   # The farmer server (if run) will run on this port
-  port: 8447
+  port: 6204
   # The farmer will attempt to connect to this beacon client and harvester
   beacon_peer:
     host: *self_hostname
-    port: 8444
+    port: 6201
   harvester_peer:
     host: *self_hostname
-    port: 8448
+    port: 6205
 
   pool_public_keys: []
 
   # If True, starts an RPC server at the following port
   start_rpc_server: True
-  rpc_port: 8559
+  rpc_port: 8204
 
   logging: *logging
   network_overrides: *network_overrides
@@ -173,7 +173,7 @@ timelord_launcher:
 
 timelord:
   # The timelord server (if run) will run on this port
-  port: 8446
+  port: 6203
   # Provides a list of VDF clients expected to connect to this timelord.
   # For each client, an IP is provided, together with the estimated iterations per second.
   vdf_clients:
@@ -185,7 +185,7 @@ timelord:
       - 150000
   beacon_peer:
       host: *self_hostname
-      port: 8444
+      port: 6201
   # Maximum number of seconds allowed for a client to reconnect to the server.
   max_connection_time: 60
   # The ip and port where the TCP clients will connect.
@@ -221,7 +221,7 @@ timelord:
   multiprocessing_start_method: default
 
   start_rpc_server: True
-  rpc_port: 8557
+  rpc_port: 8203
 
   ssl:
     private_crt:  "config/ssl/timelord/private_timelord.crt"
@@ -231,7 +231,7 @@ timelord:
 
 beacon:
   # The beacon client (if run) will run on this port
-  port: 8444
+  port: 6201
 
   # controls the sync-to-disk behavior of the database connection. Can be one of:
   # "on"    enables syncing to disk, minimizes risk of corrupting the DB in
@@ -260,7 +260,7 @@ beacon:
 
   # If True, starts an RPC server at the following port
   start_rpc_server: True
-  rpc_port: 8555
+  rpc_port: 8201
 
   # Use UPnP to attempt to allow other beacon clients to reach your node behind a gateway
   enable_upnp: True
@@ -324,13 +324,13 @@ beacon:
     - "dns-introducer.mainnet.bpxchain.cc"
   farmer_peer:
       host: *self_hostname
-      port: 8447
+      port: 6204
   timelord_peer:
       host: *self_hostname
-      port: 8446
+      port: 6203
   introducer_peer:
       host: introducer.mainnet.bpxchain.cc
-      port: 8444
+      port: 6202
   logging: *logging
   network_overrides: *network_overrides
   selected_network: *selected_network
@@ -343,11 +343,8 @@ beacon:
   use_bpx_loop_policy: True
 
 ui:
-   # The ui node server (if run) will run on this port
-  port: 8222
-
   # Which port to use to communicate with the beacon client
-  rpc_port: 8555
+  rpc_port: 8201
 
   # This SSH key is for the ui SSH server
   ssh_filename: config/ssh_host_key
@@ -358,14 +355,14 @@ ui:
   # this is where the electron UI will find its daemon
   # defaults to the one running locally with its private keys
   daemon_host: *self_hostname
-  daemon_port: 55400
+  daemon_port: 8200
   daemon_ssl:
     private_crt: config/ssl/daemon/private_daemon.crt
     private_key: config/ssl/daemon/private_daemon.key
 
 introducer:
   host: *self_hostname
-  port: 8445
+  port: 6202
   max_peers_to_send: 20
   # The introducer will only return peers it has seen in the last
   # recent_peer_threshold seconds
@@ -381,9 +378,5 @@ introducer:
 execution:
   port: 8449
   rpc_port: 9256
-
-  beacon_peer:
-    host: *self_hostname
-    port: 8444
   
   selected_network: *selected_network

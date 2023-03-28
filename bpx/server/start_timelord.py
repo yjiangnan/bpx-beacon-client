@@ -47,7 +47,7 @@ def create_timelord_service(
 
     rpc_info: Optional[RpcInfo] = None
     if service_config.get("start_rpc_server", True):
-        rpc_info = (TimelordRpcApi, service_config.get("rpc_port", 8557))
+        rpc_info = (TimelordRpcApi, service_config.get("rpc_port", 8203))
 
     return Service(
         root_path=root_path,
