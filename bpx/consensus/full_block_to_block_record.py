@@ -134,8 +134,6 @@ def header_block_to_sub_block_record(
         block.reward_chain_block.get_hash(),
         cbi.get_hash(),
         sub_slot_iters,
-        block.foliage.foliage_block_data.pool_target.puzzle_hash,
-        block.foliage.foliage_block_data.farmer_reward_puzzle_hash,
         required_iters,
         deficit,
         overflow,

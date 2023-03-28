@@ -35,8 +35,6 @@ def create_foliage(
     blocks: BlockchainInterface,
     total_iters_sp: uint128,
     timestamp: uint64,
-    farmer_reward_puzzlehash: bytes32,
-    pool_target: PoolTarget,
     get_plot_signature: Callable[[bytes32, G1Element], G2Element],
     get_pool_signature: Callable[[PoolTarget, Optional[G1Element]], Optional[G2Element]],
     seed: bytes = b"",
@@ -52,8 +50,6 @@ def create_foliage(
         blocks: dict from header hash to blocks, of all ancestor blocks
         total_iters_sp: total iters at the signage point
         timestamp: timestamp to put into the foliage block
-        farmer_reward_puzzlehash: where to pay out farming reward
-        pool_target: where to pay out pool reward
         get_plot_signature: retrieve the signature corresponding to the plot public key
         get_pool_signature: retrieve the signature corresponding to the pool public key
         seed: seed to randomize block
@@ -74,9 +70,6 @@ def create_foliage(
 
     foliage_data = FoliageBlockData(
         reward_block_unfinished.get_hash(),
-        pool_target,
-        pool_target_signature,
-        farmer_reward_puzzlehash,
         extension_data,
     )
 
@@ -111,8 +104,6 @@ def create_unfinished_block(
     ip_iters: uint64,
     proof_of_space: ProofOfSpace,
     slot_cc_challenge: bytes32,
-    farmer_reward_puzzle_hash: bytes32,
-    pool_target: PoolTarget,
     get_plot_signature: Callable[[bytes32, G1Element], G2Element],
     get_pool_signature: Callable[[PoolTarget, Optional[G1Element]], Optional[G2Element]],
     signage_point: SignagePoint,
@@ -135,8 +126,6 @@ def create_unfinished_block(
         ip_iters: ip_iters of the block to create
         proof_of_space: proof of space of the block to create
         slot_cc_challenge: challenge hash at the sp sub-slot
-        farmer_reward_puzzle_hash: where to pay out farmer rewards
-        pool_target: where to pay out pool rewards
         get_plot_signature: function that returns signature corresponding to plot public key
         get_pool_signature: function that returns signature corresponding to pool public key
         signage_point: signage point information (VDFs)
@@ -208,8 +197,6 @@ def create_unfinished_block(
         blocks,
         total_iters_sp,
         timestamp,
-        farmer_reward_puzzle_hash,
-        pool_target,
         get_plot_signature,
         get_pool_signature,
         seed,
