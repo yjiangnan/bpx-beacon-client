@@ -623,12 +623,10 @@ class Timelord:
                         - (block.sub_slot_iters if overflow else 0)
                     )
                     if self.last_state.state_type == StateType.FIRST_SUB_SLOT:
-                        is_transaction_block = True
                         height: uint32 = uint32(0)
                     else:
                         last_block_ti = self.last_state.get_last_block_total_iters()
                         assert last_block_ti is not None
-                        is_transaction_block = last_block_ti < sp_total_iters
                         height = uint32(self.last_state.get_height() + 1)
 
                     if height < 5:
@@ -650,7 +648,6 @@ class Timelord:
                         block.reward_chain_block.reward_chain_sp_signature,
                         rc_info,
                         icc_info,
-                        is_transaction_block,
                     )
                     if self.last_state.state_type == StateType.FIRST_SUB_SLOT:
                         # Genesis

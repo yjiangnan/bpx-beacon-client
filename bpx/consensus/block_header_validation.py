@@ -945,10 +945,4 @@ def validate_finished_header_block(
     if header_block.foliage.reward_block_hash != header_block.reward_chain_block.get_hash():
         return None, ValidationError(Err.INVALID_REWARD_BLOCK_HASH)
 
-    # 33. Check reward block is_transaction_block
-    if (
-        header_block.foliage.foliage_transaction_block_hash is not None
-    ) != header_block.reward_chain_block.is_transaction_block:
-        return None, ValidationError(Err.INVALID_FOLIAGE_BLOCK_PRESENCE)
-
     return required_iters, None

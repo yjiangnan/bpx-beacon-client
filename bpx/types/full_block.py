@@ -53,15 +53,6 @@ class FullBlock(Streamable):
     def header_hash(self) -> bytes32:
         return self.foliage.get_hash()
 
-    def is_transaction_block(self) -> bool:
-        return self.foliage_transaction_block is not None
-
-    def get_included_reward_coins(self) -> Set[Coin]:
-        if not self.is_transaction_block():
-            return set()
-        assert self.transactions_info is not None
-        return set(self.transactions_info.reward_claims_incorporated)
-
     def is_fully_compactified(self) -> bool:
         for sub_slot in self.finished_sub_slots:
             if (
