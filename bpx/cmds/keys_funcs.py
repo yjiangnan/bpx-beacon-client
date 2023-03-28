@@ -10,7 +10,6 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from blspy import AugSchemeMPL, G1Element, G2Element, PrivateKey
 
 from bpx.cmds.passphrase_funcs import obtain_current_passphrase
-from bpx.consensus.coinbase import create_puzzlehash_for_pk
 from bpx.util.config import load_config
 from bpx.util.errors import KeychainException
 from bpx.util.file_keyring import MAX_LABEL_LENGTH

@@ -88,8 +88,6 @@ class FarmerRpcApi:
         return {
             "/get_signage_point": self.get_signage_point,
             "/get_signage_points": self.get_signage_points,
-            "/get_reward_targets": self.get_reward_targets,
-            "/set_reward_targets": self.set_reward_targets,
             "/get_harvesters": self.get_harvesters,
             "/get_harvesters_summary": self.get_harvesters_summary,
             "/get_harvester_plots_valid": self.get_harvester_plots_valid,
@@ -242,21 +240,6 @@ class FarmerRpcApi:
                     }
                 )
         return {"signage_points": result}
-
-    async def get_reward_targets(self, request: Dict[str, Any]) -> EndpointResult:
-        search_for_private_key = request["search_for_private_key"]
-        max_ph_to_search = request.get("max_ph_to_search", 500)
-        return await self.service.get_reward_targets(search_for_private_key, max_ph_to_search)
-
-    async def set_reward_targets(self, request: Dict[str, Any]) -> EndpointResult:
-        farmer_target, pool_target = None, None
-        if "farmer_target" in request:
-            farmer_target = request["farmer_target"]
-        if "pool_target" in request:
-            pool_target = request["pool_target"]
-
-        self.service.set_reward_targets(farmer_target, pool_target)
-        return {}
 
     async def get_harvesters(self, request: Dict[str, Any]) -> EndpointResult:
         return await self.service.get_harvesters(False)

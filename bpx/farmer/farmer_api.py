@@ -194,25 +194,6 @@ class FarmerAPI:
                     )
                     assert AugSchemeMPL.verify(agg_pk, reward_chain_sp, agg_sig_rc_sp)
 
-                    if pospace.pool_public_key is not None:
-                        assert pospace.pool_contract_puzzle_hash is None
-                        pool_pk = bytes(pospace.pool_public_key)
-                        if pool_pk not in self.farmer.pool_sks_map:
-                            self.farmer.log.error(
-                                f"Don't have the private key for the pool key used by harvester: {pool_pk.hex()}"
-                            )
-                            return None
-
-                        pool_target: Optional[PoolTarget] = PoolTarget(self.farmer.pool_target, uint32(0))
-                        assert pool_target is not None
-                        pool_target_signature: Optional[G2Element] = AugSchemeMPL.sign(
-                            self.farmer.pool_sks_map[pool_pk], bytes(pool_target)
-                        )
-                    else:
-                        assert pospace.pool_contract_puzzle_hash is not None
-                        pool_target = None
-                        pool_target_signature = None
-
                     request = farmer_protocol.DeclareProofOfSpace(
                         response.challenge_hash,
                         challenge_chain_sp,
@@ -221,9 +202,6 @@ class FarmerAPI:
                         pospace,
                         agg_sig_cc_sp,
                         agg_sig_rc_sp,
-                        self.farmer.farmer_target,
-                        pool_target,
-                        pool_target_signature,
                     )
                     self.farmer.state_changed("proof", {"proof": request, "passed_filter": True})
                     msg = make_msg(ProtocolMessageTypes.declare_proof_of_space, request)
@@ -237,10 +215,6 @@ class FarmerAPI:
                     foliage_block_data_hash,
                     foliage_sig_harvester,
                 ) = response.message_signatures[0]
-                (
-                    foliage_transaction_block_hash,
-                    foliage_transaction_block_sig_harvester,
-                ) = response.message_signatures[1]
                 pk = sk.get_g1()
                 if pk == response.farmer_pk:
                     agg_pk = generate_plot_public_key(response.local_pk, pk, include_taproot)
@@ -248,33 +222,18 @@ class FarmerAPI:
                     if include_taproot:
                         taproot_sk = generate_taproot_sk(response.local_pk, pk)
                         foliage_sig_taproot: G2Element = AugSchemeMPL.sign(taproot_sk, foliage_block_data_hash, agg_pk)
-                        foliage_transaction_block_sig_taproot: G2Element = AugSchemeMPL.sign(
-                            taproot_sk, foliage_transaction_block_hash, agg_pk
-                        )
                     else:
                         foliage_sig_taproot = G2Element()
-                        foliage_transaction_block_sig_taproot = G2Element()
 
                     foliage_sig_farmer = AugSchemeMPL.sign(sk, foliage_block_data_hash, agg_pk)
-                    foliage_transaction_block_sig_farmer = AugSchemeMPL.sign(sk, foliage_transaction_block_hash, agg_pk)
 
                     foliage_agg_sig = AugSchemeMPL.aggregate(
                         [foliage_sig_harvester, foliage_sig_farmer, foliage_sig_taproot]
                     )
-                    foliage_block_agg_sig = AugSchemeMPL.aggregate(
-                        [
-                            foliage_transaction_block_sig_harvester,
-                            foliage_transaction_block_sig_farmer,
-                            foliage_transaction_block_sig_taproot,
-                        ]
-                    )
-                    assert AugSchemeMPL.verify(agg_pk, foliage_block_data_hash, foliage_agg_sig)
-                    assert AugSchemeMPL.verify(agg_pk, foliage_transaction_block_hash, foliage_block_agg_sig)
 
                     request_to_nodes = farmer_protocol.SignedValues(
                         computed_quality_string,
                         foliage_agg_sig,
-                        foliage_block_agg_sig,
                     )
 
                     msg = make_msg(ProtocolMessageTypes.signed_values, request_to_nodes)

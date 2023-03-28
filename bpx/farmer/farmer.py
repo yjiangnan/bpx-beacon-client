@@ -237,48 +237,6 @@ class Farmer:
     def get_private_keys(self) -> List[PrivateKey]:
         return self._private_keys
 
-    async def get_reward_targets(self, search_for_private_key: bool, max_ph_to_search: int = 500) -> Dict[str, Any]:
-        if search_for_private_key:
-            all_sks = await self.get_all_private_keys()
-            have_farmer_sk, have_pool_sk = False, False
-            search_addresses: List[bytes32] = [self.farmer_target, self.pool_target]
-            for sk, _ in all_sks:
-                found_addresses: Set[bytes32] = match_address_to_sk(sk, search_addresses, max_ph_to_search)
-
-                if not have_farmer_sk and self.farmer_target in found_addresses:
-                    search_addresses.remove(self.farmer_target)
-                    have_farmer_sk = True
-
-                if not have_pool_sk and self.pool_target in found_addresses:
-                    search_addresses.remove(self.pool_target)
-                    have_pool_sk = True
-
-                if have_farmer_sk and have_pool_sk:
-                    break
-
-            return {
-                "farmer_target": self.farmer_target_encoded,
-                "pool_target": self.pool_target_encoded,
-                "have_farmer_sk": have_farmer_sk,
-                "have_pool_sk": have_pool_sk,
-            }
-        return {
-            "farmer_target": self.farmer_target_encoded,
-            "pool_target": self.pool_target_encoded,
-        }
-
-    def set_reward_targets(self, farmer_target_encoded: Optional[str], pool_target_encoded: Optional[str]) -> None:
-        with lock_and_load_config(self._root_path, "config.yaml") as config:
-            if farmer_target_encoded is not None:
-                self.farmer_target_encoded = farmer_target_encoded
-                self.farmer_target = decode_puzzle_hash(farmer_target_encoded)
-                config["farmer"]["xch_target_address"] = farmer_target_encoded
-            if pool_target_encoded is not None:
-                self.pool_target_encoded = pool_target_encoded
-                self.pool_target = decode_puzzle_hash(pool_target_encoded)
-                config["pool"]["xch_target_address"] = pool_target_encoded
-            save_config(self._root_path, "config.yaml", config)
-
     async def get_harvesters(self, counts_only: bool = False) -> Dict[str, Any]:
         harvesters: List[Dict[str, Any]] = []
         for connection in self.server.get_connections(NodeType.HARVESTER):

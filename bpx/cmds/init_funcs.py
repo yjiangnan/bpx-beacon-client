@@ -10,7 +10,6 @@ import yaml
 
 from bpx import __version__
 from bpx.cmds.configure import configure
-from bpx.consensus.coinbase import create_puzzlehash_for_pk
 from bpx.ssl.create_ssl import create_all_ssl
 from bpx.util.config import (
     create_default_bpx_config,
@@ -48,77 +47,6 @@ def check_keys(new_root: Path, keychain: Optional[Keychain] = None) -> None:
 
     with lock_and_load_config(new_root, "config.yaml") as config:
         pool_child_pubkeys = [master_sk_to_pool_sk(sk).get_g1() for sk, _ in all_sks]
-        all_targets = []
-        stop_searching_for_farmer = "xch_target_address" not in config["farmer"]
-        stop_searching_for_pool = "xch_target_address" not in config["pool"]
-        number_of_ph_to_search = 50
-        selected = config["selected_network"]
-        prefix = config["network_overrides"]["config"][selected]["address_prefix"]
-
-        intermediates = {}
-        for sk, _ in all_sks:
-            intermediates[bytes(sk)] = {
-                "observer": master_sk_to_wallet_sk_unhardened_intermediate(sk),
-                "non-observer": master_sk_to_wallet_sk_intermediate(sk),
-            }
-
-        for i in range(number_of_ph_to_search):
-            if stop_searching_for_farmer and stop_searching_for_pool and i > 0:
-                break
-            for sk, _ in all_sks:
-                intermediate_n = intermediates[bytes(sk)]["non-observer"]
-                intermediate_o = intermediates[bytes(sk)]["observer"]
-
-                all_targets.append(
-                    encode_puzzle_hash(
-                        create_puzzlehash_for_pk(_derive_path_unhardened(intermediate_o, [i]).get_g1()), prefix
-                    )
-                )
-                all_targets.append(
-                    encode_puzzle_hash(create_puzzlehash_for_pk(_derive_path(intermediate_n, [i]).get_g1()), prefix)
-                )
-                if all_targets[-1] == config["farmer"].get("xch_target_address") or all_targets[-2] == config[
-                    "farmer"
-                ].get("xch_target_address"):
-                    stop_searching_for_farmer = True
-                if all_targets[-1] == config["pool"].get("xch_target_address") or all_targets[-2] == config["pool"].get(
-                    "xch_target_address"
-                ):
-                    stop_searching_for_pool = True
-
-        # Set the destinations, if necessary
-        updated_target: bool = False
-        if "xch_target_address" not in config["farmer"]:
-            print(
-                f"Setting the xch destination for the farmer reward (1/8 plus fees, solo and pooling)"
-                f" to {all_targets[0]}"
-            )
-            config["farmer"]["xch_target_address"] = all_targets[0]
-            updated_target = True
-        elif config["farmer"]["xch_target_address"] not in all_targets:
-            print(
-                f"WARNING: using a farmer address which we might not have the private"
-                f" keys for. We searched the first {number_of_ph_to_search} addresses. Consider overriding "
-                f"{config['farmer']['xch_target_address']} with {all_targets[0]}"
-            )
-
-        if "pool" not in config:
-            config["pool"] = {}
-        if "xch_target_address" not in config["pool"]:
-            print(f"Setting the xch destination address for pool reward (7/8 for solo only) to {all_targets[0]}")
-            config["pool"]["xch_target_address"] = all_targets[0]
-            updated_target = True
-        elif config["pool"]["xch_target_address"] not in all_targets:
-            print(
-                f"WARNING: using a pool address which we might not have the private"
-                f" keys for. We searched the first {number_of_ph_to_search} addresses. Consider overriding "
-                f"{config['pool']['xch_target_address']} with {all_targets[0]}"
-            )
-        if updated_target:
-            print(
-                f"To change the XCH destination addresses, edit the `xch_target_address` entries in"
-                f" {(new_root / 'config' / 'config.yaml').absolute()}."
-            )
 
         # Set the pool pks in the farmer
         pool_pubkeys_hex = set(bytes(pk).hex() for pk in pool_child_pubkeys)

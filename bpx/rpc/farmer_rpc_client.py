@@ -18,33 +18,6 @@ class FarmerRpcClient(RpcClient):
     async def get_signage_points(self) -> List[Dict[str, Any]]:
         return cast(List[Dict[str, Any]], (await self.fetch("get_signage_points", {}))["signage_points"])
 
-    async def get_reward_targets(self, search_for_private_key: bool, max_ph_to_search: int = 500) -> Dict[str, Any]:
-        response = await self.fetch(
-            "get_reward_targets",
-            {"search_for_private_key": search_for_private_key, "max_ph_to_search": max_ph_to_search},
-        )
-        return_dict = {
-            "farmer_target": response["farmer_target"],
-            "pool_target": response["pool_target"],
-        }
-        if "have_pool_sk" in response:
-            return_dict["have_pool_sk"] = response["have_pool_sk"]
-        if "have_farmer_sk" in response:
-            return_dict["have_farmer_sk"] = response["have_farmer_sk"]
-        return return_dict
-
-    async def set_reward_targets(
-        self,
-        farmer_target: Optional[str] = None,
-        pool_target: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        request = {}
-        if farmer_target is not None:
-            request["farmer_target"] = farmer_target
-        if pool_target is not None:
-            request["pool_target"] = pool_target
-        return await self.fetch("set_reward_targets", request)
-
     async def get_harvesters(self) -> Dict[str, Any]:
         return await self.fetch("get_harvesters", {})
 
