@@ -22,7 +22,6 @@ from bpx.consensus.find_fork_point import find_fork_point_in_chain
 from bpx.consensus.full_block_to_block_record import block_to_block_record
 from bpx.consensus.multiprocess_validation import (
     PreValidationResult,
-    _run_generator,
     pre_validate_blocks_multiprocessing,
 )
 from bpx.beacon.block_height_map import BlockHeightMap
@@ -520,7 +519,6 @@ class Blockchain(BlockchainInterface):
             blocks,
             self.pool,
             True,
-            self.get_block_generator,
             batch_size,
             wp_summaries,
         )

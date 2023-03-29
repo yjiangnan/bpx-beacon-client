@@ -234,8 +234,7 @@ async def pre_validate_blocks_multiprocessing(
         hb_pickled: Optional[List[bytes]] = None
         for block in blocks_to_validate:
             # We ONLY add blocks which are in the past, based on header hashes (which are validated later) to the
-            # prev blocks dict. This is important since these blocks are assumed to be valid and are used as previous
-            # generator references
+            # prev blocks dict. This is important since these blocks are assumed to be valid
             prev_blocks_dict: Dict[bytes32, FullBlock] = {}
             curr_b: FullBlock = block
 

@@ -76,8 +76,6 @@ def create_foliage(
         assert prev_block is not None
         prev_block_hash = prev_block.header_hash
 
-    generator_block_heights_list: List[uint32] = []
-
     foliage = Foliage(
         prev_block_hash,
         reward_block_unfinished.get_hash(),
