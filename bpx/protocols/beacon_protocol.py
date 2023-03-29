@@ -8,7 +8,6 @@ from bpx.types.blockchain_format.vdf import VDFInfo, VDFProof
 from bpx.types.end_of_slot_bundle import EndOfSubSlotBundle
 from bpx.types.full_block import FullBlock
 from bpx.types.peer_info import TimestampedPeerInfo
-from bpx.types.spend_bundle import SpendBundle
 from bpx.types.unfinished_block import UnfinishedBlock
 from bpx.types.weight_proof import WeightProof
 from bpx.util.ints import uint8, uint32, uint64, uint128
