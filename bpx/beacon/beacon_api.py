@@ -32,7 +32,6 @@ from bpx.types.full_block import FullBlock
 from bpx.types.peer_info import PeerInfo
 from bpx.types.unfinished_block import UnfinishedBlock
 from bpx.util.api_decorators import api_request
-from bpx.util.full_block_utils import header_block_from_block
 from bpx.util.hash import std_hash
 from bpx.util.ints import uint8, uint32, uint64, uint128
 from bpx.util.limited_semaphore import LimitedSemaphoreFullError
