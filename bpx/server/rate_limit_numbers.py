@@ -68,7 +68,6 @@ rate_limits = {
             ProtocolMessageTypes.respond_peers: RLSettings(10, 1 * 1024 * 1024),
             ProtocolMessageTypes.request_peers_introducer: RLSettings(100, 100),
             ProtocolMessageTypes.respond_peers_introducer: RLSettings(100, 1024 * 1024),
-            ProtocolMessageTypes.farm_new_block: RLSettings(200, 200),
             ProtocolMessageTypes.request_plots: RLSettings(10, 10 * 1024 * 1024),
             ProtocolMessageTypes.respond_plots: RLSettings(10, 100 * 1024 * 1024),
             ProtocolMessageTypes.plot_sync_start: RLSettings(1000, 100 * 1024 * 1024),
