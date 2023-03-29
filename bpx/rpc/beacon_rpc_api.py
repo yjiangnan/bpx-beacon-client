@@ -133,9 +133,7 @@ class BeaconRpcApi:
             space = {"space": uint128(0)}
 
         if self.service.server is not None:
-            is_connected = len(self.service.server.get_connections(NodeType.BEACON)) > 0 in str(
-                self.service.config.get("selected_network")
-            )
+            is_connected = len(self.service.server.get_connections(NodeType.BEACON)) > 0
         else:
             is_connected = False
         synced = await self.service.synced() and is_connected
