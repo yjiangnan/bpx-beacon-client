@@ -36,7 +36,6 @@ default_kwargs = {
     "BLOCKS_CACHE_SIZE": 4608 + (128 * 4),
     "WEIGHT_PROOF_RECENT_BLOCKS": 1000,
     "MAX_BLOCK_COUNT_PER_REQUESTS": 32,  # Allow up to 32 blocks per request
-    "POOL_SUB_SLOT_ITERS": 37600000000,  # iters limit * NUM_SPS
 }
 
 
