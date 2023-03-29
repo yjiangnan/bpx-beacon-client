@@ -8,7 +8,6 @@ import click
 from bpx import __version__
 from bpx.cmds.beta import beta_cmd
 from bpx.cmds.configure import configure_cmd
-from bpx.cmds.data import data_cmd
 from bpx.cmds.db import db_cmd
 from bpx.cmds.farm import farm_cmd
 from bpx.cmds.init import init_cmd
