@@ -23,7 +23,6 @@ class PeerStoreResolver:
         self.config = config
         self.selected_network = selected_network
         self.peers_file_path_key = peers_file_path_key
-        self.legacy_peer_db_path_key = legacy_peer_db_path_key
 
     def _resolve_and_update_config(self) -> Path:
         """
