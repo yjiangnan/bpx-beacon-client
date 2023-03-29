@@ -35,7 +35,6 @@ from bpx.util.api_decorators import api_request
 from bpx.util.hash import std_hash
 from bpx.util.ints import uint8, uint32, uint64, uint128
 from bpx.util.limited_semaphore import LimitedSemaphoreFullError
-from bpx.util.merkle_set import MerkleSet
 
 if TYPE_CHECKING:
     from bpx.beacon.beacon import Beacon
