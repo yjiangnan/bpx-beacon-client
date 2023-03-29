@@ -15,7 +15,6 @@ from bpx.cmds.keys import keys_cmd
 from bpx.cmds.netspace import netspace_cmd
 from bpx.cmds.passphrase import passphrase_cmd
 from bpx.cmds.peer import peer_cmd
-from bpx.cmds.plotnft import plotnft_cmd
 from bpx.cmds.plots import plots_cmd
 from bpx.cmds.plotters import plotters_cmd
 from bpx.cmds.rpc import rpc_cmd
