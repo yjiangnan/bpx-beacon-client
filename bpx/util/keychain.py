@@ -27,9 +27,9 @@ from bpx.util.ints import uint32
 from bpx.util.keyring_wrapper import KeyringWrapper
 from bpx.util.streamable import Streamable, streamable
 
-CURRENT_KEY_VERSION = "1.8"
-DEFAULT_USER = f"user-bpx-{CURRENT_KEY_VERSION}"  # e.g. user-bpx-1.8
-DEFAULT_SERVICE = f"bpx-{DEFAULT_USER}"  # e.g. bpx-user-bpx-1.8
+CURRENT_KEY_VERSION = "3.0"
+DEFAULT_USER = f"user-bpx-{CURRENT_KEY_VERSION}"  # e.g. user-bpx-3.0
+DEFAULT_SERVICE = f"bpx-{DEFAULT_USER}"  # e.g. bpx-user-bpx-3.0
 MAX_KEYS = 100
 MIN_PASSPHRASE_LEN = 8
 
