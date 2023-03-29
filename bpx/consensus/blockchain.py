@@ -226,8 +226,6 @@ class Blockchain(BlockchainInterface):
             block,
             block.height,
             fork_point_with_peak,
-            # If we did not already validate the signature, validate it now
-            validate_signature=not pre_validation_result.validated_signature,
         )
         if error_code is not None:
             return ReceiveBlockResult.INVALID_BLOCK, error_code, None
@@ -458,7 +456,6 @@ class Blockchain(BlockchainInterface):
             block.challenge_chain_sp_proof,
             block.reward_chain_sp_proof,
             block.foliage,
-            b"",
         )
         prev_b = self.try_block_record(unfinished_header_block.prev_header_hash)
         sub_slot_iters, difficulty = get_next_sub_slot_iters_and_difficulty(
@@ -499,7 +496,6 @@ class Blockchain(BlockchainInterface):
             block,
             uint32(prev_height + 1),
             None,
-            validate_signature=False,  # Signature was already validated before calling this method, no need to validate
         )
 
         if error_code is not None:
