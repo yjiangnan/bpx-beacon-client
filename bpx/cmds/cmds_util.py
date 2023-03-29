@@ -70,7 +70,7 @@ async def get_any_service_client(
         # Click already checks this, so this should never happen
         raise ValueError(f"Invalid client type requested: {client_type.__name__}")
     # load variables from config file
-    config = load_config(root_path, "config.yaml", fill_missing_services=issubclass(client_type, DataLayerRpcClient))
+    config = load_config(root_path, "config.yaml")
     self_hostname = config["self_hostname"]
     if rpc_port is None:
         rpc_port = config[node_type]["rpc_port"]
