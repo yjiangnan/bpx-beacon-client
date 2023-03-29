@@ -703,13 +703,6 @@ def validate_unfinished_header_block(
     ):
         return None, ValidationError(Err.INVALID_URSB_HASH)
 
-    # 19. Check pool target max height
-    if (
-        header_block.foliage.foliage_block_data.pool_target.max_height != 0
-        and header_block.foliage.foliage_block_data.pool_target.max_height < height
-    ):
-        return None, ValidationError(Err.OLD_POOL_TARGET)
-
     # 21. Check extension data if applicable. None for mainnet.
     
     return required_iters, None  # Valid unfinished header block

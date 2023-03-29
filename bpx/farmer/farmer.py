@@ -51,7 +51,6 @@ class Farmer:
         self,
         root_path: Path,
         farmer_config: Dict[str, Any],
-        pool_config: Dict[str, Any],
         consensus_constants: ConsensusConstants,
         local_keychain: Optional[Keychain] = None,
     ):
@@ -59,7 +58,6 @@ class Farmer:
         self.local_keychain = local_keychain
         self._root_path = root_path
         self.config = farmer_config
-        self.pool_config = pool_config
         # Keep track of all sps, keyed on challenge chain signage point hash
         self.sps: Dict[bytes32, List[farmer_protocol.NewSignagePoint]] = {}
 
@@ -123,25 +121,12 @@ class Farmer:
             return False
 
         config = load_config(self._root_path, "config.yaml")
-        if "xch_target_address" not in self.config:
-            self.config = config["farmer"]
-        if "xch_target_address" not in self.pool_config:
-            self.pool_config = config["pool"]
-        if "xch_target_address" not in self.config or "xch_target_address" not in self.pool_config:
-            log.debug("xch_target_address missing in the config")
-            return False
-
-        # This is the farmer configuration
-        self.farmer_target = bytes.fromhex(self.config["xch_target_address"])
+        self.config = config["farmer"]
 
         self.pool_public_keys = [G1Element.from_bytes(bytes.fromhex(pk)) for pk in self.config["pool_public_keys"]]
 
-        # This is the self pooling configuration, which is only used for original self-pooled plots
-        self.pool_target = bytes.fromhex(self.pool_config["xch_target_address"])
         self.pool_sks_map = {bytes(key.get_g1()): key for key in self.get_private_keys()}
 
-        assert len(self.farmer_target) == 32
-        assert len(self.pool_target) == 32
         if len(self.pool_sks_map) == 0:
             log.warning(no_keys_error_str)
             return False

@@ -45,7 +45,7 @@ def create_farmer_service(
     updated_constants = consensus_constants.replace_str_to_bytes(**overrides)
 
     farmer = Farmer(
-        root_path, service_config, config_pool, consensus_constants=updated_constants, local_keychain=keychain
+        root_path, service_config, consensus_constants=updated_constants, local_keychain=keychain
     )
     peer_api = FarmerAPI(farmer)
     network_id = service_config["selected_network"]
@@ -74,10 +74,8 @@ async def async_main() -> int:
     config = load_config(DEFAULT_ROOT_PATH, "config.yaml")
     service_config = load_config_cli(DEFAULT_ROOT_PATH, "config.yaml", SERVICE_NAME)
     config[SERVICE_NAME] = service_config
-    config_pool = load_config_cli(DEFAULT_ROOT_PATH, "config.yaml", "pool")
-    config["pool"] = config_pool
     initialize_service_logging(service_name=SERVICE_NAME, config=config)
-    service = create_farmer_service(DEFAULT_ROOT_PATH, config, config_pool, DEFAULT_CONSTANTS)
+    service = create_farmer_service(DEFAULT_ROOT_PATH, config, DEFAULT_CONSTANTS)
     await service.setup_process_global_state()
     await service.run()
 

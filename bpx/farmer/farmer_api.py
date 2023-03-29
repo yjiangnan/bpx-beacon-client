@@ -17,7 +17,6 @@ from bpx.protocols.harvester_protocol import (
     PlotSyncPathList,
     PlotSyncPlotList,
     PlotSyncStart,
-    PoolDifficulty,
 )
 from bpx.protocols.protocol_message_types import ProtocolMessageTypes
 from bpx.server.outbound_message import NodeType, make_msg
