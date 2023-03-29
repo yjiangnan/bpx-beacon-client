@@ -30,11 +30,7 @@ from bpx.util.ssl_check import (
     check_and_fix_permissions_for_ssl_file,
     fix_ssl,
 )
-from bpx.util.derive_keys import (
-    _derive_path,
-    _derive_path_unhardened,
-    master_sk_to_pool_sk,
-)
+from bpx.util.derive_keys import master_sk_to_pool_sk
 
 
 def check_keys(new_root: Path, keychain: Optional[Keychain] = None) -> None:
