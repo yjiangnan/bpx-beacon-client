@@ -79,10 +79,6 @@ rate_limits = {
             ProtocolMessageTypes.plot_sync_duplicates: RLSettings(1000, 100 * 1024 * 1024),
             ProtocolMessageTypes.plot_sync_done: RLSettings(1000, 100 * 1024 * 1024),
             ProtocolMessageTypes.plot_sync_response: RLSettings(3000, 100 * 1024 * 1024),
-            ProtocolMessageTypes.request_ses_hashes: RLSettings(2000, 1 * 1024 * 1024),
-            ProtocolMessageTypes.respond_ses_hashes: RLSettings(2000, 1 * 1024 * 1024),
-            ProtocolMessageTypes.request_children: RLSettings(2000, 1024 * 1024),
-            ProtocolMessageTypes.respond_children: RLSettings(2000, 1 * 1024 * 1024),
         },
     },
 }
