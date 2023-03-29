@@ -52,17 +52,7 @@ async def print_blockchain_state(node_client: BeaconRpcClient, config: Dict[str,
         print("You may be able to expedite with 'bpx peer beacon -a host:port' using a known node.\n")
 
     if peak is not None:
-        if peak.is_transaction_block:
-            peak_time = peak.timestamp
-        else:
-            peak_hash = peak.header_hash
-            curr = await node_client.get_block_record(peak_hash)
-            while curr is not None and not curr.is_transaction_block:
-                curr = await node_client.get_block_record(curr.prev_hash)
-            if curr is not None:
-                peak_time = curr.timestamp
-            else:
-                peak_time = uint64(0)
+        peak_time = peak.timestamp
         peak_time_struct = time.struct_time(time.localtime(peak_time))
 
         print(
@@ -110,31 +100,16 @@ async def print_block_from_hash(
             difficulty = block.weight - prev_b.weight
         else:
             difficulty = block.weight
-        if block.is_transaction_block:
-            assert full_block.transactions_info is not None
-            block_time = time.struct_time(
-                time.localtime(
-                    full_block.foliage_transaction_block.timestamp if full_block.foliage_transaction_block else None
-                )
+        block_time = time.struct_time(
+            time.localtime(
+                full_block.foliage.foliage_block_data.timestamp
             )
-            block_time_string = time.strftime("%a %b %d %Y %T %Z", block_time)
-            cost = str(full_block.transactions_info.cost)
-            tx_filter_hash: Union[str, bytes32] = "Not a transaction block"
-            if full_block.foliage_transaction_block:
-                tx_filter_hash = full_block.foliage_transaction_block.filter_hash
-            fees: Any = block.fees
-        else:
-            block_time_string = "Not a transaction block"
-            cost = "Not a transaction block"
-            tx_filter_hash = "Not a transaction block"
-            fees = "Not a transaction block"
-        address_prefix = config["network_overrides"]["config"][config["selected_network"]]["address_prefix"]
-        farmer_address = encode_puzzle_hash(block.farmer_puzzle_hash, address_prefix)
-        pool_address = encode_puzzle_hash(block.pool_puzzle_hash, address_prefix)
+        )
+        block_time_string = time.strftime("%a %b %d %Y %T %Z", block_time)
         pool_pk = (
             full_block.reward_chain_block.proof_of_space.pool_public_key
             if full_block.reward_chain_block.proof_of_space.pool_public_key is not None
-            else "Pay to pool puzzle hash"
+            else "None"
         )
         print(
             f"Block Height           {block.height}\n"
@@ -144,17 +119,11 @@ async def print_block_from_hash(
             f"Previous Block         0x{block.prev_hash.hex()}\n"
             f"Difficulty             {difficulty}\n"
             f"Sub-slot iters         {block.sub_slot_iters}\n"
-            f"Cost                   {cost}\n"
             f"Total VDF Iterations   {block.total_iters}\n"
-            f"Is a Transaction Block?{block.is_transaction_block}\n"
             f"Deficit                {block.deficit}\n"
             f"PoSpace 'k' Size       {full_block.reward_chain_block.proof_of_space.size}\n"
             f"Plot Public Key        0x{full_block.reward_chain_block.proof_of_space.plot_public_key}\n"
             f"Pool Public Key        {pool_pk}\n"
-            f"Tx Filter Hash         {tx_filter_hash}\n"
-            f"Farmer Address         {farmer_address}\n"
-            f"Pool Address           {pool_address}\n"
-            f"Fees Amount            {fees}\n"
         )
     else:
         print("Block with header hash", block_by_header_hash, "not found")
