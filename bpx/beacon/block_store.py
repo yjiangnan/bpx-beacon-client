@@ -415,7 +415,7 @@ class BlockStore:
 
     async def set_peak(self, header_hash: bytes32) -> None:
         # We need to be in a sqlite transaction here.
-        # Note: we do not commit this to the database yet, as we need to also change the coin store
+        # Note: we do not commit this to the database yet
 
         # Note: we use the key field as 0 just to ensure all inserts replace the existing row
         async with self.db_wrapper.writer_maybe_transaction() as conn:

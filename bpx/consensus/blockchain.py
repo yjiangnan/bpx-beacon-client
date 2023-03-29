@@ -278,7 +278,6 @@ class Blockchain(BlockchainInterface):
         await self.__height_map.maybe_flush()
 
         if state_change_summary is not None:
-            # new coin records added
             return ReceiveBlockResult.NEW_PEAK, None, state_change_summary
         else:
             return ReceiveBlockResult.ADDED_AS_ORPHAN, None, None
@@ -297,7 +296,6 @@ class Blockchain(BlockchainInterface):
         """
 
         peak = self.get_peak()
-        rolled_back_state: Dict[bytes32, CoinRecord] = {}
 
         if genesis:
             if peak is None:

@@ -495,8 +495,8 @@ class BeaconAPI:
         self, request: farmer_protocol.DeclareProofOfSpace, peer: WSBpxConnection
     ) -> Optional[Message]:
         """
-        Creates a block body and header, with the proof of space, coinbase, and fee targets provided
-        by the farmer, and sends the hash of the header data back to the farmer.
+        Creates a block body and header, with the proof of space and sends the hash of the header data
+        back to the farmer.
         """
         if self.beacon.sync_store.get_sync_mode():
             return None
