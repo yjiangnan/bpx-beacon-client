@@ -24,8 +24,6 @@ class FullBlock(Streamable):
     reward_chain_ip_proof: VDFProof
     infused_challenge_chain_ip_proof: Optional[VDFProof]  # Iff deficit < 4
     foliage: Foliage  # Reward chain foliage data
-        uint32
-    ]  # List of block heights of previous generators referenced in this block
 
     @property
     def prev_header_hash(self) -> bytes32:
