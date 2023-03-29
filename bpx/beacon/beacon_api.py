@@ -719,7 +719,6 @@ class BeaconAPI:
             await self.beacon.add_unfinished_block(new_candidate, None, True)
         except Exception as e:
 	        self.beacon.log.error(f"Error farming block {e} {new_candidate}")
-            pass
             
         return None
 
