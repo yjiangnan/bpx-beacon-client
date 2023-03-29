@@ -544,6 +544,9 @@ class BeaconAPI:
                 request.proof_of_space, self.beacon.constants, cc_challenge_hash, request.challenge_chain_sp
             )
             assert quality_string is not None and len(quality_string) == 32
+            
+            async with self.full_node._blockchain_lock_high_priority:
+                peak: Optional[BlockRecord] = self.full_node.blockchain.get_peak()
 
             def get_plot_sig(to_sign: bytes32, _extra: G1Element) -> G2Element:
                 if to_sign == request.challenge_chain_sp:
