@@ -48,7 +48,6 @@ class RespondProofOfWeight(Streamable):
 @dataclass(frozen=True)
 class RequestBlock(Streamable):
     height: uint32
-    include_transaction_block: bool
 
 
 @streamable
@@ -62,7 +61,6 @@ class RejectBlock(Streamable):
 class RequestBlocks(Streamable):
     start_height: uint32
     end_height: uint32
-    include_transaction_block: bool
 
 
 @streamable

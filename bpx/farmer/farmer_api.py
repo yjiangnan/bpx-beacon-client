@@ -278,7 +278,7 @@ class FarmerAPI:
             plot_identifier,
             challenge_hash,
             sp_hash,
-            [beacon_request.foliage_block_data_hash, beacon_request.foliage_transaction_block_hash],
+            [beacon_request.foliage_block_data_hash],
         )
 
         msg = make_msg(ProtocolMessageTypes.request_signatures, request)

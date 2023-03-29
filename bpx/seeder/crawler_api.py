@@ -46,10 +46,6 @@ class CrawlerAPI:
         await self.crawler.new_peak(request, peer)
         return None
 
-    @api_request()
-    async def new_transaction(self, transaction: beacon_protocol.NewTransaction) -> Optional[Message]:
-        pass
-
     @api_request(peer_required=True)
     async def new_signage_point_or_end_of_sub_slot(
         self, new_sp: beacon_protocol.NewSignagePointOrEndOfSubSlot, peer: WSBpxConnection

@@ -49,8 +49,8 @@ def validate_unfinished_header_block(
     check_sub_epoch_summary: bool = True,
 ) -> Tuple[Optional[uint64], Optional[ValidationError]]:
     """
-    Validates an unfinished header block. This is a block without the infusion VDFs (unfinished)
-    and without transactions and transaction info (header). Returns (required_iters, error).
+    Validates an unfinished header block. This is a block without the infusion VDFs (unfinished).
+    Returns (required_iters, error).
 
     This method is meant to validate only the unfinished part of the block. However, the finished_sub_slots
     refers to all sub-slots that were finishes from the previous block's infusion point, up to this blocks
@@ -725,8 +725,7 @@ def validate_finished_header_block(
     check_sub_epoch_summary: bool = True,
 ) -> Tuple[Optional[uint64], Optional[ValidationError]]:
     """
-    Fully validates the header of a block. A header block is the same  as a full block, but
-    without transactions and transaction info. Returns (required_iters, error).
+    Fully validates the header of a block. Returns (required_iters, error).
     """
     unfinished_header_block = UnfinishedHeaderBlock(
         header_block.finished_sub_slots,
@@ -734,8 +733,6 @@ def validate_finished_header_block(
         header_block.challenge_chain_sp_proof,
         header_block.reward_chain_sp_proof,
         header_block.foliage,
-        header_block.foliage_transaction_block,
-        header_block.transactions_filter,
     )
 
     required_iters, validate_unfinished_err = validate_unfinished_header_block(
