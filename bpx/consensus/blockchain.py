@@ -513,8 +513,6 @@ class Blockchain(BlockchainInterface):
         blocks: List[FullBlock],
         batch_size: int = 4,
         wp_summaries: Optional[List[SubEpochSummary]] = None,
-        *,
-        validate_signatures: bool,
     ) -> List[PreValidationResult]:
         return await pre_validate_blocks_multiprocessing(
             self.constants,
@@ -525,7 +523,6 @@ class Blockchain(BlockchainInterface):
             self.get_block_generator,
             batch_size,
             wp_summaries,
-            validate_signatures=validate_signatures,
         )
 
     def contains_block(self, header_hash: bytes32) -> bool:

@@ -29,8 +29,6 @@ async def validate_block_body(
     block: Union[FullBlock, UnfinishedBlock],
     height: uint32,
     fork_point_with_peak: Optional[uint32],
-    *,
-    validate_signature: bool = True,
 ) -> Optional[Err]:
     """
     This assumes the header block has been completely validated.

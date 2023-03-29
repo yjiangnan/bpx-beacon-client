@@ -108,7 +108,6 @@ async def pre_validate_blocks_multiprocessing(
     pool: Executor,
     batch_size: int,
     wp_summaries: Optional[List[SubEpochSummary]] = None,
-    *,
 ) -> List[PreValidationResult]:
     """
     This method must be called under the blockchain lock
