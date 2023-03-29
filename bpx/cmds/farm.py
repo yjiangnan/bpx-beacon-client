@@ -46,7 +46,6 @@ def farm_cmd() -> None:
 )
 def summary_cmd(
     rpc_port: Optional[int],
-    execution_rpc_port: Optional[int],
     harvester_rpc_port: Optional[int],
     farmer_rpc_port: Optional[int],
 ) -> None:
