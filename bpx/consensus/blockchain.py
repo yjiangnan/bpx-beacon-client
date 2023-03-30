@@ -219,7 +219,7 @@ class Blockchain(BlockchainInterface):
             return ReceiveBlockResult.INVALID_BLOCK, Err(pre_validation_result.error), None
         assert required_iters is not None
 
-        error_code, _ = await validate_block_body(
+        error_code = await validate_block_body(
             self.constants,
             self,
             self.block_store,
