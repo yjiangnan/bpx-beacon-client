@@ -712,7 +712,6 @@ def validate_finished_header_block(
     constants: ConsensusConstants,
     blocks: BlockchainInterface,
     header_block: HeaderBlock,
-    check_filter: bool,
     expected_difficulty: uint64,
     expected_sub_slot_iters: uint64,
     check_sub_epoch_summary: bool = True,

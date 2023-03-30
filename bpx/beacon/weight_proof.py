@@ -1255,7 +1255,7 @@ def validate_recent_blocks(
             log.debug(f"wp, validate block {block.height}")
             if sub_slots > 2 and (tip_height - block.height < last_blocks_to_validate):
                 caluclated_required_iters, error = validate_finished_header_block(
-                    constants, sub_blocks, block, False, diff, ssi, ses_blocks > 2
+                    constants, sub_blocks, block, diff, ssi, ses_blocks > 2
                 )
                 if error is not None:
                     log.error(f"block {block.header_hash} failed validation {error}")
