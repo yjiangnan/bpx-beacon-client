@@ -465,7 +465,6 @@ class Blockchain(BlockchainInterface):
             self.constants,
             self,
             unfinished_header_block,
-            False,
             difficulty,
             sub_slot_iters,
             skip_overflow_ss_validation,
