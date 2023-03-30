@@ -732,7 +732,6 @@ def validate_finished_header_block(
         constants,
         blocks,
         unfinished_header_block,
-        check_filter,
         expected_difficulty,
         expected_sub_slot_iters,
         False,
