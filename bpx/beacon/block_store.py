@@ -93,6 +93,7 @@ class BlockStore:
 
     def maybe_decompress(self, block_bytes: bytes) -> FullBlock:
         ret: FullBlock = FullBlock.from_bytes(zstd.decompress(block_bytes))
+        return ret
 
     def maybe_decompress_blob(self, block_bytes: bytes) -> bytes:
         ret: bytes = zstd.decompress(block_bytes)
