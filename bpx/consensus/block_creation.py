@@ -63,6 +63,7 @@ def create_foliage(
 
     foliage_data = FoliageBlockData(
         reward_block_unfinished.get_hash(),
+        timestamp,
         extension_data,
     )
 
