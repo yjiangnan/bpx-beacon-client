@@ -308,7 +308,7 @@ class Beacon:
 
             full_peak: Optional[FullBlock] = await self.blockchain.get_full_peak()
             assert full_peak is not None
-            state_change_summary = StateChangeSummary(peak, uint32(max(peak.height - 1, 0)), [], [], [])
+            state_change_summary = StateChangeSummary(peak, uint32(max(peak.height - 1, 0)))
             ppp_result: PeakPostProcessingResult = await self.peak_post_processing(
                 full_peak, state_change_summary, None
             )
