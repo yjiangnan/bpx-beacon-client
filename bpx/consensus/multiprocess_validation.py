@@ -97,7 +97,7 @@ def batch_pre_validate_blocks(
             except Exception:
                 error_stack = traceback.format_exc()
                 log.error(f"Exception: {error_stack}")
-                results.append(PreValidationResult(uint16(Err.UNKNOWN.value), None, None, False))
+                results.append(PreValidationResult(uint16(Err.UNKNOWN.value), None))
     return [bytes(r) for r in results]
 
 
@@ -129,7 +129,7 @@ async def pre_validate_blocks_multiprocessing(
     num_blocks_seen = 0
     if blocks[0].height > 0:
         if not block_records.contains_block(blocks[0].prev_header_hash):
-            return [PreValidationResult(uint16(Err.INVALID_PREV_BLOCK_HASH.value), None, None, False)]
+            return [PreValidationResult(uint16(Err.INVALID_PREV_BLOCK_HASH.value), None)]
         curr = block_records.block_record(blocks[0].prev_header_hash)
         num_sub_slots_to_look_for = 3 if curr.overflow else 2
         while (
