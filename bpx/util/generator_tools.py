@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from typing import Any, Iterator, List, Optional, Tuple
 
+from bpx.types.full_block import FullBlock
+from bpx.types.header_block import HeaderBlock
+
 def get_block_header(block: FullBlock) -> HeaderBlock:
     return HeaderBlock(
         block.finished_sub_slots,
