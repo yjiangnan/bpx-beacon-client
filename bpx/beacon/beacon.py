@@ -1464,7 +1464,7 @@ class Beacon:
         async with self._blockchain_lock_high_priority:
             # TODO: pre-validate VDFs outside of lock
             validation_start = time.time()
-            validate_result = await self.blockchain.validate_unfinished_block(block, npc_result)
+            validate_result = await self.blockchain.validate_unfinished_block(block)
             if validate_result.error is not None:
                 raise ConsensusError(Err(validate_result.error))
             validation_time = time.time() - validation_start
