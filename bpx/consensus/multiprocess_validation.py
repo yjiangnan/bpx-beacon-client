@@ -25,6 +25,7 @@ from bpx.types.full_block import FullBlock
 from bpx.types.header_block import HeaderBlock
 from bpx.types.unfinished_block import UnfinishedBlock
 from bpx.util.block_cache import BlockCache
+from bpx.util.generator_tools import get_block_header
 from bpx.util.errors import Err, ValidationError
 from bpx.util.ints import uint16, uint32, uint64
 from bpx.util.streamable import Streamable, streamable

@@ -37,6 +37,7 @@ from bpx.types.unfinished_block import UnfinishedBlock
 from bpx.types.unfinished_header_block import UnfinishedHeaderBlock
 from bpx.types.weight_proof import SubEpochChallengeSegment
 from bpx.util.errors import ConsensusError, Err
+from bpx.util.generator_tools import get_block_header
 from bpx.util.hash import std_hash
 from bpx.util.inline_executor import InlineExecutor
 from bpx.util.ints import uint16, uint32, uint64, uint128
@@ -627,7 +628,7 @@ class Blockchain(BlockchainInterface):
         for block in blocks:
             if self.height_to_hash(block.height) != block.header_hash:
                 raise ValueError(f"Block at {block.header_hash} is no longer in the blockchain (it's in a fork)")
-            header = get_block_header(block, [], [])
+            header = get_block_header(block)
             header_blocks[header.header_hash] = header
 
         return header_blocks
