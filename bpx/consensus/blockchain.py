@@ -513,7 +513,6 @@ class Blockchain(BlockchainInterface):
             self,
             blocks,
             self.pool,
-            True,
             batch_size,
             wp_summaries,
         )
