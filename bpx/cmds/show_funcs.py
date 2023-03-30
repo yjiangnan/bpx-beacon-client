@@ -73,7 +73,7 @@ async def print_blockchain_state(node_client: BeaconRpcClient, config: Dict[str,
             added_blocks.append(curr)
             if curr.height > 0:
                 curr = await node_client.get_block_record(curr.prev_hash)
-            else
+            else:
                 curr = None
 
         for b in added_blocks:
