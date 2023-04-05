@@ -38,7 +38,7 @@ async def get_average_block_time(rpc_port: Optional[int]) -> float:
             if curr is None or curr.height < (blocks_to_compare + 100):
                 return SECONDS_PER_BLOCK
             past_curr = await client.get_block_record_by_height(curr.height - blocks_to_compare)
-            if past_curr is Nonee:
+            if past_curr is None:
                 # stupid mypy
                 return SECONDS_PER_BLOCK
             return (curr.timestamp - past_curr.timestamp) / (curr.height - past_curr.height)
