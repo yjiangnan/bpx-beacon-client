@@ -1271,7 +1271,7 @@ def validate_recent_blocks(
 
         curr_block_ses = None if not ses else summaries[ses_idx - 1]
         block_record = header_block_to_sub_block_record(
-            constants, required_iters, block, ssi, overflow, deficit, height, curr_block_ses
+            constants, required_iters, block, ssi, overflow, deficit, curr_block_ses
         )
         log.debug(f"add block {block_record.height} to tmp sub blocks")
         sub_blocks.add_block_record(block_record)
