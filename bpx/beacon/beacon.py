@@ -410,7 +410,7 @@ class Beacon:
         self.log.info(f"Starting batch short sync from {start_height} to height {target_height}")
         if start_height > 0:
             first = await peer.call_api(
-                BeaconAPI.request_block, beacon_protocol.RequestBlock(uint32(start_height), False)
+                BeaconAPI.request_block, beacon_protocol.RequestBlock(uint32(start_height))
             )
             if first is None or not isinstance(first, beacon_protocol.RespondBlock):
                 self.sync_store.batch_syncing.remove(peer.peer_node_id)
@@ -432,7 +432,7 @@ class Beacon:
         try:
             for height in range(start_height, target_height, batch_size):
                 end_height = min(target_height, height + batch_size)
-                request = RequestBlocks(uint32(height), uint32(end_height), True)
+                request = RequestBlocks(uint32(height), uint32(end_height))
                 response = await peer.call_api(BeaconAPI.request_blocks, request)
                 if not response:
                     raise ValueError(f"Error short batch syncing, invalid/no response for {height}-{end_height}")
@@ -563,7 +563,7 @@ class Beacon:
                 if peer.peer_node_id not in peak_peers:
                     target_peak_response: Optional[RespondBlock] = await peer.call_api(
                         BeaconAPI.request_block,
-                        beacon_protocol.RequestBlock(target_peak.height, False),
+                        beacon_protocol.RequestBlock(target_peak.height),
                         timeout=10,
                     )
                     if target_peak_response is not None and isinstance(target_peak_response, RespondBlock):
@@ -791,7 +791,7 @@ class Beacon:
                 coroutines.append(
                     peer.call_api(
                         BeaconAPI.request_block,
-                        beacon_protocol.RequestBlock(target_peak.height, True),
+                        beacon_protocol.RequestBlock(target_peak.height),
                         timeout=10,
                     )
                 )
@@ -894,7 +894,7 @@ class Beacon:
             try:
                 for start_height in range(fork_point_height, target_peak_sb_height, batch_size):
                     end_height = min(target_peak_sb_height, start_height + batch_size)
-                    request = RequestBlocks(uint32(start_height), uint32(end_height), True)
+                    request = RequestBlocks(uint32(start_height), uint32(end_height))
                     fetched = False
                     for peer in random.sample(new_peers_with_peak, len(new_peers_with_peak)):
                         if peer.closed:
@@ -2085,7 +2085,7 @@ async def node_next_block_check(
     peer: WSBpxConnection, potential_peek: uint32, blockchain: BlockchainInterface
 ) -> bool:
     block_response: Optional[Any] = await peer.call_api(
-        BeaconAPI.request_block, beacon_protocol.RequestBlock(potential_peek, True)
+        BeaconAPI.request_block, beacon_protocol.RequestBlock(potential_peek)
     )
     if block_response is not None and isinstance(block_response, beacon_protocol.RespondBlock):
         peak = blockchain.get_peak()
