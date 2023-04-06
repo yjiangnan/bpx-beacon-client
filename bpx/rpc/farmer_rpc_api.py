@@ -94,6 +94,12 @@ class FarmerRpcApi:
             "/get_harvester_plots_invalid": self.get_harvester_plots_invalid,
             "/get_harvester_plots_keys_missing": self.get_harvester_plots_keys_missing,
             "/get_harvester_plots_duplicates": self.get_harvester_plots_duplicates,
+            "/get_public_keys": self.get_public_keys,
+            "/get_private_key": self.get_private_key,
+            "/generate_mnemonic": self.generate_mnemonic,
+            "/add_key": self.add_key,
+            "/delete_key": self.delete_key,
+            "/delete_all_keys": self.delete_all_keys,
         }
 
     async def _state_changed(self, change: str, change_data: Optional[Dict[str, Any]]) -> List[WsRpcMessage]:
@@ -283,3 +289,93 @@ class FarmerRpcApi:
 
     async def get_harvester_plots_duplicates(self, request_dict: Dict[str, object]) -> EndpointResult:
         return self.paginated_plot_path_request(Receiver.duplicates, request_dict)
+    
+    async def get_public_keys(self, request: Dict) -> EndpointResult:
+        try:
+            fingerprints = [
+                sk.get_g1().get_fingerprint() for (sk, seed) in await self.service.keychain_proxy.get_all_private_keys()
+            ]
+        except KeychainIsLocked:
+            return {"keyring_is_locked": True}
+        except Exception as e:
+            raise Exception(
+                "Error while getting keys.  If the issue persists, restart all services."
+                f"  Original error: {type(e).__name__}: {e}"
+            ) from e
+        else:
+            return {"public_key_fingerprints": fingerprints}
+
+    async def _get_private_key(self, fingerprint) -> Tuple[Optional[PrivateKey], Optional[bytes]]:
+        try:
+            all_keys = await self.service.keychain_proxy.get_all_private_keys()
+            for sk, seed in all_keys:
+                if sk.get_g1().get_fingerprint() == fingerprint:
+                    return sk, seed
+        except Exception as e:
+            log.error(f"Failed to get private key by fingerprint: {e}")
+        return None, None
+
+    async def get_private_key(self, request) -> EndpointResult:
+        fingerprint = request["fingerprint"]
+        sk, seed = await self._get_private_key(fingerprint)
+        if sk is not None:
+            s = bytes_to_mnemonic(seed) if seed is not None else None
+            return {
+                "private_key": {
+                    "fingerprint": fingerprint,
+                    "sk": bytes(sk).hex(),
+                    "pk": bytes(sk.get_g1()).hex(),
+                    "farmer_pk": bytes(master_sk_to_farmer_sk(sk).get_g1()).hex(),
+                    "pool_pk": bytes(master_sk_to_pool_sk(sk).get_g1()).hex(),
+                    "seed": s,
+                },
+            }
+        return {"success": False, "private_key": {"fingerprint": fingerprint}}
+
+    async def generate_mnemonic(self, request: Dict) -> EndpointResult:
+        return {"mnemonic": generate_mnemonic().split(" ")}
+
+    async def add_key(self, request) -> EndpointResult:
+        if "mnemonic" not in request:
+            raise ValueError("Mnemonic not in request")
+
+        # Adding a key from 24 word mnemonic
+        mnemonic = request["mnemonic"]
+        try:
+            sk = await self.service.keychain_proxy.add_private_key(" ".join(mnemonic))
+        except KeyError as e:
+            return {
+                "success": False,
+                "error": f"The word '{e.args[0]}' is incorrect.'",
+                "word": e.args[0],
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+        fingerprint = sk.get_g1().get_fingerprint()
+
+        # Makes sure the new key is added to config properly
+        try:
+            await self.service.keychain_proxy.check_keys(self.service.root_path)
+        except Exception as e:
+            log.error(f"Failed to check_keys after adding a new key: {e}")
+            return {"success": False, "error": str(e)}
+        return {"fingerprint": fingerprint}
+
+    async def delete_key(self, request) -> EndpointResult:
+        fingerprint = request["fingerprint"]
+        try:
+            await self.service.keychain_proxy.delete_key_by_fingerprint(fingerprint)
+        except Exception as e:
+            log.error(f"Failed to delete key by fingerprint: {e}")
+            return {"success": False, "error": str(e)}
+        return {}
+
+    async def delete_all_keys(self, request: Dict) -> EndpointResult:
+        try:
+            await self.service.keychain_proxy.delete_all_keys()
+        except Exception as e:
+            log.error(f"Failed to delete all keys: {e}")
+            return {"success": False, "error": str(e)}
+        return {}
+

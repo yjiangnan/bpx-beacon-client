@@ -35,3 +35,21 @@ class FarmerRpcClient(RpcClient):
 
     async def get_harvester_plots_duplicates(self, request: PlotPathRequestData) -> Dict[str, Any]:
         return await self.fetch("get_harvester_plots_duplicates", dataclass_to_json_dict(request))
+    
+    async def get_public_keys(self) -> List[int]:
+        return (await self.fetch("get_public_keys", {}))["public_key_fingerprints"]
+
+    async def get_private_key(self, fingerprint: int) -> Dict:
+        return (await self.fetch("get_private_key", {"fingerprint": fingerprint}))["private_key"]
+
+    async def generate_mnemonic(self) -> List[str]:
+        return (await self.fetch("generate_mnemonic", {}))["mnemonic"]
+
+    async def add_key(self, mnemonic: List[str], request_type: str = "new_wallet") -> Dict[str, Any]:
+        return await self.fetch("add_key", {"mnemonic": mnemonic, "type": request_type})
+
+    async def delete_key(self, fingerprint: int) -> Dict[str, Any]:
+        return await self.fetch("delete_key", {"fingerprint": fingerprint})
+
+    async def delete_all_keys(self) -> Dict[str, Any]:
+        return await self.fetch("delete_all_keys", {})
