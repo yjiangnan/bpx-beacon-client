@@ -288,16 +288,9 @@ class Keychain:
             raise KeychainUserNotFound(self.service, user)
         str_bytes = bytes.fromhex(read_str)
 
-        public_key = G1Element.from_bytes(str_bytes[: G1Element.SIZE])
-        fingerprint = public_key.get_fingerprint()
         entropy = str_bytes[G1Element.SIZE : G1Element.SIZE + 32]
 
-        return KeyData(
-            fingerprint=fingerprint,
-            public_key=public_key,
-            label=self.keyring_wrapper.get_label(fingerprint),
-            secrets=KeyDataSecrets.from_entropy(entropy) if include_secrets else None,
-        )
+        return KeyData.from_entropy(entropy, self.keyring_wrapper.get_label(fingerprint))
 
     def _get_free_private_key_index(self) -> int:
         """
