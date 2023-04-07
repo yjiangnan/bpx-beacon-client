@@ -10,7 +10,7 @@ from blspy import PrivateKey
 from bpx.cmds.init_funcs import check_keys
 from bpx.util.errors import KeychainException, KeychainFingerprintNotFound
 from bpx.util.ints import uint32
-from bpx.util.keychain import Keychain, KeyData
+from bpx.util.keychain import Keychain, KeyData, generate_mnemonic
 from bpx.util.streamable import Streamable, streamable
 
 # Commands that are handled by the KeychainServer
@@ -26,6 +26,7 @@ keychain_commands = [
     "get_keys",
     "set_label",
     "delete_label",
+    "generate_mnemonic",
 ]
 
 log = logging.getLogger(__name__)
@@ -140,6 +141,8 @@ class KeychainServer:
                 return await self.get_first_private_key(data)
             elif command == "get_key_for_fingerprint":
                 return await self.get_key_for_fingerprint(data)
+            elif command == "generate_mnemonic":
+                return await self.generate_mnemonic(data)
             elif command == "get_key":
                 return await self.run_request(data, GetKeyRequest)
             elif command == "get_keys":
@@ -302,3 +305,6 @@ class KeychainServer:
             return {"success": True, "pk": bytes(private_key.get_g1()).hex(), "entropy": entropy.hex()}
         else:
             return {"success": False, "error": KEYCHAIN_ERR_KEY_NOT_FOUND}
+    
+    async def generate_mnemonic(self, request: [str, Any]) -> Dict[str, Any]:
+        return {"success": True, "mnemonic": generate_mnemonic().split(" ")}
