@@ -26,6 +26,10 @@ from bpx.util.hash import std_hash
 from bpx.util.ints import uint32
 from bpx.util.keyring_wrapper import KeyringWrapper
 from bpx.util.streamable import Streamable, streamable
+from bpx.util.derive_keys import (
+    master_sk_to_farmer_sk,
+    master_sk_to_pool_sk,
+)
 
 CURRENT_KEY_VERSION = "3.0"
 DEFAULT_USER = f"user-bpx-{CURRENT_KEY_VERSION}"  # e.g. user-bpx-3.0
@@ -194,6 +198,8 @@ class KeyDataSecrets(Streamable):
 class KeyData(Streamable):
     fingerprint: uint32
     public_key: G1Element
+    farmer_pk: G1Element
+    pool_pk: G1Element
     label: Optional[str]
     secrets: Optional[KeyDataSecrets]
 
@@ -211,6 +217,8 @@ class KeyData(Streamable):
         return cls(
             fingerprint=private_key.get_g1().get_fingerprint(),
             public_key=private_key.get_g1(),
+            farmer_pk = master_sk_to_farmer_sk(private_key.get_g1()).get_g1(),
+            pool_pk = master_sk_to_pool_sk(private_key.get_g1()).get_g1(),
             label=label,
             secrets=KeyDataSecrets.from_mnemonic(mnemonic),
         )
