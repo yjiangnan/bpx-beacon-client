@@ -217,8 +217,8 @@ class KeyData(Streamable):
         return cls(
             fingerprint=private_key.get_g1().get_fingerprint(),
             public_key=private_key.get_g1(),
-            farmer_pk = master_sk_to_farmer_sk(private_key.get_g1()).get_g1(),
-            pool_pk = master_sk_to_pool_sk(private_key.get_g1()).get_g1(),
+            farmer_pk = master_sk_to_farmer_sk(private_key).get_g1(),
+            pool_pk = master_sk_to_pool_sk(private_key).get_g1(),
             label=label,
             secrets=KeyDataSecrets.from_mnemonic(mnemonic),
         )
