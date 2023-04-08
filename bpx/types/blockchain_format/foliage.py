@@ -16,7 +16,7 @@ class FoliageBlockData(Streamable):
     # Part of the block that is signed by the plot key
     unfinished_reward_block_hash: bytes32
     timestamp: uint64
-    extension_data: bytes32  # Used for future updates. Can be any 32 byte value initially
+    execution_block_hash: bytes32
 
 
 @streamable
