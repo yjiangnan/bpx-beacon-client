@@ -661,7 +661,6 @@ class BeaconAPI:
                 sp_vdfs,
                 timestamp,
                 self.beacon.blockchain,
-                b"",
                 prev_b,
                 finished_sub_slots,
             )

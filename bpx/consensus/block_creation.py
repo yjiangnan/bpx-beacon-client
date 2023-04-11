@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-import random
+import random # Todo
 from dataclasses import replace
 from typing import Callable, Dict, List, Optional, Tuple
 
@@ -35,7 +35,6 @@ def create_foliage(
     total_iters_sp: uint128,
     timestamp: uint64,
     get_plot_signature: Callable[[bytes32, G1Element], G2Element],
-    seed: bytes = b"",
 ) -> Foliage:
     """
     Creates a foliage for a given reward chain block. This is called at the signage point, so some of this information may be
@@ -49,13 +48,12 @@ def create_foliage(
         total_iters_sp: total iters at the signage point
         timestamp: timestamp to put into the foliage block
         get_plot_signature: retrieve the signature corresponding to the plot public key
-        seed: seed to randomize block
 
     """
 
-    random.seed(seed)
-    # Use the extension data to create different blocks based on header hash
-    extension_data: bytes32 = bytes32(random.randint(0, 100000000).to_bytes(32, "big"))
+    seed: bytes = b"" # Todo
+    random.seed(seed) # Todo
+    execution_block_hash: bytes32 = bytes32(random.randint(0, 100000000).to_bytes(32, "big")) # Todo
     if prev_block is None:
         height: uint32 = uint32(0)
     else:
@@ -64,7 +62,7 @@ def create_foliage(
     foliage_data = FoliageBlockData(
         reward_block_unfinished.get_hash(),
         timestamp,
-        extension_data,
+        execution_block_hash,
     )
 
     foliage_block_data_signature: G2Element = get_plot_signature(
@@ -100,7 +98,6 @@ def create_unfinished_block(
     signage_point: SignagePoint,
     timestamp: uint64,
     blocks: BlockchainInterface,
-    seed: bytes = b"",
     prev_block: Optional[BlockRecord] = None,
     finished_sub_slots_input: Optional[List[EndOfSubSlotBundle]] = None,
 ) -> UnfinishedBlock:
@@ -120,7 +117,6 @@ def create_unfinished_block(
         get_plot_signature: function that returns signature corresponding to plot public key
         signage_point: signage point information (VDFs)
         timestamp: timestamp to add to the foliage block, if created
-        seed: seed to randomize chain
         prev_block: previous block (already in chain) from the signage point
         blocks: dictionary from header hash to SBR of all included SBR
         finished_sub_slots_input: finished_sub_slots at the signage point
@@ -188,7 +184,6 @@ def create_unfinished_block(
         total_iters_sp,
         timestamp,
         get_plot_signature,
-        seed,
     )
     return UnfinishedBlock(
         finished_sub_slots,

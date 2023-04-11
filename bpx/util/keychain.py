@@ -217,8 +217,8 @@ class KeyData(Streamable):
         return cls(
             fingerprint=private_key.get_g1().get_fingerprint(),
             public_key=private_key.get_g1(),
-            farmer_pk = master_sk_to_farmer_sk(private_key.get_g1()).get_g1(),
-            pool_pk = master_sk_to_pool_sk(private_key.get_g1()).get_g1(),
+            farmer_pk = master_sk_to_farmer_sk(private_key).get_g1(),
+            pool_pk = master_sk_to_pool_sk(private_key).get_g1(),
             label=label,
             secrets=KeyDataSecrets.from_mnemonic(mnemonic),
         )
@@ -288,6 +288,8 @@ class Keychain:
             raise KeychainUserNotFound(self.service, user)
         str_bytes = bytes.fromhex(read_str)
 
+        public_key = G1Element.from_bytes(str_bytes[: G1Element.SIZE])
+        fingerprint = public_key.get_fingerprint()
         entropy = str_bytes[G1Element.SIZE : G1Element.SIZE + 32]
 
         return KeyData.from_entropy(entropy, self.keyring_wrapper.get_label(fingerprint))
