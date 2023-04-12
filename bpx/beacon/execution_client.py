@@ -21,11 +21,7 @@ class ExecutionClient:
         self.exe_port = exe_port
         self.w3 = None
 
-    def ensure_web3_init(
-        self,
-        exe_host: str,
-        exe_port: str,
-    ) -> None:
+    def ensure_web3_init(self) -> None:
         if self.w3 is not None:
             return None
             
