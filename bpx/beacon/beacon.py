@@ -135,7 +135,7 @@ class Beacon:
         self.uncompact_task = None
         self.compact_vdf_requests = set()
         self.log = logging.getLogger(name)
-        self.execution_client = ExecutionClient()
+        self.execution_client = None
 
         # TODO: Logging isn't setup yet so the log entries related to parsing the
         #       config would end up on stdout if handled here.
@@ -241,7 +241,7 @@ class Beacon:
 
     async def _start(self) -> None:
         ec_addr = self.config.get("execution_client")
-        self.execution_client.connect(ec_addr["host"], ec_addr["port"])
+        self.execution_client = ExecutionClient(ec_addr["host"], ec_addr["port"])
         
         self._timelord_lock = asyncio.Lock()
         self._compact_vdf_sem = LimitedSemaphore.create(active_limit=4, waiting_limit=20)
