@@ -3,7 +3,8 @@ from __future__ import annotations
 import logging
 import asyncio
 
-from web3 import Web3, HTTPProvider, Method
+from web3 import Web3, HTTPProvider
+from web3.method import Method
 
 log = logging.getLogger(__name__)
 
