@@ -28,18 +28,18 @@ class ExecutionClient:
     ) -> None:
 	    if self.w3 is None:
 	        self.w3 = Web3(HTTPProvider('http://' + self.exe_host + ':' + str(self.exe_port)))
-        
+	        
 	        w3.eth.attach_methods({
 	            "exchangeTransitionConfigurationV1": Method("engine_exchangeTransitionConfigurationV1"),
 	            "forkchoiceUpdatedV2": Method("engine_forkchoiceUpdatedV2"),
 	            "getPayloadV2": Method("engine_getPayloadV2"),
 	            "newPayloadV2": Method("engine_newPayloadV2")
-	        })
-	        
-	        if not self.w3.is_connected():
-		        raise RuntimeError("Cannot connect to execution client")
-		    
-		    log.info("Connected to execution client")
+            })
+
+            if not self.w3.is_connected():
+                raise RuntimeError("Cannot connect to execution client")
+
+            log.info("Connected to execution client")
     
     async def exchange_transition_configuration_task(self):
         log.info("Starting exchangeTransactionConfigurationV1 loop")
