@@ -60,6 +60,7 @@ from bpx.util.limited_semaphore import LimitedSemaphore
 from bpx.util.path import path_from_root
 from bpx.util.profiler import mem_profile_task, profile_task
 from bpx.util.safe_cancel_task import cancel_task_safe
+from bpx.beacon.execution_client import ExecutionClient
 
 
 # This is the result of calling peak_post_processing, which is then fed into peak_post_processing_2
@@ -100,6 +101,7 @@ class Beacon:
     _blockchain_lock_queue: Optional[LockQueue]
     _maybe_blockchain_lock_high_priority: Optional[LockClient]
     _maybe_blockchain_lock_low_priority: Optional[LockClient]
+    execution_client: ExecutionClient
 
     @property
     def server(self) -> BpxServer:
@@ -133,6 +135,7 @@ class Beacon:
         self.uncompact_task = None
         self.compact_vdf_requests = set()
         self.log = logging.getLogger(name)
+        self.execution_client = ExecutionClient()
 
         # TODO: Logging isn't setup yet so the log entries related to parsing the
         #       config would end up on stdout if handled here.
@@ -237,6 +240,9 @@ class Beacon:
         self.state_changed_callback = callback
 
     async def _start(self) -> None:
+        ec_addr = self.config.get("execution_client")
+        self.execution_client.connect(ec_addr["host"], ec_addr["port"])
+        
         self._timelord_lock = asyncio.Lock()
         self._compact_vdf_sem = LimitedSemaphore.create(active_limit=4, waiting_limit=20)
 
@@ -325,9 +331,11 @@ class Beacon:
                     sanitize_weight_proof_only,
                 )
             )
+        asyncio.create_task(self.execution_client.exchange_transaition_configuration_task())
         self.initialized = True
         if self.beacon_peers is not None:
             asyncio.create_task(self.beacon_peers.start())
+        
 
     async def initialize_weight_proof(self) -> None:
         self.weight_proof_handler = WeightProofHandler(

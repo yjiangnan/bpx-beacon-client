@@ -327,6 +327,9 @@ beacon:
   introducer_peer:
       host: introducer.mainnet.bpxchain.cc
       port: 6202
+  execution_client:
+      host: *self_hostname
+      port: 8551
   logging: *logging
   network_overrides: *network_overrides
   selected_network: *selected_network
