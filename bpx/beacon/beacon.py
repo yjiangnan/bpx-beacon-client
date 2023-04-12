@@ -331,7 +331,7 @@ class Beacon:
                     sanitize_weight_proof_only,
                 )
             )
-        asyncio.create_task(self.execution_client.exchange_transaition_configuration_task())
+        asyncio.create_task(self.execution_client.exchange_transition_configuration_task())
         self.initialized = True
         if self.beacon_peers is not None:
             asyncio.create_task(self.beacon_peers.start())

@@ -34,7 +34,7 @@ class ExecutionClient:
             "newPayloadV2": Method("engine_newPayloadV2")
         })
     
-    async def exchange_transaition_configuration_task(self):
+    async def exchange_transition_configuration_task(self):
         log.info("Starting exchangeTransactionConfigurationV1 loop")
         
         while True:
