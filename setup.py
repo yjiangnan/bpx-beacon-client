@@ -31,6 +31,7 @@ dependencies = [
     "zstd==1.5.4.0",
     "packaging==23.0",
     "psutil==5.9.4",
+    "web3==6.2.0",
 ]
 
 upnp_dependencies = [
