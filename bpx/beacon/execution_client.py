@@ -27,7 +27,7 @@ class ExecutionClient:
             
         self.w3 = Web3(HTTPProvider('http://' + self.exe_host + ':' + str(self.exe_port)))
 
-        w3.eth.attach_methods({
+        self.w3.eth.attach_methods({
             "exchangeTransitionConfigurationV1": Method("engine_exchangeTransitionConfigurationV1"),
             "forkchoiceUpdatedV2": Method("engine_forkchoiceUpdatedV2"),
             "getPayloadV2": Method("engine_getPayloadV2"),
