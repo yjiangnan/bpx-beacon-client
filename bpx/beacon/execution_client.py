@@ -2,31 +2,88 @@ from __future__ import annotations
 
 import logging
 import asyncio
+import datetime
+import timezone
+import pathlib
+
+from typing import (
+    Optional,
+    Union,
+)
+
+from web3.eth_typing import (
+    URI,
+)
 
 from web3 import Web3, HTTPProvider
 from web3.method import Method
+import jwt
+
+from bpx.util.path import path_from_root
 
 log = logging.getLogger(__name__)
+
+class HTTPAuthProvider(HTTPProvider):
+    secret: str
+
+    def __init__(
+        self,
+        endpoint_uri: Optional[Union[URI, str]] = None,
+        secret: str
+    ) -> None:
+        self.secret = bytes.fromhex(secret[2:])
+        super().__init__(endpoint_uri)
+    
+    def get_request_headers(self) -> Dict[str, str]:
+        headers = super().get_request_headers()
+        
+        encoded_jwt = jwt.encode(
+            {
+                "iat": datetime.now(tz=timezone.utc)
+            },
+            self.secret,
+            algorithm="HS256"
+        )
+        
+        headers.update(
+            {
+                "Authentication": "Bearer " + encoded_jwt
+            }
+        )
+        return headers
 
 class ExecutionClient:
     exe_host: str
     exe_port: int
+    root_path: pathlib.Path
     w3: Web3
 
     def __init__(
         self,
         exe_host: str,
         exe_port: int,
+        root_path: pathlib.Path,
     ):
         self.exe_host = exe_host
         self.exe_port = exe_port
+        self.root_path = root_path
         self.w3 = None
 
     def ensure_web3_init(self) -> None:
         if self.w3 is not None:
             return None
-            
-        self.w3 = Web3(HTTPProvider('http://' + self.exe_host + ':' + str(self.exe_port)))
+        
+        secret_file_name = path_from_root(root_path, "../execution/jwtsecret")
+        secret_file = open(secret_file_name, 'r')
+        secret = secret_file.readline()
+        secret_file.close()
+        
+        self.w3 = Web3(
+            HTTPAuthProvider(
+                'http://' + self.exe_host + ':' + str(self.exe_port),
+                secret
+            )
+        )
 
         self.w3.eth.attach_methods({
             "exchangeTransitionConfigurationV1": Method("engine_exchangeTransitionConfigurationV1"),
