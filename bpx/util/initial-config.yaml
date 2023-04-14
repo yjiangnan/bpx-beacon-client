@@ -142,6 +142,8 @@ farmer:
     port: 6205
 
   pool_public_keys: []
+  
+  coinbase: 0x0000000000000000000000000000000000000000
 
   # If True, starts an RPC server at the following port
   start_rpc_server: True
@@ -375,7 +377,4 @@ introducer:
     public_key:  "config/ssl/beacon/public_beacon.key"
 
 execution:
-  port: 8449
-  rpc_port: 9256
-  
   selected_network: *selected_network
