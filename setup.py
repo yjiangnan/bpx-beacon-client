@@ -32,7 +32,7 @@ dependencies = [
     "packaging==23.0",
     "psutil==5.9.4",
     "web3==6.2.0",
-    "jwt==1.3.1",
+    "PyJWT==2.6.0",
 ]
 
 upnp_dependencies = [
