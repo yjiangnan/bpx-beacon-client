@@ -51,10 +51,10 @@ class HTTPAuthProvider(HTTPProvider):
         return headers
 
 class EngineModule(Module):
-    exchange_transition_configuration_v1: Method("engine_exchangeTransitionConfigurationV1")
-    forkchoice_updated_v2: Method("engine_forkchoiceUpdatedV2")
-    get_payload_v2: Method("engine_getPayloadV2")
-    new_payload_v2: Method("engine_newPayloadV2")
+    exchange_transition_configuration_v1 = Method("engine_exchangeTransitionConfigurationV1")
+    forkchoice_updated_v2 = Method("engine_forkchoiceUpdatedV2")
+    get_payload_v2 = Method("engine_getPayloadV2")
+    new_payload_v2 = Method("engine_newPayloadV2")
 
 class ExecutionClient:
     exe_host: str
