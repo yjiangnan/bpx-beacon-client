@@ -4,6 +4,7 @@ import logging
 import asyncio
 from datetime import datetime, timezone
 import pathlib
+import traceback
 
 from typing import (
     Optional,
@@ -97,10 +98,15 @@ class ExecutionClient:
         log.info("Starting exchangeTransactionConfigurationV1 loop")
 
         while True:
-            self.ensure_web3_init()
-            self.w3.eth.exchangeTransitionConfigurationV1({
-                "terminalTotalDifficulty": 0,
-                "terminalBlockHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-                "terminalBlockNumber": "0x0"
-            })
+            try:
+                self.ensure_web3_init()
+                self.w3.eth.exchangeTransitionConfigurationV1({
+                    "terminalTotalDifficulty": 0,
+                    "terminalBlockHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                    "terminalBlockNumber": "0x0"
+                })
+            except Exception:
+                except Exception as e:
+                tb = traceback.format_exc()
+                log.error(f"Error in exchange transition configuration loop: {type(e)}{tb}")
             await asyncio.sleep(60)
