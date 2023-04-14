@@ -28,8 +28,8 @@ class HTTPAuthProvider(HTTPProvider):
 
     def __init__(
         self,
+        secret: str,
         endpoint_uri: Optional[Union[URI, str]] = None,
-        secret: str
     ) -> None:
         self.secret = bytes.fromhex(secret[2:])
         super().__init__(endpoint_uri)
@@ -80,8 +80,8 @@ class ExecutionClient:
         
         self.w3 = Web3(
             HTTPAuthProvider(
+                secret,
                 'http://' + self.exe_host + ':' + str(self.exe_port),
-                secret
             )
         )
 
