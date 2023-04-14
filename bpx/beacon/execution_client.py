@@ -13,6 +13,7 @@ from typing import (
 
 from web3 import Web3, HTTPProvider
 from web3.method import Method
+from web3.module import Module
 from web3.providers.rpc import URI
 import jwt
 
@@ -49,6 +50,12 @@ class HTTPAuthProvider(HTTPProvider):
         )
         return headers
 
+class EngineModule(Module):
+    exchange_transition_configuration_v1: Method("engine_exchangeTransitionConfigurationV1")
+    forkchoice_updated_v2: Method("engine_forkchoiceUpdatedV2")
+    get_payload_v2: Method("engine_getPayloadV2")
+    new_payload_v2: Method("engine_newPayloadV2")
+
 class ExecutionClient:
     exe_host: str
     exe_port: int
@@ -82,11 +89,8 @@ class ExecutionClient:
             )
         )
 
-        self.w3.eth.attach_methods({
-            "exchangeTransitionConfigurationV1": Method("engine_exchangeTransitionConfigurationV1"),
-            "forkchoiceUpdatedV2": Method("engine_forkchoiceUpdatedV2"),
-            "getPayloadV2": Method("engine_getPayloadV2"),
-            "newPayloadV2": Method("engine_newPayloadV2")
+        self.w3.attach_modules({
+            "engine": EngineModule
         })
 
         if not self.w3.is_connected():
@@ -100,7 +104,7 @@ class ExecutionClient:
         while True:
             try:
                 self.ensure_web3_init()
-                self.w3.eth.exchangeTransitionConfigurationV1({
+                self.w3.engine.exchange_transition_configuration_v1({
                     "terminalTotalDifficulty": 0,
                     "terminalBlockHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
                     "terminalBlockNumber": "0x0"
