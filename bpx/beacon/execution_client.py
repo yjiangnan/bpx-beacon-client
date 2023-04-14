@@ -17,6 +17,8 @@ from web3.providers.rpc import URI
 import jwt
 
 from bpx.util.path import path_from_root
+from bpx.types.full_block import FullBlock
+from bpx.consensus.blockchain import Blockchain
 
 log = logging.getLogger(__name__)
 
@@ -115,3 +117,45 @@ class ExecutionClient:
             except Exception as e:
                 log.error(f"Exception in exchange transition configuration loop: {e}")
             await asyncio.sleep(60)
+    
+    async def new_peak(
+        self,
+        block: FullBlock,
+        blockchain: Blockchain,
+    ):
+        log.debug("Processing new peak")
+        
+        try:
+            self.ensure_web3_init()
+            
+            # Prepare ForkChoiceStateV1
+            
+            safeBlockHash = "0x0000000000000000000000000000000000000000000000000000000000000000"
+            finalizedBlockHash = "0x0000000000000000000000000000000000000000000000000000000000000000"
+            
+            if block.height >= 32:
+                safeBlock = blockchain.get_full_block(blockchain.height_to_hash(block.height - 32))
+                safeBlockHash = safeBlock.foliage.foliage_block_data.execution_block_hash
+                
+                if block.height >= 64:
+                    finalizedBlock = blockchain.get_full_block(blockchain.height_to_hash(block.height - 64))
+                    finalizedBlockHash = finalizedBlock.foliage.foliage_block_data.execution_block_hash
+            
+            forkchoice_state = {
+                "headBlockHash": block.foliage.foliage_block_data.execution_block_hash,
+                "safeBlockHash": safeBlockHash,
+                "finalizedBlockHash": finalizedBlockHash,
+            }
+            
+            # Prepare PayloadAttributesV2
+            
+            payload_attributes = {
+                "timestamp": block.foliage.timestamp,
+                "prevRandao": ,
+                "suggestedFeeRecipient": ,
+                "withdrawals": ,
+            }
+            
+            resp = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
+        except Exception as e:
+            log.error(f"Exception in fork choice update: {e}")
