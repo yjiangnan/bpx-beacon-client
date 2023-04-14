@@ -55,7 +55,7 @@ class HTTPAuthProvider(HTTPProvider):
 class ExecutionClient:
     exe_host: str
     exe_port: int
-    root_path: pathlib.Path
+    jwtsecret_path: pathlib.Path
     w3: Web3
 
     def __init__(
@@ -63,18 +63,18 @@ class ExecutionClient:
         exe_host: str,
         exe_port: int,
         root_path: pathlib.Path,
+        selected_network: str,
     ):
         self.exe_host = exe_host
         self.exe_port = exe_port
-        self.root_path = root_path
+        self.secret_path = path_from_root(root_path, "../execution/" + selected_network + "/geth/jwtsecret")
         self.w3 = None
 
     def ensure_web3_init(self) -> None:
         if self.w3 is not None:
             return None
         
-        secret_file_name = path_from_root(root_path, "../execution/jwtsecret")
-        secret_file = open(secret_file_name, 'r')
+        secret_file = open(self.secret_path, 'r')
         secret = secret_file.readline()
         secret_file.close()
         
