@@ -4,7 +4,6 @@ import logging
 import asyncio
 from datetime import datetime, timezone
 import pathlib
-import traceback
 
 from typing import (
     Optional,
@@ -77,10 +76,14 @@ class ExecutionClient:
     def ensure_web3_init(self) -> None:
         if self.w3 is not None:
             return None
-        
-        secret_file = open(self.secret_path, 'r')
-        secret = secret_file.readline()
-        secret_file.close()
+
+        try:
+            secret_file = open(self.secret_path, 'r')
+            secret = secret_file.readline()
+            secret_file.close()
+        except Exception as e:
+            log.error(f"Exception in Web3 init: {e}")
+            raise RuntimeError("Cannot open jwtsecret file. Execution client is not running or needs more time to run")
         
         self.w3 = Web3(
             HTTPAuthProvider(
@@ -99,7 +102,7 @@ class ExecutionClient:
         log.info("Connected to execution client")
 
     async def exchange_transition_configuration_task(self):
-        log.info("Starting exchangeTransactionConfigurationV1 loop")
+        log.debug("Starting exchangeTransactionConfigurationV1 loop")
 
         while True:
             try:
@@ -110,6 +113,5 @@ class ExecutionClient:
                     "terminalBlockNumber": "0x0"
                 })
             except Exception as e:
-                tb = traceback.format_exc()
-                log.error(f"Error in exchange transition configuration loop: {type(e)}{tb}")
+                log.error(f"Exception in exchange transition configuration loop: {e}")
             await asyncio.sleep(60)
