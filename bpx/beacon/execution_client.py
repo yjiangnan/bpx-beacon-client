@@ -10,12 +10,9 @@ from typing import (
     Union,
 )
 
-from web3.eth_typing import (
-    URI,
-)
-
 from web3 import Web3, HTTPProvider
 from web3.method import Method
+from web3.providers.rpc import URI
 import jwt
 
 from bpx.util.path import path_from_root
