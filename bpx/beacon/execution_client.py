@@ -105,8 +105,7 @@ class ExecutionClient:
                     "terminalBlockHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
                     "terminalBlockNumber": "0x0"
                 })
-            except Exception:
-                except Exception as e:
+            except Exception as e:
                 tb = traceback.format_exc()
                 log.error(f"Error in exchange transition configuration loop: {type(e)}{tb}")
             await asyncio.sleep(60)
