@@ -213,4 +213,5 @@ class ExecutionClient:
         
         self.ensure_web3_init()
             
-        return self.w3.engine.get_payload_v2(self.payload_id)
+        payload = self.w3.engine.get_payload_v2(self.payload_id)
+        return payload.blockHash, Web3.to_json(payload)

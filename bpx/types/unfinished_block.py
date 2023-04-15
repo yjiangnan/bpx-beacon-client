@@ -21,7 +21,7 @@ class UnfinishedBlock(Streamable):
     challenge_chain_sp_proof: Optional[VDFProof]  # If not first sp in sub-slot
     reward_chain_sp_proof: Optional[VDFProof]  # If not first sp in sub-slot
     foliage: Foliage  # Reward chain foliage data
-    payload: Dict[str, Any]
+    payload: str
 
     @property
     def prev_header_hash(self) -> bytes32:

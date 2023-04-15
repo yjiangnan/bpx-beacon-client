@@ -176,11 +176,10 @@ def create_unfinished_block(
     )
     
     if prev_block is None:
-        payload = None
         execution_block_hash: bytes32 = bytes32(execution_client.get_genesis_hash())
+        payload = None
     else:
-        payload = execution_client.get_payload()
-        execution_block_hash: bytes32 = bytes32(payload.blockHash)
+        execution_block_hash, payload = execution_client.get_payload()
     
     foliage = create_foliage(
         constants,
