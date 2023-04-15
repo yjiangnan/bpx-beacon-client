@@ -54,10 +54,10 @@ def create_foliage(
 
     if prev_block is None:
         height: uint32 = uint32(0)
-        execution_block_hash: bytes32 = bytes32.from_hexstr(execution_client.get_genesis_hash())
+        execution_block_hash: bytes32 = bytes32.from_hexstr(await execution_client.get_genesis_hash())
     else:
         height = uint32(prev_block.height + 1)
-        execution_block_hash: bytes32 = bytes32.from_hexstr(execution_client.get_genesis_hash())
+        execution_block_hash: bytes32 = bytes32.from_hexstr(await execution_client.get_genesis_hash())
 
     foliage_data = FoliageBlockData(
         reward_block_unfinished.get_hash(),
