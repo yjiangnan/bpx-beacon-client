@@ -138,7 +138,7 @@ class ExecutionClient:
         else:
             self.farming = True
     
-    async def new_peak(
+    async def forkchoice_update(
         self,
         block: FullBlock,
         blockchain: Blockchain,
