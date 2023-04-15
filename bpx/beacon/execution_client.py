@@ -195,7 +195,7 @@ class ExecutionClient:
             else:
                 for head_block in head_blocks:
                     forkchoice_states[head_block.header_hash] = {
-                        "headBlockHash": "0x" + head_block.foliage.foliage_block_data.execution_block_hash.hex(),
+                        "headBlockHash": "0x" + head_block.foliage.foliage_block_data.execution_block_hash.hex()
                         "safeBlockHash": safe_exe_hash,
                         "finalizedBlockHash": fin_exe_hash,
                     }
