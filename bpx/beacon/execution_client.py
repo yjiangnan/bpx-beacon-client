@@ -202,7 +202,7 @@ class ExecutionClient:
         self.ensure_web3_init()
         
         block = self.w3.eth.get_block(0)
-        log.debug(f"Genesis hash is {block.hash}")
+        log.debug(f"Genesis hash is 0x{block.hash.hex()}")
         return block.hash
     
     def get_payload(self):
