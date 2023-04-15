@@ -157,7 +157,7 @@ class ExecutionClient:
             if block.height > 32:
                 safeBlockHeight = (block.height - 32) - (block.height % 32)
                 
-            safeBlock = blockchain.get_full_block(blockchain.height_to_hash(safeBlockHeight))
+            safeBlock = await blockchain.get_full_block(blockchain.height_to_hash(safeBlockHeight))
             safeBlockHash = "0x" + safeBlock.foliage.foliage_block_data.execution_block_hash.hex()
             log.debug(f"Safe block hash: {safeBlockHash}")
             
@@ -165,7 +165,7 @@ class ExecutionClient:
             if block.height > 64:
                 finalizedBlockHeight = (block.height - 64) - (block.height % 64)
                 
-            finalizedBlock = blockchain.get_full_block(blockchain.height_to_hash(finalizedBlockHeight))
+            finalizedBlock = await blockchain.get_full_block(blockchain.height_to_hash(finalizedBlockHeight))
             finalizedBlockHash = "0x" + finalizedBlock.foliage.foliage_block_data.execution_block_hash.hex()
             log.debug(f"Finalized block hash: {finalizedBlockHash}")
             
