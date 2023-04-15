@@ -36,6 +36,8 @@ from bpx.util.derive_keys import (
     master_sk_to_pool_sk,
 )
 
+from web3 import Web3
+
 log = logging.getLogger(__name__)
 
 """
@@ -119,6 +121,10 @@ class Farmer:
 
         config = load_config(self._root_path, "config.yaml")
         self.config = config["farmer"]
+        
+        if not Web3.is_address(self.config["coinbase"])):
+            self.log.error("Invalid coinbase address in config file, reverting to default 0x00000000...")
+            self.set_coinbase("0x0000000000000000000000000000000000000000")
 
         self.pool_public_keys = [G1Element.from_bytes(bytes.fromhex(pk)) for pk in self.config["pool_public_keys"]]
 
@@ -232,6 +238,19 @@ class Farmer:
                 )
 
         return {"harvesters": harvesters}
+    
+    async def get_coinbase(self) -> Dict[str, Any]:
+        return self.config["coinbase"]
+
+    def set_coinbase(self, coinbase: str) -> None:
+        if not Web3.is_address(coinbase):
+            raise ValueError("Address is invalid")
+        
+        self.config["coinbase"] = coinbase
+        
+        with lock_and_load_config(self._root_path, "config.yaml") as config:
+            config["farmer"] = self.config
+            save_config(self._root_path, "config.yaml", config)
 
     def get_receiver(self, node_id: bytes32) -> Receiver:
         receiver: Optional[Receiver] = self.plot_sync_receivers.get(node_id)

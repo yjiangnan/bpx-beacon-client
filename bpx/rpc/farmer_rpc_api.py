@@ -287,7 +287,8 @@ class FarmerRpcApi:
         return self.paginated_plot_path_request(Receiver.duplicates, request_dict)
     
     async def get_coinbase(self, request: Dict[str, Any]) -> EndpointResult:
-        return await self.service.get_coinbase()
+        result = await self.service.get_coinbase()
+        return {"coinbase": result}
 
     async def set_coinbase(self, request: Dict[str, Any]) -> EndpointResult:
         self.service.set_coinbase(request["coinbase"])
