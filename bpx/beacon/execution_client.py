@@ -174,7 +174,7 @@ class ExecutionClient:
             if self.farming:
                 payload_attributes = {
                     "timestamp": block.foliage.timestamp,
-                    "prevRandao": ,
+                    "prevRandao": "",
                     "suggestedFeeRecipient": self.coinbase,
                     "withdrawals": [],
                 }
