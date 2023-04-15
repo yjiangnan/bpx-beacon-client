@@ -46,7 +46,7 @@ class HTTPAuthProvider(HTTPProvider):
         
         headers.update(
             {
-                "Authentication": "Bearer " + encoded_jwt
+                "Authorization": "Bearer " + encoded_jwt
             }
         )
         return headers
