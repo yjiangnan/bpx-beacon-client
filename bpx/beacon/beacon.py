@@ -1272,7 +1272,10 @@ class Beacon:
             else:
                 await self.server.send_to_all([msg], NodeType.BEACON)
         
-        await self.execution_client.new_peak(block, self.blockchain)
+        await self.execution_client.forkchoice_update(
+            self.blockchain,
+            self.beacon_store,
+        )
 
         self._state_changed("new_peak")
 
@@ -1542,6 +1545,11 @@ class Beacon:
         else:
             assert block.reward_chain_block.reward_chain_sp_vdf is not None
             rc_prev = block.reward_chain_block.reward_chain_sp_vdf.challenge
+        
+        await self.execution_client.forkchoice_update(
+            self.blockchain,
+            self.beacon_store,
+        )
 
         timelord_request = timelord_protocol.NewUnfinishedBlockTimelord(
             block.reward_chain_block,

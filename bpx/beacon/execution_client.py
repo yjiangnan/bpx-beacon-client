@@ -8,6 +8,8 @@ import pathlib
 from typing import (
     Optional,
     Union,
+    Dict,
+    Any
 )
 
 from web3 import Web3, HTTPProvider
@@ -17,8 +19,10 @@ from web3.providers.rpc import URI
 import jwt
 
 from bpx.util.path import path_from_root
-from bpx.types.full_block import FullBlock
+from bpx.types.unfinished_block import UnfinishedBlock
 from bpx.consensus.blockchain import Blockchain
+from bpx.beacon.beacon_store import BeaconStore
+from bpx.types.blockchain_format.sized_bytes import bytes32
 
 log = logging.getLogger(__name__)
 
@@ -64,7 +68,7 @@ class ExecutionClient:
     w3: Web3
     coinbase: str
     farming: bool
-    payload_id: str
+    payload_ids: Dict[bytes32, str]
 
     def __init__(
         self,
@@ -79,7 +83,7 @@ class ExecutionClient:
         self.w3 = None
         self.coinbase = "0x0000000000000000000000000000000000000000"
         self.farming = False
-        self.payload_id = None
+        self.payload_ids = {}
 
     def ensure_web3_init(self) -> None:
         if self.w3 is not None:
@@ -138,10 +142,10 @@ class ExecutionClient:
         else:
             self.farming = True
     
-    async def new_peak(
+    async def forkchoice_update(
         self,
-        block: FullBlock,
         blockchain: Blockchain,
+        beacon_store: BeaconStore,
     ):
         log.debug("Processing new peak")
         
@@ -150,30 +154,51 @@ class ExecutionClient:
             
             # Prepare ForkChoiceStateV1
             
-            headBlockHash = "0x" + block.foliage.foliage_block_data.execution_block_hash.hex()
-            log.debug(f"Head block hash: {headBlockHash}")
+            safe_block = blockchain.get_full_peak()
+            safe_height = safe_block.height
+            safe_exe_hash = "0x" + safe_block.foliage.foliage_block_data.execution_block_hash.hex()
+            log.debug(f"Got safe block with height = {safe_height}, execution hash = {safe_exe_hash}")
             
-            safeBlockHeight = 0
-            if block.height > 32:
-                safeBlockHeight = (block.height - 32) - (block.height % 32)
+            
+            fin_height = 0
+            if safe_height > 64:
+                fin_height = (safe_height - 64) - (safe_height % 64)
                 
-            safeBlock = await blockchain.get_full_block(blockchain.height_to_hash(safeBlockHeight))
-            safeBlockHash = "0x" + safeBlock.foliage.foliage_block_data.execution_block_hash.hex()
-            log.debug(f"Safe block hash: {safeBlockHash}")
+            fin_block = await blockchain.get_full_block(blockchain.height_to_hash(fin_height))
+            fin_exe_hash = "0x" + fin_block.foliage.foliage_block_data.execution_block_hash.hex()
+            log.debug(f"Got finalized block with height = {fin_height}, execution hash = {fin_exe_hash}")
             
-            finalizedBlockHeight = 0
-            if block.height > 64:
-                finalizedBlockHeight = (block.height - 64) - (block.height % 64)
-                
-            finalizedBlock = await blockchain.get_full_block(blockchain.height_to_hash(finalizedBlockHeight))
-            finalizedBlockHash = "0x" + finalizedBlock.foliage.foliage_block_data.execution_block_hash.hex()
-            log.debug(f"Finalized block hash: {finalizedBlockHash}")
             
-            forkchoice_state = {
-                "headBlockHash": headBlockHash,
-                "safeBlockHash": safeBlockHash,
-                "finalizedBlockHash": finalizedBlockHash,
-            }
+            head_height = -1
+            head_blocks = []
+            
+            if self.farming:
+                unf_blocks = beacon_store.get_unfinished_blocks()
+                for _, (unf_height, _, _) in unf_blocks.items():
+                    if unf_height > head_height:
+                        head_height = unf_height
+                for _, (unf_height, unf_block, _) in unf_blocks.items():
+                    if unf_height == head_height:
+                        head_blocks.append(unf_block)
+                log.debug(f"Got {len(head_blocks)} head blocks with height = {head_height}")
+            else:
+                log.debug("Not farming, ignoring unfinished blocks")
+            
+            forkchoice_states: Dict[bytes32, Any] = {}
+            
+            if head_height == -1:
+                forkchoice_states[safe_block.header_hash] = {
+                    "headBlockHash": safe_exe_hash,
+                    "safeBlockHash": safe_exe_hash,
+                    "finalizedBlockHash": fin_exe_hash,
+                }
+            else:
+                for head_block in head_blocks:
+                    forkchoice_states[head_block.header_hash] = {
+                        "headBlockHash": "0x" + head_block.foliage.foliage_block_data.execution_block_hash.hex()
+                        "safeBlockHash": safe_exe_hash,
+                        "finalizedBlockHash": fin_exe_hash,
+                    }
             
             # Prepare PayloadAttributesV2
             
@@ -187,11 +212,15 @@ class ExecutionClient:
                     "withdrawals": [],
                 }
             
-            resp = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
-            self.payload_id = resp.payloadId
+            # Call ForkchoiceUpdatedV2
             
-            if self.farming and self.payload_id is None:
-                log.error("Farming but no payload id received")
+            for beacon_hash in forkchoice_states:
+                resp = self.w3.engine.forkchoice_updated_v2(forkchoice_state[beacon_hash], payload_attributes)
+            
+                if self.farming and resp.payloadId is None:
+                    log.error("Farming but no payload id received")
+                else:
+                    self.payload_ids[beacon_hash] = resp.payloadId
             
         except Exception as e:
             log.error(f"Exception in fork choice update: {e}")
@@ -205,13 +234,16 @@ class ExecutionClient:
         log.debug(f"Genesis hash is 0x{block.hash.hex()}")
         return block.hash
     
-    def get_payload(self):
-        log.debug("Get payload")
+    def get_payload(
+        self,
+        beacon_hash: bytes32
+    ):
+        log.debug(f"Get payload for beacon head hash {head_hash.hex()}")
         
-        if self.payload_id is None:
-            raise RuntimeError("Get payload called but no payload_id")
+        if beacon_hash not in self.payload_ids:
+            raise RuntimeError("No payload ID for specified beacon head hash")
         
         self.ensure_web3_init()
             
-        payload = self.w3.engine.get_payload_v2(self.payload_id).executionPayload
-        return payload.blockHash, Web3.to_json(payload)
+        resp = self.w3.engine.get_payload_v2(self.payload_ids[beacon_hash])
+        return resp.executionPayload.blockHash, Web3.to_json(resp.executionPayload)
