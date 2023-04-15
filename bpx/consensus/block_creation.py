@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import random # Todo
 from dataclasses import replace
 from typing import Callable, Dict, List, Optional, Tuple
 
@@ -23,11 +22,13 @@ from bpx.types.unfinished_block import UnfinishedBlock
 from bpx.util.hash import std_hash
 from bpx.util.ints import uint8, uint32, uint64, uint128
 from bpx.util.recursive_replace import recursive_replace
+from bpx.beacon.execution_client import ExecutionClient
 
 log = logging.getLogger(__name__)
 
 
 def create_foliage(
+    execution_client: ExecutionClient,
     constants: ConsensusConstants,
     reward_block_unfinished: RewardChainBlockUnfinished,
     prev_block: Optional[BlockRecord],
@@ -51,13 +52,12 @@ def create_foliage(
 
     """
 
-    seed: bytes = b"" # Todo
-    random.seed(seed) # Todo
-    execution_block_hash: bytes32 = bytes32(random.randint(0, 100000000).to_bytes(32, "big")) # Todo
     if prev_block is None:
         height: uint32 = uint32(0)
+        execution_block_hash: bytes32 = bytes32.from_hexstr(execution_client.get_genesis_hash())
     else:
         height = uint32(prev_block.height + 1)
+        execution_block_hash: bytes32 = bytes32.from_hexstr(execution_client.get_genesis_hash())
 
     foliage_data = FoliageBlockData(
         reward_block_unfinished.get_hash(),
@@ -86,6 +86,7 @@ def create_foliage(
 
 
 def create_unfinished_block(
+    execution_client: ExecutionClient,
     constants: ConsensusConstants,
     sub_slot_start_total_iters: uint128,
     sub_slot_iters: uint64,
@@ -177,6 +178,7 @@ def create_unfinished_block(
     )
     
     foliage = create_foliage(
+        execution_client,
         constants,
         rc_block,
         prev_block,

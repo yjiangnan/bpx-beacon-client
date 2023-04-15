@@ -649,6 +649,7 @@ class BeaconAPI:
 
             self.log.info("Starting to make the unfinished block")
             unfinished_block: UnfinishedBlock = create_unfinished_block(
+                self.beacon.execution_client,
                 self.beacon.constants,
                 total_iters_pos_slot,
                 sub_slot_iters,
