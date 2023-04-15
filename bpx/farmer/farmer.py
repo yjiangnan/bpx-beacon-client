@@ -119,10 +119,6 @@ class Farmer:
 
         config = load_config(self._root_path, "config.yaml")
         self.config = config["farmer"]
-        
-        if not Web3.is_address(self.config["coinbase"])):
-            self.log.error("Invalid coinbase address in config file, reverting to default 0x00000000...")
-            self.set_coinbase("0x0000000000000000000000000000000000000000")
 
         self.pool_public_keys = [G1Element.from_bytes(bytes.fromhex(pk)) for pk in self.config["pool_public_keys"]]
 
