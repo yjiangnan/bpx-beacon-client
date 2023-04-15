@@ -28,7 +28,6 @@ log = logging.getLogger(__name__)
 
 
 def create_foliage(
-    execution_client: ExecutionClient,
     constants: ConsensusConstants,
     reward_block_unfinished: RewardChainBlockUnfinished,
     prev_block: Optional[BlockRecord],
@@ -36,6 +35,7 @@ def create_foliage(
     total_iters_sp: uint128,
     timestamp: uint64,
     get_plot_signature: Callable[[bytes32, G1Element], G2Element],
+    execution_block_hash
 ) -> Foliage:
     """
     Creates a foliage for a given reward chain block. This is called at the signage point, so some of this information may be
@@ -54,10 +54,8 @@ def create_foliage(
 
     if prev_block is None:
         height: uint32 = uint32(0)
-        execution_block_hash: bytes32 = bytes32(execution_client.get_genesis_hash())
     else:
         height = uint32(prev_block.height + 1)
-        execution_block_hash: bytes32 = bytes32(execution_client.get_genesis_hash())
 
     foliage_data = FoliageBlockData(
         reward_block_unfinished.get_hash(),
@@ -177,8 +175,14 @@ def create_unfinished_block(
         rc_sp_signature,
     )
     
+    if prev_block is None:
+        payload = None
+        execution_block_hash: bytes32 = bytes32(execution_client.get_genesis_hash())
+    else:
+        payload = execution_client.get_payload()
+        execution_block_hash: bytes32 = bytes32(payload.blockHash)
+    
     foliage = create_foliage(
-        execution_client,
         constants,
         rc_block,
         prev_block,
@@ -186,6 +190,7 @@ def create_unfinished_block(
         total_iters_sp,
         timestamp,
         get_plot_signature,
+        execution_block_hash
     )
     return UnfinishedBlock(
         finished_sub_slots,
@@ -193,6 +198,7 @@ def create_unfinished_block(
         signage_point.cc_proof,
         signage_point.rc_proof,
         foliage,
+        payload
     )
 
 

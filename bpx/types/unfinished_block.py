@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 from bpx.types.blockchain_format.foliage import Foliage
 from bpx.types.blockchain_format.reward_chain_block import RewardChainBlockUnfinished
@@ -21,6 +21,7 @@ class UnfinishedBlock(Streamable):
     challenge_chain_sp_proof: Optional[VDFProof]  # If not first sp in sub-slot
     reward_chain_sp_proof: Optional[VDFProof]  # If not first sp in sub-slot
     foliage: Foliage  # Reward chain foliage data
+    payload: Dict[str, Any]
 
     @property
     def prev_header_hash(self) -> bytes32:
