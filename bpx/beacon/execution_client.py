@@ -150,19 +150,27 @@ class ExecutionClient:
             
             # Prepare ForkChoiceStateV1
             
-            safeBlockHash = "0x0000000000000000000000000000000000000000000000000000000000000000"
-            finalizedBlockHash = "0x0000000000000000000000000000000000000000000000000000000000000000"
+            headBlockHash = "0x" + block.foliage.foliage_block_data.execution_block_hash.hex()
+            log.debug(f"Head block hash: {headBlockHash}")
             
-            if block.height >= 32:
-                safeBlock = blockchain.get_full_block(blockchain.height_to_hash(block.height - 32))
-                safeBlockHash = safeBlock.foliage.foliage_block_data.execution_block_hash
+            safeBlockHeight = 0
+            if block.height > 32:
+                safeBlockHeight = (block.height - 32) - (block.height % 32)
                 
-                if block.height >= 64:
-                    finalizedBlock = blockchain.get_full_block(blockchain.height_to_hash(block.height - 64))
-                    finalizedBlockHash = finalizedBlock.foliage.foliage_block_data.execution_block_hash
+            safeBlock = blockchain.get_full_block(blockchain.height_to_hash(safeBlockHeight))
+            safeBlockHash = "0x" + safeBlock.foliage.foliage_block_data.execution_block_hash.hex()
+            log.debug(f"Safe block hash: {safeBlockHash}")
+            
+            finalizedBlockHeight = 0
+            if block.height > 64:
+                finalizedBlockHeight = (block.height - 64) - (block.height % 64)
+                
+            finalizedBlock = blockchain.get_full_block(blockchain.height_to_hash(finalizedBlockHeight))
+            finalizedBlockHash = "0x" + finalizedBlock.foliage.foliage_block_data.execution_block_hash.hex()
+            log.debug(f"Finalized block hash: {finalizedBlockHash}")
             
             forkchoice_state = {
-                "headBlockHash": block.foliage.foliage_block_data.execution_block_hash,
+                "headBlockHash": headBlockHash,
                 "safeBlockHash": safeBlockHash,
                 "finalizedBlockHash": finalizedBlockHash,
             }
@@ -178,8 +186,6 @@ class ExecutionClient:
                     "suggestedFeeRecipient": self.coinbase,
                     "withdrawals": [],
                 }
-            else:
-                log.warning("Coinbase address not set, farming not possible")
             
             resp = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
             self.payload_id = resp.payloadId
