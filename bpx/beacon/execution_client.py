@@ -181,7 +181,7 @@ class ExecutionClient:
             
             if self.farming:
                 payload_attributes = {
-                    "timestamp": block.foliage.foliage_block_data.timestamp,
+                    "timestamp": Web3.to_hex(block.foliage.foliage_block_data.timestamp),
                     "prevRandao": "",
                     "suggestedFeeRecipient": self.coinbase,
                     "withdrawals": [],
