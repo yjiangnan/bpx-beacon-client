@@ -107,10 +107,7 @@ class ExecutionClient:
             "engine": EngineModule
         })
 
-        if not self.w3.is_connected():
-            raise RuntimeError("Cannot connect to execution client")
-
-        log.info("Connected to execution client")
+        log.info("Initialized Web3 connection")
 
     async def exchange_transition_configuration_task(self):
         log.debug("Starting exchangeTransactionConfigurationV1 loop")
