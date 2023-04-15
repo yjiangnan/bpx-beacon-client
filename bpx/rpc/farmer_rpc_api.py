@@ -94,8 +94,6 @@ class FarmerRpcApi:
             "/get_harvester_plots_invalid": self.get_harvester_plots_invalid,
             "/get_harvester_plots_keys_missing": self.get_harvester_plots_keys_missing,
             "/get_harvester_plots_duplicates": self.get_harvester_plots_duplicates,
-            "/get_coinbase": self.get_coinbase,
-            "/set_coinbase": self.set_coinbase,
         }
 
     async def _state_changed(self, change: str, change_data: Optional[Dict[str, Any]]) -> List[WsRpcMessage]:
@@ -285,11 +283,3 @@ class FarmerRpcApi:
 
     async def get_harvester_plots_duplicates(self, request_dict: Dict[str, object]) -> EndpointResult:
         return self.paginated_plot_path_request(Receiver.duplicates, request_dict)
-    
-    async def get_coinbase(self, request: Dict[str, Any]) -> EndpointResult:
-        result = await self.service.get_coinbase()
-        return {"coinbase": result}
-
-    async def set_coinbase(self, request: Dict[str, Any]) -> EndpointResult:
-        self.service.set_coinbase(request["coinbase"])
-        return {}

@@ -104,3 +104,12 @@ class BeaconRpcClient(RpcClient):
                 }
         except Exception:
             return None
+    
+    async def get_coinbase(self) -> Dict[str, Any]:
+        return await self.fetch("get_coinbase", {})
+
+    async def set_coinbase(
+        self,
+        coinbase: str,
+    ) -> Dict[str, Any]:
+        return await self.fetch("set_coinbase", {"coinbase": coinbase})

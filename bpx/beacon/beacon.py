@@ -50,7 +50,7 @@ from bpx.types.header_block import HeaderBlock
 from bpx.types.unfinished_block import UnfinishedBlock
 from bpx.util import cached_bls
 from bpx.util.check_fork_next_block import check_fork_next_block
-from bpx.util.config import process_config_start_method
+from bpx.util.config import process_config_start_method, lock_and_load_config, save_config
 from bpx.util.db_synchronous import db_synchronous_on
 from bpx.util.db_version import lookup_db_version, set_db_version_async
 from bpx.util.db_wrapper import DbWrapper, manage_connection
@@ -242,6 +242,11 @@ class Beacon:
     async def _start(self) -> None:
         ec_addr = self.config.get("execution_client")
         self.execution_client = ExecutionClient(ec_addr["host"], ec_addr["port"], self.root_path, self.config["selected_network"])
+        
+        try:
+            self.execution_client.set_coinbase(self.config.get("coinbase"))
+        except ValueError:
+            self.log.error("Invalid coinbase address in config file. Farming not possible!")
         
         self._timelord_lock = asyncio.Lock()
         self._compact_vdf_sem = LimitedSemaphore.create(active_limit=4, waiting_limit=20)
@@ -1747,6 +1752,17 @@ class Beacon:
                     f"{end_of_slot_bundle.challenge_chain.challenge_chain_end_of_slot_vdf.challenge}"
                 )
         return None, False
+    
+    async def get_coinbase(self) -> Dict[str, Any]:
+        return self.config["coinbase"]
+
+    def set_coinbase(self, coinbase: str) -> None:
+        self.execution_client.set_coinbase(coinbase)
+        self.config["coinbase"] = coinbase
+        
+        with lock_and_load_config(self.root_path, "config.yaml") as config:
+            config["coinbase"] = coinbase
+            save_config(self.root_path, "config.yaml", config)
 
     async def _needs_compact_proof(
         self, vdf_info: VDFInfo, header_block: HeaderBlock, field_vdf: CompressibleVDFField

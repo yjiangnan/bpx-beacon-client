@@ -62,6 +62,8 @@ class ExecutionClient:
     exe_port: int
     jwtsecret_path: pathlib.Path
     w3: Web3
+    coinbase: str
+    farming: bool
 
     def __init__(
         self,
@@ -74,6 +76,8 @@ class ExecutionClient:
         self.exe_port = exe_port
         self.secret_path = path_from_root(root_path, "../execution/" + selected_network + "/geth/jwtsecret")
         self.w3 = None
+        self.coinbase = "0x0000000000000000000000000000000000000000"
+        self.farming = False
 
     def ensure_web3_init(self) -> None:
         if self.w3 is not None:
@@ -118,6 +122,20 @@ class ExecutionClient:
                 log.error(f"Exception in exchange transition configuration loop: {e}")
             await asyncio.sleep(60)
     
+    def set_coinbase(
+        self,
+        coinbase: str,
+    ):
+        if not Web3.is_address(coinbase):
+            raise ValueError("Invalid coinbase address")
+            
+        self.coinbase = coinbase
+        
+        if coinbase == "0x0000000000000000000000000000000000000000":
+            self.farming = False
+        else:
+            self.farming = True
+    
     async def new_peak(
         self,
         block: FullBlock,
@@ -149,12 +167,17 @@ class ExecutionClient:
             
             # Prepare PayloadAttributesV2
             
-            payload_attributes = {
-                "timestamp": block.foliage.timestamp,
-                "prevRandao": ,
-                "suggestedFeeRecipient": ,
-                "withdrawals": ,
-            }
+            payload_attributes = None
+            
+            if self.farming:
+                payload_attributes = {
+                    "timestamp": block.foliage.timestamp,
+                    "prevRandao": ,
+                    "suggestedFeeRecipient": self.coinbase,
+                    "withdrawals": [],
+                }
+            else:
+                log.warning("Coinbase address not set, farming not possible")
             
             resp = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
         except Exception as e:

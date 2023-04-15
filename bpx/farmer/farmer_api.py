@@ -243,10 +243,6 @@ class FarmerAPI:
 
     @api_request()
     async def new_signage_point(self, new_signage_point: farmer_protocol.NewSignagePoint):
-        if self.farmer.config.get("coinbase") == "0x0000000000000000000000000000000000000000":
-            self.farmer.log.error("Coinbase is not set. NOT FARMING !")
-            return None
-        
         message = harvester_protocol.NewSignagePointHarvester(
             new_signage_point.challenge_hash,
             new_signage_point.difficulty,

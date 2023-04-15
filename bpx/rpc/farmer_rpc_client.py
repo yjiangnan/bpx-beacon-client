@@ -35,13 +35,4 @@ class FarmerRpcClient(RpcClient):
 
     async def get_harvester_plots_duplicates(self, request: PlotPathRequestData) -> Dict[str, Any]:
         return await self.fetch("get_harvester_plots_duplicates", dataclass_to_json_dict(request))
-
-    async def get_coinbase(self) -> Dict[str, Any]:
-        return await self.fetch("get_coinbase", {})
-
-    async def set_coinbase(
-        self,
-        coinbase: str,
-    ) -> Dict[str, Any]:
-        return await self.fetch("set_coinbase", {"coinbase": coinbase})
  

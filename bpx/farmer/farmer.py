@@ -25,7 +25,7 @@ from bpx.ssl.create_ssl import get_mozilla_ca_crt
 from bpx.types.blockchain_format.proof_of_space import ProofOfSpace
 from bpx.types.blockchain_format.sized_bytes import bytes32
 from bpx.util.byte_types import hexstr_to_bytes
-from bpx.util.config import config_path_for_filename, load_config, lock_and_load_config, save_config
+from bpx.util.config import load_config
 from bpx.util.errors import KeychainProxyConnectionFailure
 from bpx.util.hash import std_hash
 from bpx.util.ints import uint8, uint16, uint64
@@ -35,8 +35,6 @@ from bpx.util.derive_keys import (
     master_sk_to_farmer_sk,
     master_sk_to_pool_sk,
 )
-
-from web3 import Web3
 
 log = logging.getLogger(__name__)
 
@@ -196,7 +194,7 @@ class Farmer:
 
         if peer.connection_type is NodeType.HARVESTER:
             self.plot_sync_receivers[peer.peer_node_id] = Receiver(peer, self.plot_sync_callback)
-            self.harvester_handshake_task = asyncio.create_task(handshake_task())
+            self.harvester_handshake_task = asyncio.create_task(handshake_task())            
 
     def set_server(self, server: BpxServer) -> None:
         self.server = server
@@ -238,19 +236,6 @@ class Farmer:
                 )
 
         return {"harvesters": harvesters}
-    
-    async def get_coinbase(self) -> Dict[str, Any]:
-        return self.config["coinbase"]
-
-    def set_coinbase(self, coinbase: str) -> None:
-        if not Web3.is_address(coinbase):
-            raise ValueError("Address is invalid")
-        
-        self.config["coinbase"] = coinbase
-        
-        with lock_and_load_config(self._root_path, "config.yaml") as config:
-            config["farmer"] = self.config
-            save_config(self._root_path, "config.yaml", config)
 
     def get_receiver(self, node_id: bytes32) -> Receiver:
         receiver: Optional[Receiver] = self.plot_sync_receivers.get(node_id)

@@ -142,8 +142,6 @@ farmer:
     port: 6205
 
   pool_public_keys: []
-  
-  coinbase: 0x0000000000000000000000000000000000000000
 
   # If True, starts an RPC server at the following port
   start_rpc_server: True
@@ -342,6 +340,8 @@ beacon:
     public_crt:  "config/ssl/beacon/public_beacon.crt"
     public_key:  "config/ssl/beacon/public_beacon.key"
   use_bpx_loop_policy: True
+  
+  coinbase: 0x0000000000000000000000000000000000000000
 
 ui:
   # Which port to use to communicate with the beacon client

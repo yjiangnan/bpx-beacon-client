@@ -38,6 +38,8 @@ class BeaconRpcApi:
             "/get_network_space": self.get_network_space,
             "/get_network_info": self.get_network_info,
             "/get_recent_signage_point_or_eos": self.get_recent_signage_point_or_eos,
+            "/get_coinbase": self.get_coinbase,
+            "/set_coinbase": self.set_coinbase,
         }
 
     async def _state_changed(self, change: str, change_data: Optional[Dict[str, Any]] = None) -> List[WsRpcMessage]:
@@ -428,3 +430,11 @@ class BeaconRpcApi:
             * eligible_plots_filter_multiplier
         )
         return {"space": uint128(int(network_space_bytes_estimate))}
+    
+    async def get_coinbase(self, request: Dict[str, Any]) -> EndpointResult:
+        result = await self.service.get_coinbase()
+        return {"coinbase": result}
+
+    async def set_coinbase(self, request: Dict[str, Any]) -> EndpointResult:
+        self.service.set_coinbase(request["coinbase"])
+        return {}
