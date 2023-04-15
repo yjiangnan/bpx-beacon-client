@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 
 from bpx.types.blockchain_format.foliage import Foliage
 from bpx.types.blockchain_format.reward_chain_block import RewardChainBlockUnfinished
