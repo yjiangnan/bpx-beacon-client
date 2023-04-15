@@ -116,7 +116,7 @@ class ExecutionClient:
             try:
                 self.ensure_web3_init()
                 self.w3.engine.exchange_transition_configuration_v1({
-                    "terminalTotalDifficulty": 0,
+                    "terminalTotalDifficulty": "0x0",
                     "terminalBlockHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
                     "terminalBlockNumber": "0x0"
                 })
