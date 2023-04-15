@@ -154,7 +154,7 @@ class ExecutionClient:
             
             # Prepare ForkChoiceStateV1
             
-            safe_block = blockchain.get_full_peak()
+            safe_block = await blockchain.get_full_peak()
             safe_height = safe_block.height
             safe_exe_hash = "0x" + safe_block.foliage.foliage_block_data.execution_block_hash.hex()
             log.debug(f"Got safe block with height = {safe_height}, execution hash = {safe_exe_hash}")
