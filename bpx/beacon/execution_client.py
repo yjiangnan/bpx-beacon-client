@@ -196,7 +196,7 @@ class ExecutionClient:
         except Exception as e:
             log.error(f"Exception in fork choice update: {e}")
     
-    async def get_genesis_hash(self):
+    def get_genesis_hash(self):
         log.debug("Get genesis hash")
         
         self.ensure_web3_init()
@@ -205,7 +205,7 @@ class ExecutionClient:
         log.debug(f"Genesis hash is {block.hash}")
         return block.hash
     
-    async def get_payload(self):
+    def get_payload(self):
         log.debug("Get payload")
         
         if self.payload_id is None:
