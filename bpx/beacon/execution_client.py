@@ -84,6 +84,8 @@ class ExecutionClient:
     def ensure_web3_init(self) -> None:
         if self.w3 is not None:
             return None
+        
+        log.debug(f"Trying connect to execution client at {self.exe_host}:{self.exe_port} using JWT secret {self.secret_path}")
 
         try:
             secret_file = open(self.secret_path, 'r')
