@@ -64,6 +64,7 @@ class ExecutionClient:
     w3: Web3
     coinbase: str
     farming: bool
+    payload_id: str
 
     def __init__(
         self,
@@ -78,6 +79,7 @@ class ExecutionClient:
         self.w3 = None
         self.coinbase = "0x0000000000000000000000000000000000000000"
         self.farming = False
+        self.payload_id = None
 
     def ensure_web3_init(self) -> None:
         if self.w3 is not None:
@@ -180,5 +182,20 @@ class ExecutionClient:
                 log.warning("Coinbase address not set, farming not possible")
             
             resp = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
+            self.payload_id = resp.payloadId
+            
+            if self.farming and self.payload_id is None:
+                log.error("Farming but no payload id received")
+            
         except Exception as e:
             log.error(f"Exception in fork choice update: {e}")
+    
+    async def get_payload(self):
+        log.debug("Get payload")
+        
+        if self.payload_id is None:
+            raise RuntimeError("Get payload called but no payload_id")
+        
+        self.ensure_web3_init()
+            
+        return self.w3.engine.get_payload_v2(self.payload_id)
