@@ -90,6 +90,7 @@ class ExecutionClient:
         try:
             secret_file = open(self.secret_path, 'r')
             secret = secret_file.readline()
+            log.debug(f"JWT secret key: {secret}")
             secret_file.close()
         except Exception as e:
             log.error(f"Exception in Web3 init: {e}")
