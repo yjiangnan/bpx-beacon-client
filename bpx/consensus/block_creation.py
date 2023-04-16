@@ -175,12 +175,7 @@ def create_unfinished_block(
         rc_sp_signature,
     )
     
-    if prev_block is None:
-        execution_block_hash: bytes32 = bytes32(execution_client.get_genesis_hash())
-        payload = None
-    else:
-        payload_block_hash, payload = execution_client.get_payload()
-        execution_block_hash: bytes32 = bytes32.from_hexstr(payload_block_hash)
+    execution_block_hash, payload = self.execution_client.get_payload(prev_block)
     
     foliage = create_foliage(
         constants,

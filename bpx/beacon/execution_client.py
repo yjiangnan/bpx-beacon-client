@@ -19,8 +19,11 @@ import jwt
 from bpx.util.path import path_from_root
 from bpx.types.full_block import FullBlock
 from bpx.consensus.blockchain import Blockchain
+from bpx.consensus.block_record import BlockRecord
 
 log = logging.getLogger(__name__)
+
+COINBASE_NULL = "0x0000000000000000000000000000000000000000"
 
 class HTTPAuthProvider(HTTPProvider):
     secret: str
@@ -63,7 +66,6 @@ class ExecutionClient:
     jwtsecret_path: pathlib.Path
     w3: Web3
     coinbase: str
-    farming: bool
     payload_id: str
 
     def __init__(
@@ -77,15 +79,14 @@ class ExecutionClient:
         self.exe_port = exe_port
         self.secret_path = path_from_root(root_path, "../execution/" + selected_network + "/geth/jwtsecret")
         self.w3 = None
-        self.coinbase = "0x0000000000000000000000000000000000000000"
-        self.farming = False
+        self.coinbase = COINBASE_NULL
         self.payload_id = None
 
     def ensure_web3_init(self) -> None:
         if self.w3 is not None:
             return None
         
-        log.debug(f"Trying connect to execution client at {self.exe_host}:{self.exe_port} using JWT secret {self.secret_path}")
+        log.debug(f"Initializing Web3 connection to {self.exe_host}:{self.exe_port} using JWT secret {self.secret_path}")
 
         try:
             secret_file = open(self.secret_path, 'r')
@@ -94,7 +95,7 @@ class ExecutionClient:
             secret_file.close()
         except Exception as e:
             log.error(f"Exception in Web3 init: {e}")
-            raise RuntimeError("Cannot open jwtsecret file. Execution client is not running or needs more time to run")
+            raise RuntimeError("Cannot open jwtsecret file. Execution client is not running or needs more time to start")
         
         self.w3 = Web3(
             HTTPAuthProvider(
@@ -132,54 +133,50 @@ class ExecutionClient:
             raise ValueError("Invalid coinbase address")
             
         self.coinbase = coinbase
-        
-        if coinbase == "0x0000000000000000000000000000000000000000":
-            self.farming = False
-        else:
-            self.farming = True
     
     async def forkchoice_update(
         self,
         block: FullBlock,
         blockchain: Blockchain,
     ):
-        log.debug("Processing new peak")
+        log.debug("Fork choice update")
         
         try:
             self.ensure_web3_init()
             
             # Prepare ForkChoiceStateV1
             
-            headBlockHash = "0x" + block.foliage.foliage_block_data.execution_block_hash.hex()
-            log.debug(f"Head block hash: {headBlockHash}")
+            head_height = block.height
+            head_hash = "0x" + block.foliage.foliage_block_data.execution_block_hash.hex()
+            log.debug(f"Head height: {head_height}, hash: {head_hash}")
             
-            safeBlockHeight = 0
-            if block.height > 32:
-                safeBlockHeight = (block.height - 32) - (block.height % 32)
+            safe_height = 0
+            if head_height > 6:
+                safe_height = (head_height - 6) - (head_height % 6)
                 
-            safeBlock = await blockchain.get_full_block(blockchain.height_to_hash(safeBlockHeight))
-            safeBlockHash = "0x" + safeBlock.foliage.foliage_block_data.execution_block_hash.hex()
-            log.debug(f"Safe block hash: {safeBlockHash}")
+            safe_block = await blockchain.get_full_block(blockchain.height_to_hash(safe_height))
+            safe_hash = "0x" + safe_block.foliage.foliage_block_data.execution_block_hash.hex()
+            log.debug(f"Safe height: {safe_height}, hash: {safe_hash}")
             
-            finalizedBlockHeight = 0
-            if block.height > 64:
-                finalizedBlockHeight = (block.height - 64) - (block.height % 64)
+            final_height = 0
+            if head_height > 32:
+                final_height = (head_height - 32) - (head_height % 32)
                 
-            finalizedBlock = await blockchain.get_full_block(blockchain.height_to_hash(finalizedBlockHeight))
-            finalizedBlockHash = "0x" + finalizedBlock.foliage.foliage_block_data.execution_block_hash.hex()
-            log.debug(f"Finalized block hash: {finalizedBlockHash}")
+            final_block = await blockchain.get_full_block(blockchain.height_to_hash(final_height))
+            final_hash = "0x" + final_block.foliage.foliage_block_data.execution_block_hash.hex()
+            log.debug(f"Finalized height: {final_height}, hash: {final_hash}")
             
             forkchoice_state = {
-                "headBlockHash": headBlockHash,
-                "safeBlockHash": safeBlockHash,
-                "finalizedBlockHash": finalizedBlockHash,
+                "headBlockHash": head_hash,
+                "safeBlockHash": safe_hash,
+                "finalizedBlockHash": final_hash,
             }
             
             # Prepare PayloadAttributesV2
             
             payload_attributes = None
             
-            if self.farming:
+            if self.coinbase != COINBASE_NULL:
                 payload_attributes = {
                     "timestamp": Web3.to_hex(block.foliage.foliage_block_data.timestamp),
                     "prevRandao": "0x0000000000000000000000000000000000000000000000000000000000000000",
@@ -190,28 +187,27 @@ class ExecutionClient:
             resp = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
             self.payload_id = resp.payloadId
             
-            if self.farming and self.payload_id is None:
+            if self.coinbase != COINBASE_NULL and self.payload_id is None:
                 log.error("Farming but no payload id received")
             
         except Exception as e:
             log.error(f"Exception in fork choice update: {e}")
     
-    def get_genesis_hash(self):
-        log.debug("Get genesis hash")
+    def get_payload(
+        self,
+        prev_block: Optional[BlockRecord]
+    ):
+        log.debug("Get payload")
         
         self.ensure_web3_init()
         
-        block = self.w3.eth.get_block(0)
-        log.debug(f"Genesis hash is 0x{block.hash.hex()}")
-        return block.hash
-    
-    def get_payload(self):
-        log.debug("Get payload")
+        if prev_block is None:
+            genesis_block = self.w3.eth.get_block(0)
+            log.debug(f"Genesis hash is 0x{genesis_block.hash.hex()}")
+            return bytes32(block.hash), None
         
         if self.payload_id is None:
             raise RuntimeError("Get payload called but no payload_id")
         
-        self.ensure_web3_init()
-            
         payload = self.w3.engine.get_payload_v2(self.payload_id).executionPayload
-        return payload.blockHash, Web3.to_json(payload)
+        return bytes32.from_hexstr(payload.blockHash), Web3.to_json(payload)
