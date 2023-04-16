@@ -287,6 +287,7 @@ class Beacon:
         self._blockchain = await Blockchain.create(
             block_store=self.block_store,
             consensus_constants=self.constants,
+            execution_client=self.execution_client,
             blockchain_dir=self.db_path.parent,
             reserved_cores=reserved_cores,
             multiprocessing_context=self.multiprocessing_context,
@@ -478,7 +479,7 @@ class Beacon:
         self.sync_store.batch_syncing.remove(peer.peer_node_id)
         return True
 
-    async def short_sync_backtrack( # done here
+    async def short_sync_backtrack(
         self, peer: WSBpxConnection, peak_height: uint32, target_height: uint32, target_unf_hash: bytes32
     ) -> bool:
         """
@@ -666,8 +667,6 @@ class Beacon:
                 await self.server.send_to_specific([msg], peer.peer_node_id)
 
     async def synced(self) -> bool:
-        if "simulator" in str(self.config.get("selected_network")):
-            return True  # sim is always synced because it has no peers
         curr: Optional[BlockRecord] = self.blockchain.get_peak()
         if curr is None:
             return False
@@ -1271,8 +1270,6 @@ class Beacon:
                 await self.server.send_to_all([msg], NodeType.BEACON, peer.peer_node_id)
             else:
                 await self.server.send_to_all([msg], NodeType.BEACON)
-        
-        await self.execution_client.forkchoice_update(block, self.blockchain)
 
         self._state_changed("new_peak")
 

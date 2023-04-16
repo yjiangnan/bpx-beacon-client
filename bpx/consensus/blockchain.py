@@ -42,6 +42,7 @@ from bpx.util.hash import std_hash
 from bpx.util.inline_executor import InlineExecutor
 from bpx.util.ints import uint16, uint32, uint64, uint128
 from bpx.util.setproctitle import getproctitle, setproctitle
+from bpx.beacon.execution_client import ExecutionClient
 
 log = logging.getLogger(__name__)
 
@@ -68,6 +69,7 @@ class StateChangeSummary:
 
 class Blockchain(BlockchainInterface):
     constants: ConsensusConstants
+    execution_client: ExecutionClient
 
     # peak of the blockchain
     _peak_height: Optional[uint32]
@@ -96,6 +98,7 @@ class Blockchain(BlockchainInterface):
     async def create(
         block_store: BlockStore,
         consensus_constants: ConsensusConstants,
+        execution_client: ExecutionClient,
         blockchain_dir: Path,
         reserved_cores: int,
         multiprocessing_context: Optional[BaseContext] = None,
@@ -127,6 +130,7 @@ class Blockchain(BlockchainInterface):
 
         self.constants = consensus_constants
         self.block_store = block_store
+        self.execution_client = execution_client
         self._shut_down = False
         await self._load_chain_from_store(blockchain_dir)
         self._seen_compact_proofs = set()
@@ -223,6 +227,7 @@ class Blockchain(BlockchainInterface):
             self.constants,
             self,
             self.block_store,
+            self.execution_client,
             self.get_peak(),
             block,
             block.height,
@@ -492,6 +497,7 @@ class Blockchain(BlockchainInterface):
             self.constants,
             self,
             self.block_store,
+            self.execution_client,
             self.get_peak(),
             block,
             uint32(prev_height + 1),
