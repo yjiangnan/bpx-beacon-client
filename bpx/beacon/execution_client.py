@@ -151,7 +151,12 @@ class ExecutionClient:
         log.debug(f"Validating unfinished block of height: {height}")
         
         if height == 0:
+            if block.payload is not None:
+                return Err.PAYLOAD_IN_GENESIS_BLOCK
             return None
+        
+        if block.payload is None:
+            return Err.NO_PAYLOAD
         
         self.ensure_web3_init()
             

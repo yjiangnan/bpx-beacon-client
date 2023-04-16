@@ -59,6 +59,8 @@ class Err(Enum):
     PAYLOAD_INVALID_BLOCK_HASH = 38
     PAYLOAD_INVALID_TERMINAL_BLOCK = 39
     PAYLOAD_HASH_MISMATCH = 40
+    PAYLOAD_IN_GENESIS_BLOCK = 41
+    NO_PAYLOAD = 42
 
 
 class ValidationError(Exception):
