@@ -252,7 +252,7 @@ class ExecutionClient:
         if prev_block is None:
             genesis_block = self.w3.eth.get_block(0)
             log.debug(f"Genesis hash is 0x{genesis_block.hash.hex()}")
-            return bytes32(block.hash), None
+            return bytes32(genesis_block.hash), None
         
         if self.payload_id is None:
             raise RuntimeError("Get payload called but no payload_id")
