@@ -42,7 +42,6 @@ from bpx.util.hash import std_hash
 from bpx.util.inline_executor import InlineExecutor
 from bpx.util.ints import uint16, uint32, uint64, uint128
 from bpx.util.setproctitle import getproctitle, setproctitle
-from bpx.beacon.execution_client import ExecutionClient
 
 log = logging.getLogger(__name__)
 
