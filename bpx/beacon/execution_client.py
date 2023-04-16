@@ -155,24 +155,18 @@ class ExecutionClient:
             # Prepare ForkChoiceStateV1
             
             safe_block = await blockchain.get_full_peak()
-            if safe_block is None:
-                safe_exe_hash = "0x0000000000000000000000000000000000000000000000000000000000000000"
-                log.debug("No safe block")
-                fin_exe_hash = "0x0000000000000000000000000000000000000000000000000000000000000000"
-                log.debug("No finalized block")
-            else:
-                safe_height = safe_block.height
-                safe_exe_hash = "0x" + safe_block.foliage.foliage_block_data.execution_block_hash.hex()
-                log.debug(f"Got safe block with height = {safe_height}, execution hash = {safe_exe_hash}")
+            safe_height = safe_block.height
+            safe_exe_hash = "0x" + safe_block.foliage.foliage_block_data.execution_block_hash.hex()
+            log.debug(f"Got safe block with height = {safe_height}, execution hash = {safe_exe_hash}")
+            
+            
+            fin_height = 0
+            if safe_height > 64:
+                fin_height = (safe_height - 64) - (safe_height % 64)
                 
-                
-                fin_height = 0
-                if safe_height > 64:
-                    fin_height = (safe_height - 64) - (safe_height % 64)
-                    
-                fin_block = await blockchain.get_full_block(blockchain.height_to_hash(fin_height))
-                fin_exe_hash = "0x" + fin_block.foliage.foliage_block_data.execution_block_hash.hex()
-                log.debug(f"Got finalized block with height = {fin_height}, execution hash = {fin_exe_hash}")
+            fin_block = await blockchain.get_full_block(blockchain.height_to_hash(fin_height))
+            fin_exe_hash = "0x" + fin_block.foliage.foliage_block_data.execution_block_hash.hex()
+            log.debug(f"Got finalized block with height = {fin_height}, execution hash = {fin_exe_hash}")
             
             
             head_height = -1
@@ -193,7 +187,6 @@ class ExecutionClient:
             forkchoice_states: Dict[bytes32, Any] = {}
             
             if head_height == -1:
-                assert safe_block is not None
                 forkchoice_states[safe_block.header_hash] = {
                     "headBlockHash": safe_exe_hash,
                     "safeBlockHash": safe_exe_hash,
