@@ -1272,7 +1272,7 @@ class Beacon:
             else:
                 await self.server.send_to_all([msg], NodeType.BEACON)
         
-        await self.execution_client.forkchoice_update(block, self.blockchain)
+        await self.execution_client.new_peak(block, self.blockchain)
 
         self._state_changed("new_peak")
 
