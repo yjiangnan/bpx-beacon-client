@@ -5,7 +5,6 @@ import logging
 from typing import Awaitable, Callable, Dict, List, Optional, Set, Tuple, Union
 
 from bpx.consensus.block_record import BlockRecord
-from bpx.consensus.blockchain_interface import BlockchainInterface
 from bpx.consensus.constants import ConsensusConstants
 from bpx.consensus.find_fork_point import find_fork_point_in_chain
 from bpx.beacon.block_store import BlockStore
@@ -17,14 +16,13 @@ from bpx.util import cached_bls
 from bpx.util.errors import Err
 from bpx.util.hash import std_hash
 from bpx.util.ints import uint32, uint64
-from bpx.beacon.execution_client import ExecutionClient
 
 log = logging.getLogger(__name__)
 
 
 async def validate_block_body(
     constants: ConsensusConstants,
-    blocks: BlockchainInterface,
+    blocks: Blockchain,
     block_store: BlockStore,
     execution_client: ExecutionClient,
     peak: Optional[BlockRecord],
