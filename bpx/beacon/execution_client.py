@@ -150,7 +150,7 @@ class ExecutionClient:
     ) -> Optional[Err]:
         log.debug(f"Validating unfinished block of height: {height}")
         
-        if head_height == 0:
+        if height == 0:
             return None
         
         self.ensure_web3_init()
