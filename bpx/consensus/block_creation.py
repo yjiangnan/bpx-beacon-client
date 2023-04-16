@@ -175,7 +175,7 @@ def create_unfinished_block(
         rc_sp_signature,
     )
     
-    execution_block_hash, payload = self.execution_client.get_payload(prev_block)
+    execution_block_hash, payload = execution_client.get_payload(prev_block)
     
     foliage = create_foliage(
         constants,
