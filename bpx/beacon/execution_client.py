@@ -23,6 +23,7 @@ from bpx.types.unfinished_block import UnfinishedBlock
 from bpx.consensus.blockchain import Blockchain
 from bpx.consensus.block_record import BlockRecord
 from bpx.util.errors import Err
+from bpx.types.blockchain_format.sized_bytes import bytes32
 
 log = logging.getLogger(__name__)
 
