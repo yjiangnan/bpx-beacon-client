@@ -15,7 +15,6 @@ from web3.method import Method
 from web3.module import Module
 from web3.providers.rpc import URI
 import jwt
-import json
 
 from bpx.util.path import path_from_root
 from bpx.types.full_block import FullBlock
@@ -160,11 +159,10 @@ class ExecutionClient:
         
         self.ensure_web3_init()
             
-        payload = json.loads(block.payload)
-        if payload.blockHash != block.foliage.foliage_block_data.execution_block_hash:
+        if block.payload.blockHash != block.foliage.foliage_block_data.execution_block_hash:
             return Err.PAYLOAD_HASH_MISMATCH
         
-        payload_status = self.w3.engine.new_payload_v2(payload)
+        payload_status = self.w3.engine.new_payload_v2(block.payload)
         return self.validation_result(payload_status)
     
     
@@ -263,5 +261,6 @@ class ExecutionClient:
         if self.payload_id is None:
             raise RuntimeError("Get payload called but no payload_id")
         
-        payload = self.w3.engine.get_payload_v2(self.payload_id).executionPayload
-        return bytes32.from_hexstr(payload.blockHash), Web3.to_json(payload)
+        result = self.w3.engine.get_payload_v2(self.payload_id)
+        payload = dict(result.executionPayload)
+        return bytes32.from_hexstr(payload.blockHash), payload
