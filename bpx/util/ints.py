@@ -48,6 +48,11 @@ class uint128(StructStream):
     pass
 
 
+@parse_metadata_from_name
+class uint256(StructStream):
+    pass
+
+
 class int512(StructStream):
     PACK = None
 

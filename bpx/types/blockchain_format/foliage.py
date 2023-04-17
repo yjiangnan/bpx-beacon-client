@@ -6,6 +6,7 @@ from typing import List, Optional
 from blspy import G2Element
 
 from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.types.blockchain_format.execution_payload import ExecutionPayloadV2
 from bpx.util.ints import uint64
 from bpx.util.streamable import Streamable, streamable
 
@@ -15,8 +16,7 @@ from bpx.util.streamable import Streamable, streamable
 class FoliageBlockData(Streamable):
     # Part of the block that is signed by the plot key
     unfinished_reward_block_hash: bytes32
-    timestamp: uint64
-    execution_block_hash: bytes32
+    execution_payload: ExecutionPayloadV2
 
 
 @streamable
