@@ -23,6 +23,7 @@ from bpx.util.hash import std_hash
 from bpx.util.ints import uint8, uint32, uint64, uint128
 from bpx.util.recursive_replace import recursive_replace
 from bpx.beacon.execution_client import ExecutionClient
+from bpx.types.blockchain_format.execution_payload import ExecutionPayloadV2
 
 log = logging.getLogger(__name__)
 
@@ -33,9 +34,8 @@ def create_foliage(
     prev_block: Optional[BlockRecord],
     blocks: BlockchainInterface,
     total_iters_sp: uint128,
-    timestamp: uint64,
     get_plot_signature: Callable[[bytes32, G1Element], G2Element],
-    execution_block_hash
+    execution_payload: ExecutionPayloadV2
 ) -> Foliage:
     """
     Creates a foliage for a given reward chain block. This is called at the signage point, so some of this information may be
@@ -47,7 +47,6 @@ def create_foliage(
         prev_block: the previous block at the signage point
         blocks: dict from header hash to blocks, of all ancestor blocks
         total_iters_sp: total iters at the signage point
-        timestamp: timestamp to put into the foliage block
         get_plot_signature: retrieve the signature corresponding to the plot public key
 
     """
@@ -59,8 +58,7 @@ def create_foliage(
 
     foliage_data = FoliageBlockData(
         reward_block_unfinished.get_hash(),
-        timestamp,
-        execution_block_hash,
+        execution_payload
     )
 
     foliage_block_data_signature: G2Element = get_plot_signature(
@@ -84,8 +82,8 @@ def create_foliage(
 
 
 def create_unfinished_block(
-    execution_client: ExecutionClient,
     constants: ConsensusConstants,
+    execution_client: ExecutionClient,
     sub_slot_start_total_iters: uint128,
     sub_slot_iters: uint64,
     signage_point_index: uint8,
@@ -95,7 +93,6 @@ def create_unfinished_block(
     slot_cc_challenge: bytes32,
     get_plot_signature: Callable[[bytes32, G1Element], G2Element],
     signage_point: SignagePoint,
-    timestamp: uint64,
     blocks: BlockchainInterface,
     prev_block: Optional[BlockRecord] = None,
     finished_sub_slots_input: Optional[List[EndOfSubSlotBundle]] = None,
@@ -175,7 +172,7 @@ def create_unfinished_block(
         rc_sp_signature,
     )
     
-    execution_block_hash, payload = execution_client.get_payload(prev_block)
+    execution_payload = execution_client.get_payload(prev_block)
     
     foliage = create_foliage(
         constants,
@@ -183,9 +180,8 @@ def create_unfinished_block(
         prev_block,
         blocks,
         total_iters_sp,
-        timestamp,
         get_plot_signature,
-        execution_block_hash
+        execution_payload
     )
     return UnfinishedBlock(
         finished_sub_slots,
@@ -193,7 +189,6 @@ def create_unfinished_block(
         signage_point.cc_proof,
         signage_point.rc_proof,
         foliage,
-        payload
     )
 
 

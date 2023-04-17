@@ -7,7 +7,6 @@ from blspy import G2Element
 
 from bpx.types.blockchain_format.sized_bytes import bytes32
 from bpx.types.blockchain_format.execution_payload import ExecutionPayloadV2
-from bpx.util.ints import uint64
 from bpx.util.streamable import Streamable, streamable
 
 

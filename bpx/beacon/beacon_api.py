@@ -639,18 +639,10 @@ class BeaconAPI:
                 required_iters,
             )
 
-            # The block's timestamp must be greater than the previous block's timestamp
-            timestamp = uint64(int(time.time()))
-            curr: Optional[BlockRecord] = prev_b
-            if curr is not None:
-                assert curr.timestamp is not None
-                if timestamp <= curr.timestamp:
-                    timestamp = uint64(int(curr.timestamp + 1))
-
             self.log.info("Starting to make the unfinished block")
             unfinished_block: UnfinishedBlock = create_unfinished_block(
-                self.beacon.execution_client,
                 self.beacon.constants,
+                self.beacon.execution_client,
                 total_iters_pos_slot,
                 sub_slot_iters,
                 request.signage_point_index,
@@ -660,7 +652,6 @@ class BeaconAPI:
                 cc_challenge_hash,
                 get_plot_sig,
                 sp_vdfs,
-                timestamp,
                 self.beacon.blockchain,
                 prev_b,
                 finished_sub_slots,
