@@ -224,9 +224,9 @@ class Blockchain(BlockchainInterface):
 
         error_code = await validate_block_body(
             self.constants,
+            self.execution_client,
             self,
             self.block_store,
-            self.execution_client,
             self.get_peak(),
             block,
             block.height,
@@ -495,9 +495,9 @@ class Blockchain(BlockchainInterface):
 
         error_code = await validate_block_body(
             self.constants,
+            self.execution_client,
             self,
             self.block_store,
-            self.execution_client,
             self.get_peak(),
             block,
             uint32(prev_height + 1),

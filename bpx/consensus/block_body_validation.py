@@ -22,9 +22,9 @@ log = logging.getLogger(__name__)
 
 async def validate_block_body(
     constants: ConsensusConstants,
+    execution_client: ExecutionClient,
     blocks: Blockchain,
     block_store: BlockStore,
-    execution_client: ExecutionClient,
     peak: Optional[BlockRecord],
     block: Union[FullBlock, UnfinishedBlock],
     height: uint32,
@@ -36,6 +36,5 @@ async def validate_block_body(
     """
     if isinstance(block, FullBlock):
         assert height == block.height
-        return await execution_client.new_block(block, blocks, peak)
     
-    return await execution_client.new_unfinished_block(block, height, blocks)
+    payload_status = execution_client.new_payload(block.execution_payload)
