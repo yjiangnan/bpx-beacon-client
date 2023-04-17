@@ -120,7 +120,6 @@ def header_block_to_sub_block_record(
         finished_challenge_slot_hashes = None
         finished_reward_slot_hashes = None
         finished_infused_challenge_slot_hashes = None
-    timestamp = block.foliage.foliage_block_data.timestamp
 
     return BlockRecord(
         block.header_hash,
@@ -137,7 +136,7 @@ def header_block_to_sub_block_record(
         required_iters,
         deficit,
         overflow,
-        timestamp,
+        block.execution_payload.timestamp,
         block.execution_payload.blockHash,
         finished_challenge_slot_hashes,
         finished_infused_challenge_slot_hashes,

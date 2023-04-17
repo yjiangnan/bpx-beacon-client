@@ -33,7 +33,6 @@ def create_foliage(
     prev_block: Optional[BlockRecord],
     blocks: BlockchainInterface,
     total_iters_sp: uint128,
-    timestamp: uint64,
     get_plot_signature: Callable[[bytes32, G1Element], G2Element],
     execution_block_hash: bytes32
 ) -> Foliage:
@@ -47,7 +46,6 @@ def create_foliage(
         prev_block: the previous block at the signage point
         blocks: dict from header hash to blocks, of all ancestor blocks
         total_iters_sp: total iters at the signage point
-        timestamp: timestamp to put into the foliage block
         get_plot_signature: retrieve the signature corresponding to the plot public key
         execution_block_hash: execution block hash to put into the foliage block
 
@@ -60,7 +58,6 @@ def create_foliage(
 
     foliage_data = FoliageBlockData(
         reward_block_unfinished.get_hash(),
-        timestamp,
         execution_block_hash,
     )
 
@@ -182,9 +179,8 @@ def create_unfinished_block(
         prev_block,
         blocks,
         total_iters_sp,
-        execution_payload.timestamp,
         get_plot_signature,
-        execution_payload
+        execution_payload.blockHash,
     )
     return UnfinishedBlock(
         finished_sub_slots,

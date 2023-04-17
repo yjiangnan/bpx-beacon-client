@@ -1385,7 +1385,7 @@ class Beacon:
             "height": block.height,
             "validation_time": validation_time,
             "pre_validation_time": pre_validation_time,
-            "timestamp": block.foliage.foliage_block_data.timestamp
+            "timestamp": block.execution_payload.timestamp
         }
 
         if added is not None:
