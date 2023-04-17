@@ -703,92 +703,90 @@ def validate_unfinished_header_block(
         != header_block.foliage.foliage_block_data.unfinished_reward_block_hash
     ):
         return None, ValidationError(Err.INVALID_URSB_HASH)
-
-    # 17a. Check execution payload parentHash match the constant in genesis block
-    if genesis_block:
-        if (
-            header_block.foliage.foliage_block_data.execution_payload.parentHash
-            != constants.GENESIS_PARENT_HASH
-        ):
-            return None, ValidationError(Err.INVALID_PARENT_HASH, "invalid genesis block parent hash")
-    
-    #17b. Check parentHash match blockHash of the previous block
-    else:
-        prev_b_full = ### TODO
-        if (
-            header_block.foliage.foliage_block_data.execution_payload.parentHash
-            != prev_b_full.foliage.foliage_block_data.execution_payload.blockHash
-        ):
-            return None, ValidationError(Err.INVALID_PARENT_HASH, "parent hash != previous block hash")
-    
-    #18a. Check execution payload prevRandao match the constant in genesis block
-    if genesis_block:
-        if (
-            header_block.foliage.foliage_block_data.execution_payload.prevRandao
-            != constants.GENESIS_PREV_RANDAO
-        ):
-            return None, ValidationError(Err.INVALID_PREV_RANDAO, "invalid genesis block randao")
-    
-    #18b. Check prevRandao match ###
-    else:
-        if (
-            header_block.foliage.foliage_block_data.execution.payload.prevRandao
-            != ### TODO
-        ):
-            return None, ValidationError(Err.INVALID_PREV_RANDAO, "invalid randao")
-    
-    #19. Check execution block number match beacon block number
-    if header_block.foliage.foliage_block_data.execution_payload.blockNumber != height:
-        return None, ValidationError(Err.INVALID_BLOCK_NUMBER, "execution height != beacon height")
-    
-    #20a. The timestamp must not be over 15 seconds in the future
-    if header_block.foliage.foliage_block_data.execution_payload.timestamp > int(time.time() + constants.MAX_FUTURE_TIME):
+        
+    #17a. The timestamp must not be over 15 seconds in the future
+    if header_block.foliage.foliage_block_data.timestamp > int(time.time() + constants.MAX_FUTURE_TIME):
         return None, ValidationError(Err.TIMESTAMP_TOO_FAR_IN_FUTURE)
 
-    #20b. The timestamp must be greater than the previous block timestamp
+    #17b. The timestamp must be greater than the previous block timestamp
     if (
         not genesis_block
-        and header_block.foliage.foliage_block_data.execution_payload.timestamp <= prev_b.timestamp
+        and header_block.foliage.foliage_block_data.timestamp <= prev_b.timestamp
     ):
         return None, ValidationError(Err.TIMESTAMP_TOO_FAR_IN_PAST)
     
-    #21b. Check extraData match constant for genesis block
+    # 18. Check execution payload blockHash match execution_block_hash in foliage
+    if (
+        header_block.execution_payload.blockHash
+        != header_block.foliage.foliage_block_data.execution_block_hash
+    ):
+        return None, ValidationError(Err.INVALID_BLOCK_HASH, "foliage block hash mismatch")
+
+    # 19a. Check execution payload parentHash match the constant in genesis block
     if genesis_block:
-        if (
-            header_block.foliage.foliage_block_data.execution_payload.extraData
-            != constants.GENESIS_EXTRA_DATA
-        ):
+        if header_block.execution_payload.parentHash != constants.GENESIS_PARENT_HASH:
+            return None, ValidationError(Err.INVALID_PARENT_HASH, "invalid genesis block parent hash")
+    
+    # 19b. Check parentHash match blockHash of the previous block
+    else:
+        if header_block.execution_payload.parentHash != prev_b.execution_block_hash:
+            return None, ValidationError(Err.INVALID_PARENT_HASH, "parent hash != previous block hash")
+    
+    # 20a. Check execution payload prevRandao match the constant in genesis block
+    if genesis_block:
+        if header_block.execution_payload.prevRandao != constants.GENESIS_PREV_RANDAO:
+            return None, ValidationError(Err.INVALID_PREV_RANDAO, "invalid genesis block randao")
+    
+    # 20b. Check prevRandao match ### TODO
+    else:
+        if header_block.execution_payload.prevRandao != ### TODO:
+            return None, ValidationError(Err.INVALID_PREV_RANDAO, "invalid randao")
+    
+    # 21. Check execution block number match beacon block number
+    if header_block.execution_payload.blockNumber != height:
+        return None, ValidationError(Err.INVALID_BLOCK_NUMBER, "execution height != beacon height")
+    
+    # 22. Check execution block timestamp match beacon block timestamp
+    if (
+        header_block.execution_payload.timestamp
+        != header_block.foliage.foliage_block_data.timestamp
+    ):
+        return None, ValidationError(Err.INVALID_TIMESTAMP, "payload timestamp != beacon block timestamp")
+    
+    # 23a. Check extraData match constant for genesis block
+    if genesis_block:
+        if header_block.execution_payload.extraData != constants.GENESIS_EXTRA_DATA:
             return None, ValidationError(Err.INVALID_GENESIS_EXTRA_DATA, "invalid genesis extraData")
             
-    #21b. Check extraData size for non genesis block
+    # 23b. Check extraData size for non genesis block
     else:
-        if len(header_block.foliage.foliage_block_data.execution_payload.extraData) > 32:
+        if len(header_block.execution_payload.extraData) > 32:
             return None, ValidationError(Err.INVALID_EXTRA_DATA_SIZE, "extraData size > 32 bytes")
     
-    #22a. Check no withdrawals is present in genesis block
+    # 24a. Check no withdrawals is present in genesis block
     if genesis_block:
-        if len(header_block.foliage.foliage_block_data.execution_payload.withdrawals) != 0:
+        if len(header_block.execution_payload.withdrawals) != 0:
             return None, ValidationError(Err.INVALID_WITHDRAWALS_COUNT, "there are withdrawals in genesis block")
     
-    #22b. Check exactly one withdrawal is present in non-genesis block
+    # 24b. Check exactly one withdrawal is present in non-genesis block
     else:
-        if len(header_block.foliage.foliage_block_data.execution_payload.withdrawals) != 1:
+        if len(header_block.execution_payload.withdrawals) != 1:
             return None, ValidationError(Err.INVALID_WITHDRAWALS_COUNT, "withdrawals count != 1")
     
-        withdrawal = header_block.foliage.foliage_block_data.execution_payload.withdrawals[0]
+        withdrawal = header_block.execution_payload.withdrawals[0]
         
-        #22c. Check withdrawal index match ### TODO
+        # 24c. Check withdrawal index match ### TODO
         if withdrawal.index != ### TODO:
             return None, ValidationError(Err.INVALID_WITHDRAWAL_INDEX, "invalid withdrawal index")
         
-        #22d. Check withdrawal validatorIndex match 0
+        # 24d. Check withdrawal validatorIndex == 0
         if withdrawal.validatorIndex != 0:
             return None, ValidationError(Err.INVALID_WITHDRAWAL_VALIDATOR_INDEX, "invalid withdrawal validator index")
         
-        #22e. Check block reward
+        # 24e. Check block reward
         if (
             withdrawal.amount != calculate_v3_reward(
-                header_block.foliage.foliage_block_data.execution_payload.blockNumber,
+                header_block.execution_payload.blockNumber,
                 constants.V2_EOL_HEIGHT
             )
         ):
@@ -814,6 +812,7 @@ def validate_finished_header_block(
         header_block.challenge_chain_sp_proof,
         header_block.reward_chain_sp_proof,
         header_block.foliage,
+        header_block.execution_payload,
     )
 
     required_iters, validate_unfinished_err = validate_unfinished_header_block(

@@ -10,6 +10,7 @@ from bpx.types.blockchain_format.vdf import VDFProof
 from bpx.types.end_of_slot_bundle import EndOfSubSlotBundle
 from bpx.util.ints import uint32, uint128
 from bpx.util.streamable import Streamable, streamable
+from bpx.types.blockchain_format.execution_payload import ExecutionPayloadV2
 
 
 @streamable
@@ -24,6 +25,7 @@ class FullBlock(Streamable):
     reward_chain_ip_proof: VDFProof
     infused_challenge_chain_ip_proof: Optional[VDFProof]  # Iff deficit < 4
     foliage: Foliage  # Reward chain foliage data
+    execution_payload: ExecutionPayloadV2
 
     @property
     def prev_header_hash(self) -> bytes32:

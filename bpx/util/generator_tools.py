@@ -15,6 +15,7 @@ def get_block_header(block: FullBlock) -> HeaderBlock:
         block.reward_chain_ip_proof,
         block.infused_challenge_chain_ip_proof,
         block.foliage,
+        block.execution_payload,
     )
 
 def list_to_batches(list_to_split: List[Any], batch_size: int) -> Iterator[Tuple[int, List[Any]]]:

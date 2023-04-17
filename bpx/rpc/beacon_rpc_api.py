@@ -387,6 +387,7 @@ class BeaconRpcApi:
                     block.challenge_chain_sp_proof,
                     block.reward_chain_sp_proof,
                     block.foliage,
+                    block.execution_payload,
                 )
                 response_headers.append(unfinished_header_block)
         return {"headers": response_headers}
