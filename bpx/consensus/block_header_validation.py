@@ -775,11 +775,16 @@ def validate_unfinished_header_block(
     
         withdrawal = header_block.execution_payload.withdrawals[0]
         
-        # 24c. Check withdrawal index match ### TODO
-        if withdrawal.index != ### TODO:
+        # 24c. Check withdrawal index
+        # Currently, each block except genesis contains exactly one withdrawal, so withdrawal
+        # index = height - 1
+        if withdrawal.index != header_block.execution_payload.blockNumber - 1:
             return None, ValidationError(Err.INVALID_WITHDRAWAL_INDEX, "invalid withdrawal index")
         
-        # 24d. Check withdrawal validatorIndex == 0
+        # 24d. Check withdrawal validatorIndex
+        # We use this field as a reward type
+        # 0 - standard farmer block reward
+        # Other types may be added in the future, such as a timelord operator reward
         if withdrawal.validatorIndex != 0:
             return None, ValidationError(Err.INVALID_WITHDRAWAL_VALIDATOR_INDEX, "invalid withdrawal validator index")
         
