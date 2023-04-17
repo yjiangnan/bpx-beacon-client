@@ -138,6 +138,7 @@ def header_block_to_sub_block_record(
         deficit,
         overflow,
         timestamp,
+        block.execution_payload.blockHash,
         finished_challenge_slot_hashes,
         finished_infused_challenge_slot_hashes,
         finished_reward_slot_hashes,
