@@ -112,7 +112,6 @@ def create_unfinished_block(
         slot_cc_challenge: challenge hash at the sp sub-slot
         get_plot_signature: function that returns signature corresponding to plot public key
         signage_point: signage point information (VDFs)
-        timestamp: timestamp to add to the foliage block, if created
         prev_block: previous block (already in chain) from the signage point
         blocks: dictionary from header hash to SBR of all included SBR
         finished_sub_slots_input: finished_sub_slots at the signage point

@@ -46,6 +46,11 @@ class ConsensusConstants:
     WEIGHT_PROOF_RECENT_BLOCKS: uint32
     MAX_BLOCK_COUNT_PER_REQUESTS: uint32
     BLOCKS_CACHE_SIZE: uint32
+    
+    GENESIS_PARENT_HASH: bytes32
+    GENESIS_PREV_RANDAO: bytes32
+    GENESIS_EXTRA_DATA: bytes32
+    V2_EOL_HEIGHT: uint64
 
     def replace(self, **changes: object) -> "ConsensusConstants":
         return dataclasses.replace(self, **changes)

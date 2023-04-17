@@ -25,7 +25,7 @@ default_kwargs = {
     "MAX_PLOT_SIZE": 50,
     "SUB_SLOT_TIME_TARGET": 600,  # The target number of seconds per slot, mainnet 600
     "NUM_SP_INTERVALS_EXTRA": 3,  # The number of sp intervals to add to the signage point
-    "MAX_FUTURE_TIME": 5 * 60,  # The next block can have a timestamp of at most these many seconds in the future
+    "MAX_FUTURE_TIME": 15,  # The next block can have a timestamp of at most these many seconds in the future
     "NUMBER_OF_TIMESTAMPS": 11,  # Than the average of the last NUMBER_OF_TIMESTAMPS blocks
     # Used as the initial cc rc challenges, as well as first block back pointers, and first SES back pointer
     # We override this value based on the chain being run (testnet, mainnet, etc)
@@ -36,6 +36,10 @@ default_kwargs = {
     "BLOCKS_CACHE_SIZE": 4608 + (128 * 4),
     "WEIGHT_PROOF_RECENT_BLOCKS": 1000,
     "MAX_BLOCK_COUNT_PER_REQUESTS": 32,  # Allow up to 32 blocks per request
+    "GENESIS_PARENT_HASH": bytes.fromhex("0000000000000000000000000000000000000000000000000000000000000000"),
+    "GENESIS_PREV_RANDAO": bytes.fromhex("0000000000000000000000000000000000000000000000000000000000000000"),
+    "GENESIS_EXTRA_DATA": bytes.fromhex("0000000000000000000000000000000000000000000000000000000000000000"),
+    "V2_EOL_HEIGHT": 0
 }
 
 
