@@ -17,16 +17,10 @@ from web3.providers.rpc import URI
 import jwt
 
 from bpx.util.path import path_from_root
-from bpx.types.full_block import FullBlock
-from bpx.types.unfinished_block import UnfinishedBlock
-from bpx.consensus.blockchain import Blockchain
 from bpx.consensus.block_record import BlockRecord
-from bpx.util.errors import Err
 from bpx.types.blockchain_format.sized_bytes import bytes32
 
 log = logging.getLogger(__name__)
-
-COINBASE_NULL = "0x0000000000000000000000000000000000000000"
 
 class HTTPAuthProvider(HTTPProvider):
     secret: str
@@ -64,26 +58,15 @@ class EngineModule(Module):
     new_payload_v2 = Method("engine_newPayloadV2")
 
 class ExecutionClient:
-    exe_host: str
-    exe_port: int
-    jwtsecret_path: pathlib.Path
+    beacon: Beacon
     w3: Web3
-    coinbase: str
-    payload_id: str
 
     def __init__(
         self,
-        exe_host: str,
-        exe_port: int,
-        root_path: pathlib.Path,
-        selected_network: str,
+        beacon,
     ):
-        self.exe_host = exe_host
-        self.exe_port = exe_port
-        self.secret_path = path_from_root(root_path, "../execution/" + selected_network + "/geth/jwtsecret")
+        self.beacon = beacon
         self.w3 = None
-        self.coinbase = COINBASE_NULL
-        self.payload_id = None
 
 
     def ensure_web3_init(self) -> None:
@@ -93,6 +76,7 @@ class ExecutionClient:
         log.debug(f"Initializing Web3 connection to {self.exe_host}:{self.exe_port} using JWT secret {self.secret_path}")
 
         try:
+            self.secret_path = path_from_root(root_path, "../execution/" + selected_network + "/geth/jwtsecret")
             secret_file = open(self.secret_path, 'r')
             secret = secret_file.readline()
             log.debug(f"JWT secret key: {secret}")
@@ -129,41 +113,6 @@ class ExecutionClient:
             except Exception as e:
                 log.error(f"Exception in exchange transition configuration loop: {e}")
             await asyncio.sleep(60)
-    
-    
-    def set_coinbase(
-        self,
-        coinbase: str,
-    ):
-        if not Web3.is_address(coinbase):
-            raise ValueError("Invalid coinbase address")
-            
-        self.coinbase = coinbase
-    
-    
-    async def new_unfinished_block(
-        self,
-        block: UnfinishedBlock,
-        height: uint32,
-        blockchain: Blockchain,
-    ) -> Optional[Err]:
-        log.debug(f"Validating unfinished block of height: {height}")
-        
-        if height == 0:
-            if block.payload is not None:
-                return Err.PAYLOAD_IN_GENESIS_BLOCK
-            return None
-        
-        if block.payload is None:
-            return Err.NO_PAYLOAD
-        
-        self.ensure_web3_init()
-            
-        if block.payload.blockHash != block.foliage.foliage_block_data.execution_block_hash:
-            return Err.PAYLOAD_HASH_MISMATCH
-        
-        payload_status = self.w3.engine.new_payload_v2(block.payload)
-        return self.validation_result(payload_status)
     
     
     async def new_block(
@@ -220,29 +169,6 @@ class ExecutionClient:
         self.payload_id = resp.payloadId
         
         return self.validation_result(result.payloadStatus)
-    
-    
-    def validation_result(
-        self,
-        payload_status
-    ) -> Optional[Err]:
-        log.debug(f"Payload status: {payload_status.status}")
-        if payload_status.validationError is not None:
-            log.error(f"Validation error: {payload_status.validationError}")
-    
-        if payload_status.status == "VALID":
-            return None
-        if payload_status.status == "INVALID":
-            return Err.PAYLOAD_INVALID
-        if payload_status.status == "SYNCING":
-            raise RuntimeError("Execution client is syncing")
-        if payload_status.status == "ACCEPTED":
-            return Err.PAYLOAD_SIDECHAIN
-        if payload_status.status == "INVALID_BLOCK_HASH":
-            return Err.PAYLOAD_INVALID_BLOCK_HASH
-        if payload_status.status == "INVALID_TERMINAL_BLOCK":
-            return Err.PAYLOAD_INVALID_TERMINAL_BLOCK
-        return Err.UNKNOWN
     
     
     def get_payload(
