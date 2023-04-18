@@ -17,10 +17,10 @@ def calculate_v3_reward(
     return _calculate_v2_reward(v2_equiv_height)
 
 def calculate_v3_prefarm(
-    v3_additional_prefarm: uint64,
+    v3_prefarm_value: uint64,
     v2_eol_height: uint64
 ) -> uint64:
-    prefarm: uint64 = v3_additional_prefarm
+    prefarm: uint64 = v3_prefarm_value
     
     for i in range(0, v2_eol_height):
         prefarm += _calculate_v2_reward(i)
