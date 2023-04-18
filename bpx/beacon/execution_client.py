@@ -175,14 +175,15 @@ class ExecutionClient:
         self,
         prev_block: Optional[BlockRecord]
     ):
-        log.debug("Get payload")
+        if prev_block is None:
+            log.debug("Get payload for head: genesis")
+        else:
+            log.debug(f"Get payload for head: height={prev_block.height}, hash={prev_block.execution_block_hash}")
         
         self.ensure_web3_init()
         
         if prev_block is None:
-            genesis_block = self.w3.eth.get_block(0)
-            log.debug(f"Genesis hash is 0x{genesis_block.hash.hex()}")
-            return bytes32(genesis_block.hash), None
+            raw_payload = 
         
         if self.payload_id is None:
             raise RuntimeError("Get payload called but no payload_id")
