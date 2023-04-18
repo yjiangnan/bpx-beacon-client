@@ -55,6 +55,7 @@ class BlockRecord(Streamable):
     overflow: bool
     timestamp: uint64
     execution_block_hash: bytes32
+    last_withdrawal_index: Optional[uint64]
 
     # Slot (present iff this is the first SB in sub slot)
     finished_challenge_slot_hashes: Optional[List[bytes32]]

@@ -120,6 +120,11 @@ def header_block_to_sub_block_record(
         finished_challenge_slot_hashes = None
         finished_reward_slot_hashes = None
         finished_infused_challenge_slot_hashes = None
+    
+    if len(block.execution_payload.withdrawals) == 0:
+        last_withdrawal_index = None
+    else:
+        last_withdrawal_index = block.execution_payload.withdrawals[-1].index
 
     return BlockRecord(
         block.header_hash,
@@ -138,6 +143,7 @@ def header_block_to_sub_block_record(
         overflow,
         block.execution_payload.timestamp,
         block.execution_payload.blockHash,
+        last_withdrawal_index,
         finished_challenge_slot_hashes,
         finished_infused_challenge_slot_hashes,
         finished_reward_slot_hashes,
