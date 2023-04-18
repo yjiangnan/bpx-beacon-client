@@ -4,7 +4,7 @@ import dataclasses
 import logging
 from typing import Any
 
-from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.types.blockchain_format.sized_bytes import bytes20, bytes32
 from bpx.util.byte_types import hexstr_to_bytes
 from bpx.util.ints import uint8, uint32, uint64, uint128
 
@@ -51,7 +51,8 @@ class ConsensusConstants:
     GENESIS_PREV_RANDAO: bytes32
     GENESIS_EXTRA_DATA: bytes32
     V2_EOL_HEIGHT: uint64
-    V3_PREFARM_VALUE: uint64
+    V3_PREFARM_AMOUNT: uint64
+    PREFARM_ADDRESS: bytes20
 
     def replace(self, **changes: object) -> "ConsensusConstants":
         return dataclasses.replace(self, **changes)
