@@ -51,7 +51,7 @@ class ConsensusConstants:
     GENESIS_PREV_RANDAO: bytes32
     GENESIS_EXTRA_DATA: bytes32
     V2_EOL_HEIGHT: uint64
-    V3_ADDITIONAL_PREFARM: uint64
+    V3_PREFARM_VALUE: uint64
 
     def replace(self, **changes: object) -> "ConsensusConstants":
         return dataclasses.replace(self, **changes)
