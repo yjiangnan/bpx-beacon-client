@@ -133,7 +133,7 @@ class ExecutionClient:
         self,
         block: FullBlock,
         blockchain: Blockchain,
-        peak: BlockRecord,
+        peak: Optional[BlockRecord],
     ) -> str:
         log.debug(f"Fork choice update")
         
@@ -177,7 +177,10 @@ class ExecutionClient:
         
         payload_attributes = None
         
-        if peak.height == head_height:
+        if (
+            peak is None
+            or peak.height == head_height
+        ):
             coinbase = self.beacon.config.get("coinbase")
             if coinbase == COINBASE_NULL:
                 log.error("Coinbase not set! FARMING NOT POSSIBLE!")
