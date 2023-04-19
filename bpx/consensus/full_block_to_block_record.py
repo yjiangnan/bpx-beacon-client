@@ -121,7 +121,10 @@ def header_block_to_sub_block_record(
         finished_reward_slot_hashes = None
         finished_infused_challenge_slot_hashes = None
     
-    if len(block.execution_payload.withdrawals) == 0:
+    if (
+        block.execution_payload is None
+        or len(block.execution_payload.withdrawals) == 0
+    ):
         last_withdrawal_index = None
     else:
         last_withdrawal_index = block.execution_payload.withdrawals[-1].index
