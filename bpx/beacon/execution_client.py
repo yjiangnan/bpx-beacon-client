@@ -168,9 +168,9 @@ class ExecutionClient:
         log.debug(f"Finalized height: {final_height}, hash: {final_hash}")
         
         forkchoice_state = {
-            "headBlockHash": "0x" + head_hash.hex(),
-            "safeBlockHash": "0x" + safe_hash.hex(),
-            "finalizedBlockHash": "0x" + final_hash.hex(),
+            "headBlockHash": Web3.to_hex(head_hash),
+            "safeBlockHash": Web3.to_hex(safe_hash),
+            "finalizedBlockHash": Web3.to_hex(final_hash),
         }
             
         # Prepare PayloadAttributesV2
