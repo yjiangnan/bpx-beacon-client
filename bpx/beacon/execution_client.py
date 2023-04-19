@@ -278,6 +278,6 @@ class ExecutionClient:
         return {
             "timestamp": int(time.time()),
             "prevRandao": "0x0000000000000000000000000000000000000000000000000000000000000000",
-            "suggestedFeeRecipient": "0x" + coinbase.hex(),
+            "suggestedFeeRecipient": Web3.to_hex(coinbase),
             "withdrawals": [],
         }
