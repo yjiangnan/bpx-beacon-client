@@ -148,7 +148,7 @@ class ExecutionClient:
             
         if head_height == 0:
             safe_height = 0
-            safe_hash = head_height
+            safe_hash = head_hash
         else:
             if head_height > 6:
                 safe_height = (head_height - 6) - (head_height % 6)
