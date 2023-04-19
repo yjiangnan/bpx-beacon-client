@@ -230,10 +230,10 @@ class ExecutionClient:
         for raw_withdrawal in raw_payload.withdrawals:
             withdrawals.append(
                 WithdrawalV1(
-                    uint64(Web3.to_int(raw_withdrawal.index)),
-                    uint64(Web3.to_int(raw_withdrawal.validatorIndex)),
+                    uint64(Web3.to_int(hexstr_to_bytes(raw_withdrawal.index))),
+                    uint64(Web3.to_int(hexstr_to_bytes(raw_withdrawal.validatorIndex))),
                     bytes20.from_hexstr(raw_withdrawal.address),
-                    uint64(Web3.to_int(raw_withdrawal.amount)),
+                    uint64(Web3.to_int(hexstr_to_bytes(raw_withdrawal.amount))),
                 )
             )
         
@@ -244,12 +244,12 @@ class ExecutionClient:
             bytes32.from_hexstr(raw_payload.receiptsRoot),
             bytes256.from_hexstr(raw_payload.logsBloom),
             bytes32.from_hexstr(raw_payload.prevRandao),
-            uint64(Web3.to_int(raw_payload.blockNumber)),
-            uint64(Web3.to_int(raw_payload.gasLimit)),
-            uint64(Web3.to_int(raw_payload.gasUsed)),
-            uint64(Web3.to_int(raw_payload.timestamp)),
+            uint64(Web3.to_int(hexstr_to_bytes(raw_payload.blockNumber))),
+            uint64(Web3.to_int(hexstr_to_bytes(raw_payload.gasLimit))),
+            uint64(Web3.to_int(hexstr_to_bytes(raw_payload.gasUsed))),
+            uint64(Web3.to_int(hexstr_to_bytes(raw_payload.timestamp))),
             hexstr_to_bytes(raw_payload.extraData),
-            uint256(Web3.to_int(raw_payload.baseFeePerGas)),
+            uint256(Web3.to_int(hexstr_to_bytes(raw_payload.baseFeePerGas))),
             bytes32.from_hexstr(raw_payload.blockHash),
             transactions,
             withdrawals,
