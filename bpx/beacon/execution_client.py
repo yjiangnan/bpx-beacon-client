@@ -82,14 +82,16 @@ class ExecutionClient:
         if self.w3 is not None:
             return None
         
-        log.debug(f"Initializing execution client connection: {self.exe_host}:{self.exe_port} using JWT secret {self.secret_path}")
+        ec_config = self.beacon.config.get("execution_client")
+        selected_network = self.beacon.config.get("selected_network")
+        secret_path = path_from_root(
+            self.beacon.root_path,
+            "../execution/" + selected_network + "/geth/jwtsecret"
+        )
+        
+        log.debug(f"Initializing execution client connection: {ec_config.host}:{ec_config.port} using JWT secret {secret_path}")
 
         try:
-            selected_network = self.beacon.config.get("selected_network")
-            secret_path = path_from_root(
-                self.beacon.root_path,
-                "../execution/" + selected_network + "/geth/jwtsecret"
-            )
             secret_file = open(secret_path, 'r')
             secret = secret_file.readline()
             secret_file.close()
@@ -97,7 +99,6 @@ class ExecutionClient:
             log.error(f"Exception in Web3 init: {e}")
             raise RuntimeError("Cannot open JWT secret file. Execution client is not running or needs more time to start")
         
-        ec_config = self.beacon.config.get("execution_client")
         self.w3 = Web3(
             HTTPAuthProvider(
                 hexstr_to_bytes(secret),
