@@ -273,11 +273,11 @@ class ExecutionClient:
     def _create_payload_attributes(
         self,
         prev_block: FullBlock,
-        coinbase: bytes20,
+        coinbase: str,
     ):
         return {
             "timestamp": Web3.to_hex(int(time.time())),
             "prevRandao": "0x0000000000000000000000000000000000000000000000000000000000000000",
-            "suggestedFeeRecipient": "0x" + coinbase.hex(),
+            "suggestedFeeRecipient": coinbase,
             "withdrawals": [],
         }

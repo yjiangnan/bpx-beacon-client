@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Set, Tuple, Union
 
 from blspy import AugSchemeMPL
+from web3 import Web3
 
 from bpx.consensus.block_creation import unfinished_block_to_full_block
 from bpx.consensus.block_record import BlockRecord
@@ -1750,11 +1751,13 @@ class Beacon:
         return self.config["coinbase"]
 
     def set_coinbase(self, coinbase: str) -> None:
-        self.execution_client.set_coinbase(coinbase)
+        if not Web3.is_address(coinbase):
+            raise ValueError("Invalid address")
+            
         self.config["coinbase"] = coinbase
         
         with lock_and_load_config(self.root_path, "config.yaml") as config:
-            config["coinbase"] = coinbase
+            config["beacon"]["coinbase"] = coinbase
             save_config(self.root_path, "config.yaml", config)
 
     async def _needs_compact_proof(
