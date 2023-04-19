@@ -1247,6 +1247,8 @@ class Beacon:
             self.beacon_store.clear_old_cache_entries()
 
         if self.sync_store.get_sync_mode() is False:
+            # TODO Move forkchoice update here
+            
             await self.send_peak_to_timelords(block)
 
             # Tell beacon clients about the new peak
