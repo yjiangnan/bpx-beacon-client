@@ -18,7 +18,9 @@ import jwt
 
 from bpx.util.path import path_from_root
 from bpx.consensus.block_record import BlockRecord
-from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.types.blockchain_format.sized_bytes import bytes20, bytes32, bytes256
+from bpx.util.ints import uint64, uint256
+from bpx.types.blockchain_format.execution_payload import ExecutionPayloadV2, WithdrawalV1
 
 log = logging.getLogger(__name__)
 
@@ -60,6 +62,8 @@ class EngineModule(Module):
 class ExecutionClient:
     beacon: Beacon
     w3: Web3
+    payload_id: Optional[str]
+    payload_head: Optional[bytes32]
 
     def __init__(
         self,
@@ -67,28 +71,33 @@ class ExecutionClient:
     ):
         self.beacon = beacon
         self.w3 = None
+        self.payload_id = None
+        self.payload_head = None
 
 
     def ensure_web3_init(self) -> None:
         if self.w3 is not None:
             return None
         
-        log.debug(f"Initializing Web3 connection to {self.exe_host}:{self.exe_port} using JWT secret {self.secret_path}")
+        log.debug(f"Initializing execution client connection: {self.exe_host}:{self.exe_port} using JWT secret {self.secret_path}")
 
         try:
-            self.secret_path = path_from_root(root_path, "../execution/" + selected_network + "/geth/jwtsecret")
-            secret_file = open(self.secret_path, 'r')
+            secret_path = path_from_root(
+                beacon.root_path,
+                "../execution/" + selected_network + "/geth/jwtsecret"
+            )
+            secret_file = open(secret_path, 'r')
             secret = secret_file.readline()
-            log.debug(f"JWT secret key: {secret}")
             secret_file.close()
         except Exception as e:
             log.error(f"Exception in Web3 init: {e}")
-            raise RuntimeError("Cannot open jwtsecret file. Execution client is not running or needs more time to start")
+            raise RuntimeError("Cannot open JWT secret file. Execution client is not running or needs more time to start")
         
+        ec_config = self.beacon.config.get("execution_client")
         self.w3 = Web3(
             HTTPAuthProvider(
                 secret,
-                'http://' + self.exe_host + ':' + str(self.exe_port),
+                "http://" + ec_config["host"] + ":" + str(ec_config["port"]),
             )
         )
 
@@ -96,11 +105,11 @@ class ExecutionClient:
             "engine": EngineModule
         })
 
-        log.info("Initialized Web3 connection")
+        log.info("Initialized execution client connection")
 
 
     async def exchange_transition_configuration_task(self):
-        log.debug("Starting exchangeTransactionConfigurationV1 loop")
+        log.debug("Starting exchange transition configuration loop")
 
         while True:
             try:
@@ -111,7 +120,7 @@ class ExecutionClient:
                     "terminalBlockNumber": "0x0"
                 })
             except Exception as e:
-                log.error(f"Exception in exchange transition configuration loop: {e}")
+                log.error(f"Exception in exchange transition configuration: {e}")
             await asyncio.sleep(60)
     
     
@@ -173,21 +182,49 @@ class ExecutionClient:
     
     def get_payload(
         self,
-        prev_block: Optional[BlockRecord]
-    ):
-        if prev_block is None:
-            log.debug("Get payload for head: genesis")
-        else:
-            log.debug(f"Get payload for head: height={prev_block.height}, hash={prev_block.execution_block_hash}")
+        prev_block: BlockRecord
+    ) -> ExecutionPayloadV2:
+        log.debug(f"Get payload for head: height={prev_block.height}, hash={prev_block.execution_block_hash}")
         
         self.ensure_web3_init()
         
-        if prev_block is None:
-            raw_payload = 
-        
         if self.payload_id is None:
-            raise RuntimeError("Get payload called but no payload_id")
+            raise RuntimeError("Execution payload not built")
         
-        result = self.w3.engine.get_payload_v2(self.payload_id)
-        payload = dict(result.executionPayload)
-        return bytes32.from_hexstr(payload.blockHash), payload
+        if self.payload_head != prev_block.execution_block_hash:
+            raise RuntimeError(f"Payload head ({self.payload_head}) differs from requested ({prev_block.execution_block_hash})")
+        
+        raw_payload = self.w3.engine.get_payload_v2(self.payload_id).executionPayload
+        
+        transactions: List[bytes] = []
+        for raw_transaction in raw_payload.transactions:
+            transactions.append(bytes.from_hexstr(raw_transaction))
+        
+        withdrawals: List[WithdrawalV1] = []
+        for raw_withdrawal in raw_payload.withdrawals:
+            withdrawals.append(
+                WithdrawalV1(
+                    uint64(raw_withdrawal.index),
+                    uint64(raw_withdrawal.validatorIndex),
+                    bytes20.from_hexstr(raw_withdrawal.address),
+                    uint64(raw_withdrawal.amount),
+                )
+            )
+        
+        return ExecutionPayloadV2(
+            bytes32.from_hexstr(raw_payload.parentHash),
+            bytes20.from_hexstr(raw_payload.feeRecipient),
+            bytes32.from_hexstr(raw_payload.stateRoot),
+            bytes32.from_hexstr(raw_payload.receiptsRoot),
+            bytes256.from_hexstr(raw_payload.logsBloom),
+            bytes32.from_hexstr(raw_payload.prevRandao),
+            uint64(raw_payload.blockNumber),
+            uint64(raw_payload.gasLimit),
+            uint64(raw_payload.gasUsed),
+            uint64(raw_payload.timestamp),
+            bytes.from_hexstr(raw_payload.extraData),
+            uint256(raw_payload.baseFeePerGas),
+            bytes32.from_hexstr(raw_payload.blockHash),
+            transactions,
+            withdrawals,
+        )        

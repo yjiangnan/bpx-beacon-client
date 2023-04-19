@@ -175,11 +175,13 @@ def create_unfinished_block(
         rc_sp_signature,
     )
     
-    execution_block_hash, execution_payload = execution_client.get_payload(prev_block)
-    
-    if execution_payload is not None:
+    if prev_block is not None:
+        execution_payload = execution_client.get_payload(prev_block)
+        execution_block_hash = execution_payload.blockHash
         timestamp = execution_payload.timestamp
     else:
+        execution_payload = None
+        execution_block_hash = constant.GENESIS_EXECUTION_BLOCK_HASH
         timestamp = uint64(int(time.time()))
     
     foliage = create_foliage(
