@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import logging
 import asyncio
-from datetime import datetime, timezone
 import pathlib
+import time
 
 from typing import (
     Optional,
@@ -43,7 +43,7 @@ class HTTPAuthProvider(HTTPProvider):
         
         encoded_jwt = jwt.encode(
             {
-                "iat": datetime.now(tz=timezone.utc)
+                "iat": int(time.time())
             },
             self.secret,
             algorithm="HS256"
@@ -173,7 +173,7 @@ class ExecutionClient:
             elif not Web3.is_address(coinbase):
                 log.error("Coinbase address invalid! FARMING NOT POSSIBLE!")
             else:
-                payload_attributes = self._create_payload_attributes()
+                payload_attributes = self._create_payload_attributes(block, coinbase)
         else:
             log.debug("Beacon node not synced, no payload expected")
         
@@ -244,7 +244,7 @@ class ExecutionClient:
     
     def new_payload(
         self,
-        payload: ExecutionPayloadV2
+        payload: ExecutionPayloadV2,
     ) -> str:
         log.debug(f"New payload: height={payload.blockNumber}, hash={payload.blockHash}")
         
@@ -254,3 +254,16 @@ class ExecutionClient:
         if result.validationError is not None:
             log.error(f"New payload validation error: {result.validationError}")
         return result.status
+    
+    
+    def _create_payload_attributes(
+        self,
+        prev_block: FullBlock,
+        coinbase: bytes20,
+    ):
+        return {
+            "timestamp": int(time.time()),
+            "prevRandao": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "suggestedFeeRecipient": coinbase,
+            "withdrawals": [],
+        }
