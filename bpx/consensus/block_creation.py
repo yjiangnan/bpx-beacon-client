@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from dataclasses import replace
 from typing import Callable, Dict, List, Optional, Tuple
+import time
 
 import blspy
 from blspy import G1Element, G2Element
@@ -33,6 +34,7 @@ def create_foliage(
     prev_block: Optional[BlockRecord],
     blocks: BlockchainInterface,
     total_iters_sp: uint128,
+    timestamp: uint64,
     get_plot_signature: Callable[[bytes32, G1Element], G2Element],
     execution_block_hash: bytes32
 ) -> Foliage:
@@ -46,6 +48,7 @@ def create_foliage(
         prev_block: the previous block at the signage point
         blocks: dict from header hash to blocks, of all ancestor blocks
         total_iters_sp: total iters at the signage point
+        timestamp: timestamp to put into the foliage block
         get_plot_signature: retrieve the signature corresponding to the plot public key
         execution_block_hash: execution block hash to put into the foliage block
 
@@ -58,6 +61,7 @@ def create_foliage(
 
     foliage_data = FoliageBlockData(
         reward_block_unfinished.get_hash(),
+        timestamp,
         execution_block_hash,
     )
 
@@ -171,7 +175,12 @@ def create_unfinished_block(
         rc_sp_signature,
     )
     
-    execution_payload = execution_client.get_payload(prev_block)
+    execution_block_hash, execution_payload = execution_client.get_payload(prev_block)
+    
+    if execution_payload is not None:
+        timestamp = execution_payload.timestamp
+    else:
+        timestamp = uint64(int(time.time()))
     
     foliage = create_foliage(
         constants,
@@ -179,8 +188,9 @@ def create_unfinished_block(
         prev_block,
         blocks,
         total_iters_sp,
+        timestamp,
         get_plot_signature,
-        execution_payload.blockHash,
+        execution_block_hash,
     )
     return UnfinishedBlock(
         finished_sub_slots,
@@ -260,6 +270,7 @@ def unfinished_block_to_full_block(
         rc_ip_proof,
         icc_ip_proof,
         new_foliage,
+        unfinished_block.execution_payload,
     )
     ret = recursive_replace(
         ret,

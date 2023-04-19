@@ -25,7 +25,7 @@ class FullBlock(Streamable):
     reward_chain_ip_proof: VDFProof
     infused_challenge_chain_ip_proof: Optional[VDFProof]  # Iff deficit < 4
     foliage: Foliage  # Reward chain foliage data
-    execution_payload: ExecutionPayloadV2
+    execution_payload: Optional[ExecutionPayloadV2]
 
     @property
     def prev_header_hash(self) -> bytes32:
