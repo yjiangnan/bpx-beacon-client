@@ -82,6 +82,7 @@ class ExecutionClient:
         log.debug(f"Initializing execution client connection: {self.exe_host}:{self.exe_port} using JWT secret {self.secret_path}")
 
         try:
+            selected_network = self.beacon.config.get("selected_network")
             secret_path = path_from_root(
                 beacon.root_path,
                 "../execution/" + selected_network + "/geth/jwtsecret"

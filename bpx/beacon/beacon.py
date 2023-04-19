@@ -240,13 +240,7 @@ class Beacon:
         self.state_changed_callback = callback
 
     async def _start(self) -> None:
-        ec_addr = self.config.get("execution_client")
-        self.execution_client = ExecutionClient(ec_addr["host"], ec_addr["port"], self.root_path, self.config["selected_network"])
-        
-        try:
-            self.execution_client.set_coinbase(self.config.get("coinbase"))
-        except ValueError:
-            self.log.error("Invalid coinbase address in config file. Farming not possible!")
+        self.execution_client = ExecutionClient(self)
         
         self._timelord_lock = asyncio.Lock()
         self._compact_vdf_sem = LimitedSemaphore.create(active_limit=4, waiting_limit=20)
