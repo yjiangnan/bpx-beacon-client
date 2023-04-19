@@ -181,7 +181,7 @@ def create_unfinished_block(
         timestamp = execution_payload.timestamp
     else:
         execution_payload = None
-        execution_block_hash = constant.GENESIS_EXECUTION_BLOCK_HASH
+        execution_block_hash = constants.GENESIS_EXECUTION_BLOCK_HASH
         timestamp = uint64(int(time.time()))
     
     foliage = create_foliage(

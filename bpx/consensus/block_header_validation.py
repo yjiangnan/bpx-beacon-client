@@ -733,7 +733,7 @@ def validate_unfinished_header_block(
     if (
         genesis_block
         and header_block.foliage.foliage_block_data.execution_block_hash
-        != constant.GENESIS_EXECUTION_BLOCK_HASH
+        != constants.GENESIS_EXECUTION_BLOCK_HASH
     ):
         return None, ValidationError(Err.INVALID_BLOCK_HASH, "genesis block hash not match to predefined constant")
     
