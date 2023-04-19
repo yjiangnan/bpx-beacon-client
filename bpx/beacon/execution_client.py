@@ -220,7 +220,7 @@ class ExecutionClient:
         if self.payload_head != prev_block.execution_block_hash:
             raise RuntimeError(f"Payload head ({self.payload_head}) differs from requested ({prev_block.execution_block_hash})")
         
-        raw_payload = self.w3.engine.get_payload_v2(self.payload_id).executionPayload
+        raw_payload = self.w3.engine.get_payload_v2(self.payload_id)
         
         transactions: List[bytes] = []
         for raw_transaction in raw_payload.transactions:
