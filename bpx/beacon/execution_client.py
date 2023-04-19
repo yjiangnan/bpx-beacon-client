@@ -15,6 +15,7 @@ from web3.method import Method
 from web3.module import Module
 from web3.providers.rpc import URI
 import jwt
+from hexbytes import HexBytes
 
 from bpx.util.path import path_from_root
 from bpx.consensus.block_record import BlockRecord
@@ -230,10 +231,10 @@ class ExecutionClient:
         for raw_withdrawal in raw_payload.withdrawals:
             withdrawals.append(
                 WithdrawalV1(
-                    uint64(Web3.to_int(hexstr_to_bytes(raw_withdrawal.index))),
-                    uint64(Web3.to_int(hexstr_to_bytes(raw_withdrawal.validatorIndex))),
+                    uint64(Web3.to_int(HexBytes(raw_withdrawal.index))),
+                    uint64(Web3.to_int(HexBytes(raw_withdrawal.validatorIndex))),
                     bytes20.from_hexstr(raw_withdrawal.address),
-                    uint64(Web3.to_int(hexstr_to_bytes(raw_withdrawal.amount))),
+                    uint64(Web3.to_int(HexBytes(raw_withdrawal.amount))),
                 )
             )
         
@@ -244,12 +245,12 @@ class ExecutionClient:
             bytes32.from_hexstr(raw_payload.receiptsRoot),
             bytes256.from_hexstr(raw_payload.logsBloom),
             bytes32.from_hexstr(raw_payload.prevRandao),
-            uint64(Web3.to_int(hexstr_to_bytes(raw_payload.blockNumber))),
-            uint64(Web3.to_int(hexstr_to_bytes(raw_payload.gasLimit))),
-            uint64(Web3.to_int(hexstr_to_bytes(raw_payload.gasUsed))),
-            uint64(Web3.to_int(hexstr_to_bytes(raw_payload.timestamp))),
+            uint64(Web3.to_int(HexBytes(raw_payload.blockNumber))),
+            uint64(Web3.to_int(HexBytes(raw_payload.gasLimit))),
+            uint64(Web3.to_int(HexBytes(raw_payload.gasUsed))),
+            uint64(Web3.to_int(HexBytes(raw_payload.timestamp))),
             hexstr_to_bytes(raw_payload.extraData),
-            uint256(Web3.to_int(hexstr_to_bytes(raw_payload.baseFeePerGas))),
+            uint256(Web3.to_int(HexBytes(raw_payload.baseFeePerGas))),
             bytes32.from_hexstr(raw_payload.blockHash),
             transactions,
             withdrawals,
