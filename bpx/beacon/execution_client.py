@@ -145,16 +145,26 @@ class ExecutionClient:
         head_hash = block.foliage.foliage_block_data.execution_block_hash
         log.debug(f"Head height: {head_height}, hash: {head_hash}")
             
-        safe_height = 0
-        if head_height > 6:
-            safe_height = (head_height - 6) - (head_height % 6)
-        safe_hash = blockchain.height_to_block_record(safe_height).execution_block_hash
+        if head_height == 0:
+            safe_height = 0
+            safe_hash = head_height
+        else:
+            if head_height > 6:
+                safe_height = (head_height - 6) - (head_height % 6)
+            else:
+                safe_height = 0
+            safe_hash = blockchain.height_to_block_record(safe_height).execution_block_hash
         log.debug(f"Safe height: {safe_height}, hash: {safe_hash}")
         
-        final_height = 0
-        if head_height > 32:
-            final_height = (head_height - 32) - (head_height % 32)
-        final_hash = blockchain.height_to_block_record(final_height).execution_block_hash
+        if head_height == 0:
+            final_height = 0
+            final_hash = head_hash
+        else:
+            if head_height > 32:
+                final_height = (head_height - 32) - (head_height % 32)
+            else:
+                final_height = 0
+            final_hash = blockchain.height_to_block_record(final_height).execution_block_hash
         log.debug(f"Finalized height: {final_height}, hash: {final_hash}")
         
         forkchoice_state = {
