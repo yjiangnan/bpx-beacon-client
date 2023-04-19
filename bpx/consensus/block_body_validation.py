@@ -48,10 +48,11 @@ async def validate_block_body(
     if isinstance(block, FullBlock):
         assert height == block.height
     
-    payload_status = execution_client.new_payload(block.execution_payload)
-    err = _payload_status_to_err(payload_status.status)
-    if err is not None:
-        return err
+    if block.execution_payload is not None:
+        payload_status = execution_client.new_payload(block.execution_payload)
+        err = _payload_status_to_err(payload_status.status)
+        if err is not None:
+            return err
     
     if isinstance(block, FullBlock):
         payload_status = execution_client.forkchoice_update()
