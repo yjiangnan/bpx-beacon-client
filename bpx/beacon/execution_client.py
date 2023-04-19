@@ -243,7 +243,7 @@ class ExecutionClient:
         )
     
     
-    def new_payload(
+    async def new_payload(
         self,
         payload: ExecutionPayloadV2,
     ) -> str:
