@@ -22,6 +22,7 @@ from bpx.types.blockchain_format.sized_bytes import bytes20, bytes32, bytes256
 from bpx.util.ints import uint64, uint256
 from bpx.types.blockchain_format.execution_payload import ExecutionPayloadV2, WithdrawalV1
 from bpx.util.byte_types import hexstr_to_bytes
+from bpx.util.streamable import recurse_jsonify
 
 COINBASE_NULL = bytes20.fromhex("0000000000000000000000000000000000000000")
 
@@ -168,9 +169,9 @@ class ExecutionClient:
         log.debug(f"Finalized height: {final_height}, hash: {final_hash}")
         
         forkchoice_state = {
-            "headBlockHash": Web3.to_hex(head_hash),
-            "safeBlockHash": Web3.to_hex(safe_hash),
-            "finalizedBlockHash": Web3.to_hex(final_hash),
+            "headBlockHash": head_hash,
+            "safeBlockHash": safe_hash,
+            "finalizedBlockHash": final_hash,
         }
             
         # Prepare PayloadAttributesV2
@@ -191,7 +192,10 @@ class ExecutionClient:
         else:
             log.debug("Beacon node not synced, no payload expected")
         
-        result = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
+        result = self.w3.engine.forkchoice_updated_v2(
+            recurse_jsonify(forkchoice_state),
+            recurse_jsonify(payload_attributes),
+        )
         
         if result.payloadId is not None:
             self.payload_head = head_hash
@@ -220,40 +224,8 @@ class ExecutionClient:
         if self.payload_head != prev_block.execution_block_hash:
             raise RuntimeError(f"Payload head ({self.payload_head}) differs from requested ({prev_block.execution_block_hash})")
         
-        raw_payload = self.w3.engine.get_payload_v2(self.payload_id).executionPayload
-        
-        transactions: List[bytes] = []
-        for raw_transaction in raw_payload.transactions:
-            transactions.append(hexstr_to_bytes(raw_transaction))
-        
-        withdrawals: List[WithdrawalV1] = []
-        for raw_withdrawal in raw_payload.withdrawals:
-            withdrawals.append(
-                WithdrawalV1(
-                    uint64(raw_withdrawal.index),
-                    uint64(raw_withdrawal.validatorIndex),
-                    bytes20.from_hexstr(raw_withdrawal.address),
-                    uint64(raw_withdrawal.amount),
-                )
-            )
-        
-        return ExecutionPayloadV2(
-            bytes32.from_hexstr(raw_payload.parentHash),
-            bytes20.from_hexstr(raw_payload.feeRecipient),
-            bytes32.from_hexstr(raw_payload.stateRoot),
-            bytes32.from_hexstr(raw_payload.receiptsRoot),
-            bytes256.from_hexstr(raw_payload.logsBloom),
-            bytes32.from_hexstr(raw_payload.prevRandao),
-            uint64(raw_payload.blockNumber),
-            uint64(raw_payload.gasLimit),
-            uint64(raw_payload.gasUsed),
-            uint64(raw_payload.timestamp),
-            hexstr_to_bytes(raw_payload.extraData),
-            uint256(raw_payload.baseFeePerGas),
-            bytes32.from_hexstr(raw_payload.blockHash),
-            transactions,
-            withdrawals,
-        )
+        result = self.w3.engine.get_payload_v2(self.payload_id)
+        return ExecutionPayloadV2.from_json_dict(result.executionPayload)
     
     
     async def new_payload(
@@ -264,7 +236,9 @@ class ExecutionClient:
         
         self.ensure_web3_init()
         
-        result = self.w3.engine.new_payload_v2(payload)
+        result = self.w3.engine.new_payload_v2(
+            recurse_jsonify(payload)
+        )
         if result.validationError is not None:
             log.error(f"New payload validation error: {result.validationError}")
         return result.status
@@ -278,6 +252,6 @@ class ExecutionClient:
         return {
             "timestamp": int(time.time()),
             "prevRandao": "0x0000000000000000000000000000000000000000000000000000000000000000",
-            "suggestedFeeRecipient": Web3.to_hex(coinbase),
+            "suggestedFeeRecipient": coinbase,
             "withdrawals": [],
         }
