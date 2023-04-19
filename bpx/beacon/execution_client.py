@@ -250,7 +250,7 @@ class ExecutionClient:
         coinbase: bytes20,
     ):
         return {
-            "timestamp": int(time.time()),
+            "timestamp": uint64(int(time.time())),
             "prevRandao": "0x0000000000000000000000000000000000000000000000000000000000000000",
             "suggestedFeeRecipient": coinbase,
             "withdrawals": [],
