@@ -21,18 +21,19 @@ from bpx.consensus.block_record import BlockRecord
 from bpx.types.blockchain_format.sized_bytes import bytes20, bytes32, bytes256
 from bpx.util.ints import uint64, uint256
 from bpx.types.blockchain_format.execution_payload import ExecutionPayloadV2, WithdrawalV1
+from bpx.util.byte_types import hexstr_to_bytes
 
 log = logging.getLogger(__name__)
 
 class HTTPAuthProvider(HTTPProvider):
-    secret: str
+    secret: bytes
 
     def __init__(
         self,
-        secret: str,
+        secret: bytes,
         endpoint_uri: Optional[Union[URI, str]] = None,
     ) -> None:
-        self.secret = bytes.fromhex(secret[2:])
+        self.secret = secret
         super().__init__(endpoint_uri)
     
     def get_request_headers(self) -> Dict[str, str]:
@@ -97,7 +98,7 @@ class ExecutionClient:
         ec_config = self.beacon.config.get("execution_client")
         self.w3 = Web3(
             HTTPAuthProvider(
-                secret,
+                hexstr_to_bytes(secret),
                 "http://" + ec_config["host"] + ":" + str(ec_config["port"]),
             )
         )
@@ -125,12 +126,12 @@ class ExecutionClient:
             await asyncio.sleep(60)
     
     
-    async def new_block(
+    async def forkchoice_update(
         self,
         block: FullBlock,
         blockchain: Blockchain,
         peak: Optional[BlockRecord],
-    ) -> Optional[Err]:
+    ) -> None:
         log.debug(f"Validating finished block of height: {block.height}")
         
         self.ensure_web3_init()
@@ -199,7 +200,7 @@ class ExecutionClient:
         
         transactions: List[bytes] = []
         for raw_transaction in raw_payload.transactions:
-            transactions.append(bytes.from_hexstr(raw_transaction))
+            transactions.append(hexstr_to_bytes(raw_transaction))
         
         withdrawals: List[WithdrawalV1] = []
         for raw_withdrawal in raw_payload.withdrawals:
@@ -223,9 +224,23 @@ class ExecutionClient:
             uint64(raw_payload.gasLimit),
             uint64(raw_payload.gasUsed),
             uint64(raw_payload.timestamp),
-            bytes.from_hexstr(raw_payload.extraData),
+            hexstr_to_bytes(raw_payload.extraData),
             uint256(raw_payload.baseFeePerGas),
             bytes32.from_hexstr(raw_payload.blockHash),
             transactions,
             withdrawals,
-        )        
+        )
+    
+    
+    def new_payload(
+        self,
+        payload: ExecutionPayloadV2
+    ) -> str:
+        log.debug(f"New payload: height={payload.blockNumber}, hash={payload.blockHash}")
+        
+        self.ensure_web3_init()
+        
+        result = self.w3.engine.new_payload_v2(payload)
+        if result.validationError is not None:
+            log.error(f"New payload validation error: {result.validationError}")
+        return result.status
