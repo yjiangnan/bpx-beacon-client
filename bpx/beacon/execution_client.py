@@ -84,7 +84,7 @@ class ExecutionClient:
         try:
             selected_network = self.beacon.config.get("selected_network")
             secret_path = path_from_root(
-                beacon.root_path,
+                self.beacon.root_path,
                 "../execution/" + selected_network + "/geth/jwtsecret"
             )
             secret_file = open(secret_path, 'r')
