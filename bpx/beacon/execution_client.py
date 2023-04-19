@@ -89,7 +89,7 @@ class ExecutionClient:
             "../execution/" + selected_network + "/geth/jwtsecret"
         )
         
-        log.debug(f"Initializing execution client connection: {ec_config.host}:{ec_config.port} using JWT secret {secret_path}")
+        log.debug(f"Initializing execution client connection: {ec_config['host']}:{ec_config['port']} using JWT secret {secret_path}")
 
         try:
             secret_file = open(secret_path, 'r')
