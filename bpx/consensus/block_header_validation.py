@@ -778,7 +778,7 @@ def validate_unfinished_header_block(
             prefarm_amount = 0
             
         if prefarm_amount > 0:
-            # 25a. If prefarm exists, first block must contain exactly 2 withdrawals
+            # 25a. If prefarm exists, the block must contain exactly 2 withdrawals
             if len(header_block.execution_payload.withdrawals) != 2:
                 return None, ValidationError(Err.INVALID_WITHDRAWALS_COUNT, "withdrawals count != 2 in prefarm block")
         
@@ -787,13 +787,16 @@ def validate_unfinished_header_block(
             reward_withdrawal_index = 1
             
         else:
-            # 25b. If prefarm not exists, first block must contain exactly 1 withdrawal
+            # 25b. If prefarm not exists, the block must contain exactly 1 withdrawal
             if len(header_block.execution_payload.withdrawals) != 1:
                 return None, ValidationError(Err.INVALID_WITHDRAWALS_COUNT, "withdrawals count != 1")
                 
             prefarm_withdrawal = None
             reward_withdrawal = header_block.execution_payload.withdrawals[0]
-            reward_withdrawal_index = 0
+            if height == 1:
+                reward_withdrawal_index = 0
+            else:
+                reward_withdrawal_index = prev_b.last_withdrawal_index + 1
             
         if prefarm_withdrawal is not None:
             # 26a. Prefarm withdrawal index must be 0
@@ -812,32 +815,21 @@ def validate_unfinished_header_block(
             if prefarm_withdrawal.amount != prefarm_amount:
                 return None, ValidationError(Err.INVALID_WITHDRAWAL_AMOUNT, "invalid prefarm amount")
         
-        else:
-            # 25. Each subsequent block must contain exactly 1 withdrawal
-            if len(header_block.execution_payload.withdrawals) != 1:
-                return None, ValidationError(Err.INVALID_WITHDRAWALS_COUNT, "withdrawals count != 1")
-        
-            reward_withdrawal = header_block.execution_payload.withdrawals[0]
-            reward_withdrawal_index = prev_b.last_withdrawal_index + 1
-        
-        # 26a. Check withdrawal index
-        # For block 0 without prefarm -> 0
-        # For block 1 with prefarm -> 1
-        # For each subsequent block -> last withdrawal index from previous block + 1
-        if withdrawal.index != reward_withdrawal_index:
+        # 27a. Check withdrawal index
+        if reward_withdrawal.index != reward_withdrawal_index:
             return None, ValidationError(Err.INVALID_WITHDRAWAL_INDEX, "invalid withdrawal index")
         
-        # 26b. Check withdrawal validatorIndex
+        # 27b. Check withdrawal validatorIndex
         # We use this field as a reward type
         # 0 - prefarm
         # 1 - standard farmer block reward
-        # Other types may be added in the future, such as a timelord reward
-        if withdrawal.validatorIndex != 1:
+        # Other types may be added in the future, like timelord reward
+        if reward_withdrawal.validatorIndex != 1:
             return None, ValidationError(Err.INVALID_WITHDRAWAL_VALIDATOR_INDEX, "invalid withdrawal validator index")
         
-        # 26c. Check block reward amount
+        # 27c. Check block reward amount
         if (
-            withdrawal.amount != calculate_v3_reward(
+            reward_withdrawal.amount != calculate_v3_reward(
                 header_block.execution_payload.blockNumber,
                 constants.V2_EOL_HEIGHT
             )
