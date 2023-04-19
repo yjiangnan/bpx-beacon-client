@@ -703,105 +703,115 @@ def validate_unfinished_header_block(
         != header_block.foliage.foliage_block_data.unfinished_reward_block_hash
     ):
         return None, ValidationError(Err.INVALID_URSB_HASH)
-        
-    # 17. Check execution payload blockHash match execution_block_hash in foliage
-    if (
-        header_block.execution_payload.blockHash
-        != header_block.foliage.foliage_block_data.execution_block_hash
-    ):
-        return None, ValidationError(Err.INVALID_BLOCK_HASH, "foliage block hash mismatch")
-
-    # 18a. Check execution payload parentHash match the constant in genesis block
-    if genesis_block:
-        if header_block.execution_payload.parentHash != constants.GENESIS_PARENT_HASH:
-            return None, ValidationError(Err.INVALID_PARENT_HASH, "invalid genesis block parent hash")
     
-    # 18b. Check parentHash match blockHash of the previous block
-    else:
-        if header_block.execution_payload.parentHash != prev_b.execution_block_hash:
-            return None, ValidationError(Err.INVALID_PARENT_HASH, "parent hash != previous block hash")
-    
-    # 19a. Check execution payload prevRandao match the constant in genesis block
-    if genesis_block:
-        if header_block.execution_payload.prevRandao != constants.GENESIS_PREV_RANDAO:
-            return None, ValidationError(Err.INVALID_PREV_RANDAO, "invalid genesis block randao")
-    
-    # 19b. Check prevRandao match ### TODO
-    else:
-        if header_block.execution_payload.prevRandao != ### TODO:
-            return None, ValidationError(Err.INVALID_PREV_RANDAO, "invalid randao")
-    
-    # 20. Check execution block number match beacon block number
-    if header_block.execution_payload.blockNumber != height:
-        return None, ValidationError(Err.INVALID_BLOCK_NUMBER, "execution height != beacon height")
-    
-    # 21a. The timestamp must not be over 15 seconds in the future
-    if header_block.execution_payload.timestamp > int(time.time() + constants.MAX_FUTURE_TIME):
+    # 17a. The timestamp must not be over 15 seconds in the future
+    if header_block.foliage.foliage_block_data.timestamp > int(time.time() + constants.MAX_FUTURE_TIME):
         return None, ValidationError(Err.TIMESTAMP_TOO_FAR_IN_FUTURE)
 
-    # 21b. The timestamp must be greater than the previous block timestamp
+    # 17b. The timestamp must be greater than the previous block timestamp
     if (
         not genesis_block
-        and header_block.execution_payload.timestamp <= prev_b.timestamp
+        and header_block.foliage.foliage_block_data.timestamp <= prev_b.timestamp
     ):
         return None, ValidationError(Err.TIMESTAMP_TOO_FAR_IN_PAST)
     
-    # 22a. Check extraData match constant for genesis block
-    if genesis_block:
-        if header_block.execution_payload.extraData != constants.GENESIS_EXTRA_DATA:
-            return None, ValidationError(Err.INVALID_GENESIS_EXTRA_DATA, "invalid genesis extraData")
+    # 18a. Genesis block cannot contain payload
+    if (
+        genesis_block
+        and header_block.execution_payload is not None
+    ):
+        return None, ValidationError(Err.PAYLOAD_IN_GENESIS_BLOCK)
+    
+    # 18b. Non-genesis block must contain payload
+    if (
+        not genesis_block
+        and header_block.execution_payload is None
+    ):
+        return None, ValidationError(Err.NO_PAYLOAD)
+    
+    # 19a. Check genesis block hash match constant
+    if (
+        genesis_block
+        and header_block.foliage.foliage_block_data.execution_block_hash
+        != constant.GENESIS_EXECUTION_BLOCK_HASH
+    ):
+        return None, ValidationError(Err.INVALID_BLOCK_HASH, "genesis block hash not match to predefined constant")
+    
+    # 19b. Check execution payload blockHash match execution_block_hash in foliage
+    if (
+        not genesis_block
+        and header_block.foliage.foliage_block_data.execution_block_hash
+        != header_block.execution_payload.blockHash
+    ):
+        return None, ValidationError(Err.INVALID_BLOCK_HASH, "foliage and payload block hash mismatch")
+    
+    if not genesis_block:
+        # 20. Check parentHash match blockHash of the previous block
+        if header_block.execution_payload.parentHash != prev_b.execution_block_hash:
+            return None, ValidationError(Err.INVALID_PARENT_HASH)
+    
+        # 21. Check prevRandao match ### TODO
+        if header_block.execution_payload.prevRandao != ### TODO:
+            return None, ValidationError(Err.INVALID_PREV_RANDAO)
+    
+        # 22. Check execution block number match beacon block number
+        if header_block.execution_payload.blockNumber != height:
+            return None, ValidationError(Err.INVALID_BLOCK_NUMBER)
+    
+        # 23. Check execution timestamp match beacon timestamp
+        if (
+            header_block.execution_payload.timestamp
+            != header_block.foliage.foliage_block_data.timestamp
+        ):
+            return None, ValidationError(Err.INVALID_TIMESTAMP)
             
-    # 22b. Check extraData size for non genesis block
-    else:
+        # 24. Check extraData size <= 32 bytes
         if len(header_block.execution_payload.extraData) > 32:
-            return None, ValidationError(Err.INVALID_EXTRA_DATA_SIZE, "extraData size > 32 bytes")
+            return None, ValidationError(Err.INVALID_EXTRA_DATA_SIZE)
     
-    # 23. Check no withdrawals is present in genesis block
-    if genesis_block:
-        if len(header_block.execution_payload.withdrawals) != 0:
-            return None, ValidationError(Err.INVALID_WITHDRAWALS_COUNT, "there are withdrawals in genesis block")
-    
-    else:
         if height == 1:
             prefarm_amount = calculate_v3_prefarm(
                 constants.V3_PREFARM_AMOUNT,
                 constants.V2_EOL_HEIGHT,
             )
+        else:
+            prefarm_amount = 0
             
-            if prefarm_amount > 0:
-                # 24a. If prefarm exists, first block must contain exactly 2 withdrawals
-                if len(header_block.execution_payload.withdrawals) != 2:
-                    return None, ValidationError(Err.INVALID_WITHDRAWALS_COUNT, "withdrawals count != 2 in block 1 with prefarm")
+        if prefarm_amount > 0:
+            # 25a. If prefarm exists, first block must contain exactly 2 withdrawals
+            if len(header_block.execution_payload.withdrawals) != 2:
+                return None, ValidationError(Err.INVALID_WITHDRAWALS_COUNT, "withdrawals count != 2 in prefarm block")
         
-                prefarm_withdrawal = header_block.execution_payload.withdrawals[0]
+            prefarm_withdrawal = header_block.execution_payload.withdrawals[0]
+            reward_withdrawal = header_block.execution_payload.withdrawals[1]
+            reward_withdrawal_index = 1
             
-                # 24b. Prefarm withdrawal index must be 0
-                if prefarm_withdrawal.index != 0:
-                    return None, ValidationError(Err.INVALID_WITHDRAWAL_INDEX, "prefarm withdrawal index != 0")
+        else:
+            # 25b. If prefarm not exists, first block must contain exactly 1 withdrawal
+            if len(header_block.execution_payload.withdrawals) != 1:
+                return None, ValidationError(Err.INVALID_WITHDRAWALS_COUNT, "withdrawals count != 1")
+                
+            prefarm_withdrawal = None
+            reward_withdrawal = header_block.execution_payload.withdrawals[0]
+            reward_withdrawal_index = 0
             
-                # 24c. Prefarm validatorIndex must be 0
-                if prefarm_withdrawal.validatorIndex != 0:
-                    return None, ValidationError(Err.INVALID_WITHDRAWAL_VALIDATOR_INDEX, "prefarm validator index != 0")
-                
-                # 24d. Check prefarm address
-                if prefarm_withdrawal.address != constants.PREFARM_ADDRESS:
-                    return None, ValidationError(Err.INVALID_WITHDRAWAL_ADDRESS, "invalid prefarm address")
-                
-                # 24e. Check prefarm value
-                if prefarm_withdrawal.amount != prefarm_amount:
-                    return None, ValidationError(Err.INVALID_WITHDRAWAL_AMOUNT, "invalid prefarm amount")
-                
-                reward_withdrawal = header_block.execution_payload.withdrawals[1]
-                reward_withdrawal_index = 1
+        if prefarm_withdrawal is not None:
+            # 26a. Prefarm withdrawal index must be 0
+            if prefarm_withdrawal.index != 0:
+                return None, ValidationError(Err.INVALID_WITHDRAWAL_INDEX, "prefarm withdrawal index != 0")
             
-            else:
-                # 24f. If prefarm not exists, first block must contain exactly 1 withdrawal
-                if len(header_block.execution_payload.withdrawals) != 1:
-                    return None, ValidationError(Err.INVALID_WITHDRAWALS_COUNT, "withdrawals count != 1 in block 1 without prefarm")
+            # 26b. Prefarm validatorIndex must be 0
+            if prefarm_withdrawal.validatorIndex != 0:
+                return None, ValidationError(Err.INVALID_WITHDRAWAL_VALIDATOR_INDEX, "prefarm validator index != 0")
                 
-                reward_withdrawal = header_block.execution_payload.withdrawals[0]
-                reward_withdrawal_index = 0
-    
+            # 26c. Check prefarm address
+            if prefarm_withdrawal.address != constants.PREFARM_ADDRESS:
+                return None, ValidationError(Err.INVALID_WITHDRAWAL_ADDRESS, "invalid prefarm address")
+                
+            # 26d. Check prefarm value
+            if prefarm_withdrawal.amount != prefarm_amount:
+                return None, ValidationError(Err.INVALID_WITHDRAWAL_AMOUNT, "invalid prefarm amount")
+        
         else:
             # 25. Each subsequent block must contain exactly 1 withdrawal
             if len(header_block.execution_payload.withdrawals) != 1:
