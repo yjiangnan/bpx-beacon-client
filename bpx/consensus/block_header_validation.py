@@ -751,7 +751,7 @@ def validate_unfinished_header_block(
             return None, ValidationError(Err.INVALID_PARENT_HASH)
     
         # 21. Check prevRandao match ### TODO
-        if header_block.execution_payload.prevRandao != ### TODO:
+        if header_block.execution_payload.prevRandao != bytes.fromhex("0000000000000000000000000000000000000000000000000000000000000000"):
             return None, ValidationError(Err.INVALID_PREV_RANDAO)
     
         # 22. Check execution block number match beacon block number
