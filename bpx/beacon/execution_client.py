@@ -70,9 +70,9 @@ class ExecutionClient:
     w3: Web3
     payload_id: Optional[str]
     payload_head: Optional[bytes32]
-    head_hash: bytes32,
-    safe_hash: bytes32,
-    final_hash: bytes32,
+    head_hash: bytes32
+    safe_hash: bytes32
+    final_hash: bytes32
 
     def __init__(
         self,
