@@ -140,10 +140,10 @@ class ExecutionClient:
     
     async def set_head(
         self,
-        block: FullBlock,
+        head_hash: bytes32,
     ) -> str:
-        self.head_hash = block.foliage.foliage_block_data.execution_block_hash
-        log.debug(f"New head height: {block.height}, hash: {self.head_hash}")
+        self.head_hash = head_hash
+        log.debug(f"New head hash: {head_hash}")
         
         return await self._forkchoice_update(None)
     

@@ -54,7 +54,7 @@ async def validate_block_body(
         if err is not None:
             return err
     
-    payload_status = await execution_client.set_head(block)
+    payload_status = await execution_client.set_head(block.foliage.foliage_block_data.execution_block_hash)
     return _payload_status_to_err(payload_status)
     
     return None
