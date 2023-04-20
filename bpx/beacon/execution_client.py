@@ -23,6 +23,7 @@ from bpx.types.blockchain_format.sized_bytes import bytes20, bytes32, bytes256
 from bpx.util.ints import uint64, uint256
 from bpx.types.blockchain_format.execution_payload import ExecutionPayloadV2, WithdrawalV1
 from bpx.util.byte_types import hexstr_to_bytes
+from bpx.consensus.block_rewards import calculate_v3_reward, calculate_v3_prefarm
 
 COINBASE_NULL = bytes20.fromhex("0000000000000000000000000000000000000000")
 
@@ -276,9 +277,44 @@ class ExecutionClient:
         prev_block: FullBlock,
         coinbase: str,
     ):
+        withdrawals = []
+        height = prev_block.height + 1
+        
+        if height == 1:
+            prefarm_amount = calculate_v3_prefarm(
+                self.beacon.constants.V3_PREFARM_AMOUNT,
+                self.beacon.constants.V2_EOL_HEIGHT,
+            )
+            
+            if prefarm_amount > 0:
+                reward_withdrawal_index = 1
+                
+                withdrawals.append({
+                    "index": "0x0",
+                    "validatorIndex": "0x0",
+                    "address": "0x" + self.beacon.constants.PREFARM_ADDRESS.hex(),
+                    "amount": Web3.to_hex(prefarm_amount)
+                })
+            else:
+                reward_withdrawal_index = 0
+        else:
+            reward_withdrawal_index = prev_block.execution_payload.withdrawals[-1].index + 1
+        
+        reward_amount = calculate_v3_reward(
+            height,
+            self.beacon.constants.V2_EOL_HEIGHT,
+        )
+        
+        withdrawals.append({
+            "index": Web3.to_hex(reward_withdrawal_index),
+            "validatorIndex": "0x1",
+            "address": coinbase,
+            "amount": Web3.to_hex(reward_amount)
+        })
+        
         return {
             "timestamp": Web3.to_hex(int(time.time())),
             "prevRandao": "0x0000000000000000000000000000000000000000000000000000000000000000",
             "suggestedFeeRecipient": coinbase,
-            "withdrawals": [],
+            "withdrawals": withdrawals,
         }

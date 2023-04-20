@@ -831,7 +831,7 @@ def validate_unfinished_header_block(
         if (
             reward_withdrawal.amount != calculate_v3_reward(
                 header_block.execution_payload.blockNumber,
-                constants.V2_EOL_HEIGHT
+                constants.V2_EOL_HEIGHT,
             )
         ):
             return None, ValidationError(Err.INVALID_WITHDRAWAL_AMOUNT, "invalid block reward amount")
