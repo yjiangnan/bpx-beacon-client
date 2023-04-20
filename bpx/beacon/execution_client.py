@@ -199,10 +199,7 @@ class ExecutionClient:
             self.payload_head = head_hash
             self.payload_id = result.payloadId
             log.debug(f"Started building payload for head: height={head_height}, hash={self.payload_head}, id={self.payload_id}")
-        else:
-            self.payload_head = None
-            self.payload_id = None
-            if payload_attributes is not None:
+        elif payload_attributes is not None:
                 log.error("Payload expected but building not started, head height={head_height}, hash={self.payload_head} ({result.payloadStatus.validationError})")
         
         return result.payloadStatus.status
