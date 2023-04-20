@@ -98,7 +98,7 @@ class ExecutionClient:
             "../execution/" + selected_network + "/geth/jwtsecret"
         )
         
-        log.debug(f"Initializing execution client connection: {ec_config['host']}:{ec_config['port']} using JWT secret {secret_path}")
+        log.info(f"Initializing execution client connection: {ec_config['host']}:{ec_config['port']} using JWT secret {secret_path}")
 
         try:
             secret_file = open(secret_path, 'r')
@@ -123,7 +123,7 @@ class ExecutionClient:
 
 
     async def exchange_transition_configuration_task(self):
-        log.debug("Starting exchange transition configuration loop")
+        log.info("Starting exchange transition configuration loop")
 
         while True:
             try:
@@ -143,7 +143,7 @@ class ExecutionClient:
         head_hash: bytes32,
     ) -> str:
         self.head_hash = head_hash
-        log.debug(f"New head hash: {head_hash}")
+        log.info(f"New head hash: {head_hash}")
         
         return await self._forkchoice_update(None)
     
@@ -152,10 +152,10 @@ class ExecutionClient:
         block: FullBlock,
     ) -> None:
         self.head_hash = block.foliage.foliage_block_data.execution_block_hash
-        log.debug(f"New peak head height: {block.height}, hash: {self.head_hash}")
+        log.info(f"New peak head height: {block.height}, hash: {self.head_hash}")
         
         self.safe_hash = self.head_hash
-        log.debug(f"New peak safe height: {block.height}, hash: {self.safe_hash}")
+        log.info(f"New peak safe height: {block.height}, hash: {self.safe_hash}")
         
         if block.height > 32:
             final_height = (block.height - 32) - (block.height % 32)
@@ -163,7 +163,7 @@ class ExecutionClient:
         else:
             final_height = None
             self.final_hash = FINAL_BLOCK_HASH_NOT_AVAILABLE    
-        log.debug(f"New peak final height: {final_height}, hash: {self.final_hash}")
+        log.info(f"New peak final height: {final_height}, hash: {self.final_hash}")
         
         payload_attributes = None
         
@@ -184,7 +184,7 @@ class ExecutionClient:
         self,
         prev_block: BlockRecord
     ) -> ExecutionPayloadV2:
-        log.debug(f"Get payload for head: height={prev_block.height}, hash={prev_block.execution_block_hash}")
+        log.info(f"Get payload for head: height={prev_block.height}, hash={prev_block.execution_block_hash}")
         
         self.ensure_web3_init()
         
@@ -234,7 +234,7 @@ class ExecutionClient:
         self,
         payload: ExecutionPayloadV2,
     ) -> str:
-        log.debug(f"New payload: height={payload.blockNumber}, hash={payload.blockHash}")
+        log.info(f"New payload: height={payload.blockNumber}, hash={payload.blockHash}")
         
         self.ensure_web3_init()
         
@@ -279,7 +279,7 @@ class ExecutionClient:
         self,
         payload_attributes: Optional[Dict[str, Any]],
     ) -> str:
-        log.debug(f"Fork choice update, head: {self.head_hash}, safe: {self.safe_hash}, finalized: {self.final_hash}")
+        log.info(f"Fork choice update, head: {self.head_hash}, safe: {self.safe_hash}, finalized: {self.final_hash}")
         
         self.ensure_web3_init()
         
@@ -294,7 +294,7 @@ class ExecutionClient:
         if result.payloadId is not None:
             self.payload_head = head_hash
             self.payload_id = result.payloadId
-            log.debug(f"Payload building started, id: {self.payload_id}")
+            log.info(f"Payload building started, id: {self.payload_id}")
         elif payload_attributes is not None:
             log.error("Payload expected but building not started: {result.payloadStatus.validationError}")
         
