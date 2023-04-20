@@ -292,7 +292,7 @@ class ExecutionClient:
         result = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
         
         if result.payloadId is not None:
-            self.payload_head = head_hash
+            self.payload_head = self.head_hash
             self.payload_id = result.payloadId
             log.info(f"Payload building started, id: {self.payload_id}")
         elif payload_attributes is not None:
