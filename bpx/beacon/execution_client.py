@@ -142,10 +142,10 @@ class ExecutionClient:
         self.ensure_web3_init()
         
         head_hash = block.foliage.foliage_block_data.execution_block_hash
-        log.info(f" |- New head height: {block.height}, hash: {self.head_hash}")
+        log.info(f" |- New head height: {block.height}, hash: {head_hash}")
         
         safe_hash = head_hash
-        log.info(f" |- New safe height: {block.height}, hash: {self.safe_hash}")
+        log.info(f" |- New safe height: {block.height}, hash: {safe_hash}")
         
         if block.height > 32:
             final_height = (block.height - 32) - (block.height % 32)
@@ -153,12 +153,12 @@ class ExecutionClient:
         else:
             final_height = None
             final_hash = BLOCK_HASH_NULL
-        log.info(f" |- New final height: {final_height}, hash: {self.final_hash}")
+        log.info(f" |- New final height: {final_height}, hash: {final_hash}")
         
         forkchoice_state = {
-            "headBlockHash": "0x" + self.head_hash.hex(),
-            "safeBlockHash": "0x" + self.safe_hash.hex(),
-            "finalizedBlockHash": "0x" + self.final_hash.hex(),
+            "headBlockHash": "0x" + head_hash.hex(),
+            "safeBlockHash": "0x" + safe_hash.hex(),
+            "finalizedBlockHash": "0x" + final_hash.hex(),
         }
         payload_attributes = None
         
