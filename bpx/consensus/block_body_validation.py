@@ -54,8 +54,7 @@ async def validate_block_body(
         if err is not None:
             return err
     
-    if isinstance(block, FullBlock):
-        payload_status = await execution_client.set_head(block)
-        return _payload_status_to_err(payload_status)
+    payload_status = await execution_client.set_head(block)
+    return _payload_status_to_err(payload_status)
     
     return None
