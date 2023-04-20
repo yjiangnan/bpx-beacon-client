@@ -275,7 +275,7 @@ class ExecutionClient:
             raw_withdrawals.append({
                 "index": Web3.to_hex(withdrawal.index),
                 "validatorIndex": Web3.to_hex(withdrawal.validatorIndex),
-                "address": "0x" + withdrawal.address,
+                "address": "0x" + withdrawal.address.hex(),
                 "amount": Web3.to_hex(withdrawal.amount),
             })
         
