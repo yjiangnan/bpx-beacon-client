@@ -26,6 +26,7 @@ from bpx.util.byte_types import hexstr_to_bytes
 from bpx.consensus.block_rewards import calculate_v3_reward, calculate_v3_prefarm
 
 COINBASE_NULL = bytes20.fromhex("0000000000000000000000000000000000000000")
+FINAL_BLOCK_HASH_NOT_AVAILABLE = bytes32.fromhex("0000000000000000000000000000000000000000000000000000000000000000")
 
 log = logging.getLogger(__name__)
 
@@ -69,6 +70,9 @@ class ExecutionClient:
     w3: Web3
     payload_id: Optional[str]
     payload_head: Optional[bytes32]
+    head_hash: bytes32,
+    safe_hash: bytes32,
+    final_hash: bytes32,
 
     def __init__(
         self,
@@ -78,6 +82,9 @@ class ExecutionClient:
         self.w3 = None
         self.payload_id = None
         self.payload_head = None
+        self.head_hash = beacon.constants.GENESIS_EXECUTION_BLOCK_HASH
+        self.safe_hash = beacon.constants.GENESIS_EXECUTION_BLOCK_HASH
+        self.final_hash = FINAL_BLOCK_HASH_NOT_AVAILABLE
 
 
     def ensure_web3_init(self) -> None:
@@ -131,78 +138,46 @@ class ExecutionClient:
             await asyncio.sleep(60)
     
     
-    async def forkchoice_update(
+    async def set_head(
         self,
         block: FullBlock,
-        blockchain: Blockchain,
-        peak: Optional[BlockRecord],
     ) -> str:
-        log.debug(f"Fork choice update")
+        self.head_hash = block.foliage.foliage_block_data.execution_block_hash
+        log.debug(f"New head height: {block.height}, hash: {self.head_hash}")
         
-        self.ensure_web3_init()
+        return await self._forkchoice_update(None)
+    
+    async def new_peak(
+        self,
+        block: FullBlock,
+    ) -> None:
+        self.head_hash = block.foliage.foliage_block_data.execution_block_hash
+        log.debug(f"New peak head height: {block.height}, hash: {self.head_hash}")
         
-        # Prepare ForkchoiceStateV1
-            
-        head_height = block.height
-        head_hash = block.foliage.foliage_block_data.execution_block_hash
-        log.debug(f"Head height: {head_height}, hash: {head_hash}")
-            
-        if head_height == 0:
-            safe_height = 0
-            safe_hash = head_hash
+        self.safe_hash = self.head_hash
+        log.debug(f"New peak safe height: {block.height}, hash: {self.safe_hash}")
+        
+        if block.height > 32:
+            final_height = (block.height - 32) - (block.height % 32)
+            self.final_hash = self.beacon.blockchain.height_to_block_record(final_height).execution_block_hash
         else:
-            if head_height > 6:
-                safe_height = (head_height - 6) - (head_height % 6)
-            else:
-                safe_height = 0
-            safe_hash = blockchain.height_to_block_record(safe_height).execution_block_hash
-        log.debug(f"Safe height: {safe_height}, hash: {safe_hash}")
-        
-        if head_height == 0:
-            final_height = 0
-            final_hash = head_hash
-        else:
-            if head_height > 32:
-                final_height = (head_height - 32) - (head_height % 32)
-            else:
-                final_height = 0
-            final_hash = blockchain.height_to_block_record(final_height).execution_block_hash
-        log.debug(f"Finalized height: {final_height}, hash: {final_hash}")
-        
-        forkchoice_state = {
-            "headBlockHash": "0x" + head_hash.hex(),
-            "safeBlockHash": "0x" + safe_hash.hex(),
-            "finalizedBlockHash": "0x" + final_hash.hex(),
-        }
-            
-        # Prepare PayloadAttributesV2
+            final_height = None
+            self.final_hash = FINAL_BLOCK_HASH_NOT_AVAILABLE    
+        log.debug(f"New peak final height: {final_height}, hash: {self.final_hash}")
         
         payload_attributes = None
         
-        if (
-            peak is None
-            or peak.height == head_height
-        ):
-            coinbase = self.beacon.config.get("coinbase")
-            if coinbase == COINBASE_NULL:
-                log.error("Coinbase not set! FARMING NOT POSSIBLE!")
-            elif not Web3.is_address(coinbase):
-                log.error("Coinbase address invalid! FARMING NOT POSSIBLE!")
-            else:
-                payload_attributes = self._create_payload_attributes(block, coinbase)
+        coinbase = self.beacon.config.get("coinbase")
+        if coinbase == COINBASE_NULL:
+            log.error("Coinbase not set! FARMING NOT POSSIBLE!")
+        elif not Web3.is_address(coinbase):
+            log.error("Coinbase address invalid! FARMING NOT POSSIBLE!")
         else:
-            log.debug("Beacon node not synced, no payload expected")
+            payload_attributes = self._create_payload_attributes(block, coinbase)
         
-        result = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
-        
-        if result.payloadId is not None:
-            self.payload_head = head_hash
-            self.payload_id = result.payloadId
-            log.debug(f"Started building payload for head: height={head_height}, hash={self.payload_head}, id={self.payload_id}")
-        elif payload_attributes is not None:
-                log.error("Payload expected but building not started, head height={head_height}, hash={self.payload_head} ({result.payloadStatus.validationError})")
-        
-        return result.payloadStatus.status
+        status = await self._forkchoice_update(payload_attributes)
+        if status != "VALID":
+            raise RuntimeException("Payload status is not VALID when processing new peak. This should never happen!")
     
     
     def get_payload(
@@ -300,11 +275,37 @@ class ExecutionClient:
         return result.status
     
     
+    async def _forkchoice_update(
+        self,
+        payload_attributes: Optional[Dict[str, Any]],
+    ) -> str:
+        log.debug(f"Fork choice update, head: {self.head_hash}, safe: {self.safe_hash}, finalized: {self.final_hash}")
+        
+        self.ensure_web3_init()
+        
+        forkchoice_state = {
+            "headBlockHash": "0x" + self.head_hash.hex(),
+            "safeBlockHash": "0x" + self.safe_hash.hex(),
+            "finalizedBlockHash": "0x" + self.final_hash.hex(),
+        }
+        
+        result = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
+        
+        if result.payloadId is not None:
+            self.payload_head = head_hash
+            self.payload_id = result.payloadId
+            log.debug(f"Payload building started, id: {self.payload_id}")
+        elif payload_attributes is not None:
+            log.error("Payload expected but building not started: {result.payloadStatus.validationError}")
+        
+        return result.payloadStatus.status
+    
+    
     def _create_payload_attributes(
         self,
         prev_block: FullBlock,
         coinbase: str,
-    ):
+    ) -> Dict[str, Any]:
         withdrawals = []
         height = prev_block.height + 1
         
