@@ -266,7 +266,38 @@ class ExecutionClient:
         
         self.ensure_web3_init()
         
-        result = self.w3.engine.new_payload_v2(payload)
+        raw_transactions = []
+        for transaction in payload.transactions:
+            raw_transactions.append("0x" + transaction.hex())
+        
+        raw_withdrawals = []
+        for withdrawal in payload.withdrawals:
+            raw_withdrawals.append({
+                "index": Web3.to_hex(withdrawal.index),
+                "validatorIndex": Web3.to_hex(withdrawal.validatorIndex),
+                "address": "0x" + withdrawal.address,
+                "amount": Web3.to_hex(withdrawal.amount),
+            })
+        
+        raw_payload = {
+            "parentHash": "0x" + payload.parentHash.hex(),
+            "feeRecipient": "0x" + payload.feeRecipient.hex(),
+            "stateRoot": "0x" + payload.stateRoot.hex(),
+            "receiptsRoot": "0x" + payload.receiptsRoot.hex(),
+            "logsBloom": "0x" + payload.logsBloom.hex(),
+            "prevRandao": "0x" + payload.prevRandao.hex(),
+            "blockNumber": Web3.to_hex(payload.blockNumber),
+            "gasLimit": Web3.to_hex(payload.gasLimit),
+            "gasUsed": Web3.to_hex(payload.gasUsed),
+            "timestamp": Web3.to_hex(payload.timestamp),
+            "extraData": "0x" + payload.extraData.hex(),
+            "baseFeePerGas": Web3.to_hex(payload.baseFeePerGas),
+            "blockHash": "0x" + payload.blockHash.hex(),
+            "transactions": raw_transactions,
+            "withdrawals": raw_withdrawals,
+        }
+        
+        result = self.w3.engine.new_payload_v2(raw_payload)
         if result.validationError is not None:
             log.error(f"New payload validation error: {result.validationError}")
         return result.status
