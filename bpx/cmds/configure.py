@@ -118,7 +118,6 @@ def configure(
                 config["beacon"]["selected_network"] = testnet
                 config["ui"]["selected_network"] = testnet
                 config["introducer"]["selected_network"] = testnet
-                config["execution"]["selected_network"] = testnet
 
                 if "seeder" in config:
                     config["seeder"]["port"] = int(testnet_port)
@@ -150,7 +149,6 @@ def configure(
                 config["beacon"]["selected_network"] = net
                 config["ui"]["selected_network"] = net
                 config["introducer"]["selected_network"] = net
-                config["execution"]["selected_network"] = net
 
                 if "seeder" in config:
                     config["seeder"]["port"] = int(mainnet_port)
