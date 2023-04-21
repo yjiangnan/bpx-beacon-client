@@ -20,17 +20,6 @@ from bpx.util.ints import uint32, uint64
 log = logging.getLogger(__name__)
 
 
-def _payload_status_to_err(status: str) -> Optional[Err]:
-    if status == "INVALID":
-        return Err.EXECUTION_INVALID_PAYLOAD
-    if status == "SYNCING":
-        return Err.EXECUTION_SYNCING
-    if status == "ACCEPTED":
-        return Err.EXECUTION_SIDECHAIN
-    if status != "VALID":
-        return Err.UNKNOWN
-    return None
-
 async def validate_block_body(
     constants: ConsensusConstants,
     execution_client: ExecutionClient,
@@ -48,13 +37,17 @@ async def validate_block_body(
     if isinstance(block, FullBlock):
         assert height == block.height
     
-    if block.execution_payload is not None:
-        payload_status = await execution_client.new_payload(block.execution_payload)
-        err = _payload_status_to_err(payload_status)
-        if err is not None:
-            return err
-    
-    payload_status = await execution_client.set_head(block.foliage.foliage_block_data.execution_block_hash)
-    return _payload_status_to_err(payload_status)
+    if block.execution_payload is None:
+        return None
+        
+    status = await execution_client.new_payload(block.execution_payload)
+    if status == "INVALID":
+        return Err.EXECUTION_INVALID_PAYLOAD
+    if status == "SYNCING":
+        return Err.EXECUTION_SYNCING
+    if status == "ACCEPTED":
+        return Err.EXECUTION_SIDECHAIN
+    if status != "VALID":
+        return Err.UNKNOWN
     
     return None

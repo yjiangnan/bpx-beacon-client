@@ -26,7 +26,7 @@ from bpx.util.byte_types import hexstr_to_bytes
 from bpx.consensus.block_rewards import calculate_v3_reward, calculate_v3_prefarm
 
 COINBASE_NULL = bytes20.fromhex("0000000000000000000000000000000000000000")
-FINAL_BLOCK_HASH_NOT_AVAILABLE = bytes32.fromhex("0000000000000000000000000000000000000000000000000000000000000000")
+BLOCK_HASH_NULL = bytes32.fromhex("0000000000000000000000000000000000000000000000000000000000000000")
 
 log = logging.getLogger(__name__)
 
@@ -70,9 +70,6 @@ class ExecutionClient:
     w3: Web3
     payload_id: Optional[str]
     payload_head: Optional[bytes32]
-    head_hash: bytes32
-    safe_hash: bytes32
-    final_hash: bytes32
 
     def __init__(
         self,
@@ -82,9 +79,6 @@ class ExecutionClient:
         self.w3 = None
         self.payload_id = None
         self.payload_head = None
-        self.head_hash = beacon.constants.GENESIS_EXECUTION_BLOCK_HASH
-        self.safe_hash = beacon.constants.GENESIS_EXECUTION_BLOCK_HASH
-        self.final_hash = FINAL_BLOCK_HASH_NOT_AVAILABLE
 
 
     def ensure_web3_init(self) -> None:
@@ -138,46 +132,56 @@ class ExecutionClient:
             await asyncio.sleep(60)
     
     
-    async def set_head(
-        self,
-        head_hash: bytes32,
-    ) -> str:
-        self.head_hash = head_hash
-        log.info(f"New head hash: {head_hash}")
-        
-        return await self._forkchoice_update(None)
-    
-    async def new_peak(
+    async def forkchoice_update(
         self,
         block: FullBlock,
+        synced: bool,
     ) -> None:
-        self.head_hash = block.foliage.foliage_block_data.execution_block_hash
-        log.info(f"New peak head height: {block.height}, hash: {self.head_hash}")
+        log.info("Fork choice update")
         
-        self.safe_hash = self.head_hash
-        log.info(f"New peak safe height: {block.height}, hash: {self.safe_hash}")
+        self.ensure_web3_init()
+        
+        head_hash = block.foliage.foliage_block_data.execution_block_hash
+        log.info(f" |- New head height: {block.height}, hash: {head_hash}")
+        
+        safe_hash = head_hash
+        log.info(f" |- New safe height: {block.height}, hash: {safe_hash}")
         
         if block.height > 32:
             final_height = (block.height - 32) - (block.height % 32)
-            self.final_hash = self.beacon.blockchain.height_to_block_record(final_height).execution_block_hash
+            final_hash = self.beacon.blockchain.height_to_block_record(final_height).execution_block_hash
         else:
             final_height = None
-            self.final_hash = FINAL_BLOCK_HASH_NOT_AVAILABLE    
-        log.info(f"New peak final height: {final_height}, hash: {self.final_hash}")
+            final_hash = BLOCK_HASH_NULL
+        log.info(f" |- New final height: {final_height}, hash: {final_hash}")
         
+        forkchoice_state = {
+            "headBlockHash": "0x" + head_hash.hex(),
+            "safeBlockHash": "0x" + safe_hash.hex(),
+            "finalizedBlockHash": "0x" + final_hash.hex(),
+        }
         payload_attributes = None
         
-        coinbase = self.beacon.config.get("coinbase")
-        if coinbase == COINBASE_NULL:
-            log.error("Coinbase not set! FARMING NOT POSSIBLE!")
-        elif not Web3.is_address(coinbase):
-            log.error("Coinbase address invalid! FARMING NOT POSSIBLE!")
-        else:
-            payload_attributes = self._create_payload_attributes(block, coinbase)
+        if synced:
+            coinbase = self.beacon.config.get("coinbase")
+            if coinbase == COINBASE_NULL:
+                log.error("Coinbase not set! FARMING NOT POSSIBLE!")
+            elif not Web3.is_address(coinbase):
+                log.error("Coinbase address invalid! FARMING NOT POSSIBLE!")
+            else:
+                payload_attributes = self._create_payload_attributes(block, coinbase)
         
-        status = await self._forkchoice_update(payload_attributes)
-        if status != "VALID":
-            raise RuntimeException("Payload status is not VALID when processing new peak. This should never happen!")
+        result = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
+        
+        if result.payloadStatus.status != "VALID":
+            raise RuntimeError(f"Payload status {result.payloadStatus.status}: {result.payloadStatus.validationError}")
+        
+        if result.payloadId is not None:
+            self.payload_head = head_hash
+            self.payload_id = result.payloadId
+            log.info(f"Payload building started, id: {self.payload_id}")
+        elif payload_attributes is not None:
+            log.error(f"Payload building not started")
     
     
     def get_payload(
@@ -273,32 +277,6 @@ class ExecutionClient:
         if result.validationError is not None:
             log.error(f"New payload validation error: {result.validationError}")
         return result.status
-    
-    
-    async def _forkchoice_update(
-        self,
-        payload_attributes: Optional[Dict[str, Any]],
-    ) -> str:
-        log.info(f"Fork choice update, head: {self.head_hash}, safe: {self.safe_hash}, finalized: {self.final_hash}")
-        
-        self.ensure_web3_init()
-        
-        forkchoice_state = {
-            "headBlockHash": "0x" + self.head_hash.hex(),
-            "safeBlockHash": "0x" + self.safe_hash.hex(),
-            "finalizedBlockHash": "0x" + self.final_hash.hex(),
-        }
-        
-        result = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
-        
-        if result.payloadId is not None:
-            self.payload_head = self.head_hash
-            self.payload_id = result.payloadId
-            log.info(f"Payload building started, id: {self.payload_id}")
-        elif payload_attributes is not None:
-            log.error("Payload expected but building not started: {result.payloadStatus.validationError}")
-        
-        return result.payloadStatus.status
     
     
     def _create_payload_attributes(
