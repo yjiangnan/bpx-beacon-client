@@ -139,48 +139,56 @@ class ExecutionClient:
     ) -> None:
         log.info("Fork choice update")
         
-        self.ensure_web3_init()
+        self.payload_head = None
+        self.payload_id = None
         
-        head_hash = block.foliage.foliage_block_data.execution_block_hash
-        log.info(f" |- New head height: {block.height}, hash: {head_hash}")
-        
-        safe_hash = head_hash
-        log.info(f" |- New safe height: {block.height}, hash: {safe_hash}")
-        
-        if block.height > 32:
-            final_height = (block.height - 32) - (block.height % 32)
-            final_hash = self.beacon.blockchain.height_to_block_record(final_height).execution_block_hash
-        else:
-            final_height = None
-            final_hash = BLOCK_HASH_NULL
-        log.info(f" |- New final height: {final_height}, hash: {final_hash}")
-        
-        forkchoice_state = {
-            "headBlockHash": "0x" + head_hash.hex(),
-            "safeBlockHash": "0x" + safe_hash.hex(),
-            "finalizedBlockHash": "0x" + final_hash.hex(),
-        }
-        payload_attributes = None
-        
-        if synced:
-            coinbase = self.beacon.config.get("coinbase")
-            if coinbase == COINBASE_NULL:
-                log.error("Coinbase not set! FARMING NOT POSSIBLE!")
-            elif not Web3.is_address(coinbase):
-                log.error("Coinbase address invalid! FARMING NOT POSSIBLE!")
+        try:
+            self.ensure_web3_init()
+            
+            head_hash = block.foliage.foliage_block_data.execution_block_hash
+            log.info(f" |- New head height: {block.height}, hash: {head_hash}")
+            
+            safe_hash = head_hash
+            log.info(f" |- New safe height: {block.height}, hash: {safe_hash}")
+            
+            if block.height > 32:
+                final_height = (block.height - 32) - (block.height % 32)
+                final_hash = self.beacon.blockchain.height_to_block_record(final_height).execution_block_hash
             else:
-                payload_attributes = self._create_payload_attributes(block, coinbase)
+                final_height = None
+                final_hash = BLOCK_HASH_NULL
+            log.info(f" |- New final height: {final_height}, hash: {final_hash}")
+            
+            forkchoice_state = {
+                "headBlockHash": "0x" + head_hash.hex(),
+                "safeBlockHash": "0x" + safe_hash.hex(),
+                "finalizedBlockHash": "0x" + final_hash.hex(),
+            }
+            payload_attributes = None
+            
+            if synced:
+                coinbase = self.beacon.config.get("coinbase")
+                if coinbase == COINBASE_NULL:
+                    log.error("Coinbase not set! FARMING NOT POSSIBLE!")
+                elif not Web3.is_address(coinbase):
+                    log.error("Coinbase address invalid! FARMING NOT POSSIBLE!")
+                else:
+                    payload_attributes = self._create_payload_attributes(block, coinbase)
+            
+            result = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
+            
+            if result.payloadStatus.status != "VALID":
+                raise RuntimeError(f"Payload status {result.payloadStatus.status}: {result.payloadStatus.validationError}")
+            
+            if result.payloadId is not None:
+                self.payload_head = head_hash
+                self.payload_id = result.payloadId
+        except Exception as e:
+            log.error(f"Exception in fork choice update: {e}")
         
-        result = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
-        
-        if result.payloadStatus.status != "VALID":
-            raise RuntimeError(f"Payload status {result.payloadStatus.status}: {result.payloadStatus.validationError}")
-        
-        if result.payloadId is not None:
-            self.payload_head = head_hash
-            self.payload_id = result.payloadId
+        if self.payload_id is not None:
             log.info(f"Payload building started, id: {self.payload_id}")
-        elif payload_attributes is not None:
+        else:
             log.error(f"Payload building not started")
     
     
