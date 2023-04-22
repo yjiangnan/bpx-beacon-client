@@ -167,12 +167,13 @@ class ExecutionClient:
             
             if synced:
                 coinbase = self.beacon.config.get("coinbase")
+                coinbase_encoded = "0x" + coinbase.hex()
                 if coinbase == COINBASE_NULL:
                     log.error("Coinbase not set! FARMING NOT POSSIBLE!")
-                elif not Web3.is_address(coinbase):
+                elif not Web3.is_address(coinbase_encoded):
                     log.error("Coinbase address invalid! FARMING NOT POSSIBLE!")
                 else:
-                    payload_attributes = self._create_payload_attributes(block, coinbase)
+                    payload_attributes = self._create_payload_attributes(block, coinbase_encoded)
             
             result = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
             

@@ -345,7 +345,7 @@ beacon:
     public_key:  "config/ssl/beacon/public_beacon.key"
   use_bpx_loop_policy: True
   
-  coinbase: "0x0000000000000000000000000000000000000000"
+  coinbase: 0000000000000000000000000000000000000000
 
 ui:
   # Which port to use to communicate with the beacon client

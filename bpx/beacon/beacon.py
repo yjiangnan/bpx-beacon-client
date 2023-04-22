@@ -62,6 +62,7 @@ from bpx.util.path import path_from_root
 from bpx.util.profiler import mem_profile_task, profile_task
 from bpx.util.safe_cancel_task import cancel_task_safe
 from bpx.beacon.execution_client import ExecutionClient
+from bpx.util.byte_types import hexstr_to_bytes
 
 
 # This is the result of calling peak_post_processing, which is then fed into peak_post_processing_2
@@ -1750,16 +1751,16 @@ class Beacon:
         return None, False
     
     async def get_coinbase(self) -> Dict[str, Any]:
-        return self.config["coinbase"]
+        return "0x" + self.config["coinbase"].hex()
 
-    def set_coinbase(self, coinbase: str) -> None:
-        if not Web3.is_address(coinbase):
+    def set_coinbase(self, coinbase_encoded: str) -> None:
+        if not Web3.is_address(coinbase_encoded):
             raise ValueError("Invalid address")
             
-        self.config["coinbase"] = coinbase
+        self.config["coinbase"] = hexstr_to_bytes(coinbase_encoded)
         
         with lock_and_load_config(self.root_path, "config.yaml") as config:
-            config["beacon"]["coinbase"] = coinbase
+            config["beacon"]["coinbase"] = self.config["coinbase"]
             save_config(self.root_path, "config.yaml", config)
 
     async def _needs_compact_proof(
