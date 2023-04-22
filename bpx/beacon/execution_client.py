@@ -24,7 +24,7 @@ from bpx.types.blockchain_format.execution_payload import ExecutionPayloadV2, Wi
 from bpx.util.byte_types import hexstr_to_bytes
 from bpx.consensus.block_rewards import calculate_v3_reward, calculate_v3_prefarm
 
-COINBASE_NULL = bytes20.fromhex("0000000000000000000000000000000000000000")
+COINBASE_NULL = "0x0000000000000000000000000000000000000000"
 BLOCK_HASH_NULL = bytes32.fromhex("0000000000000000000000000000000000000000000000000000000000000000")
 
 log = logging.getLogger(__name__)
