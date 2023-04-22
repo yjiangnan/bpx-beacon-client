@@ -41,10 +41,10 @@ fi
 
 # Builds CLI only rpm
 CLI_RPM_BASE="bpx-beacon-client-cli-$BPX_INSTALLER_VERSION-1.$REDHAT_PLATFORM"
-mkdir -p "dist/$CLI_RPM_BASE/opt/bpx"
+mkdir -p "dist/$CLI_RPM_BASE/opt/bpx-beacon-client"
 mkdir -p "dist/$CLI_RPM_BASE/usr/bin"
-cp -r dist/daemon/* "dist/$CLI_RPM_BASE/opt/bpx/"
-ln -s ../../opt/bpx/bpx "dist/$CLI_RPM_BASE/usr/bin/bpx"
+cp -r dist/daemon/* "dist/$CLI_RPM_BASE/opt/bpx-beacon-client/"
+ln -s ../../opt/bpx-beacon-client/bpx "dist/$CLI_RPM_BASE/usr/bin/bpx"
 # This is built into the base build image
 # shellcheck disable=SC1091
 . /etc/profile.d/rvm.sh
@@ -78,7 +78,7 @@ OPT_ARCH="--x64"
 if [ "$REDHAT_PLATFORM" = "arm64" ]; then
   OPT_ARCH="--arm64"
 fi
-PRODUCT_NAME="bpx"
+PRODUCT_NAME="bpx-gui"
 echo electron-builder build --linux rpm "${OPT_ARCH}" \
   --config.extraMetadata.name=bpx-beacon-client \
   --config.productName="${PRODUCT_NAME}" --config.linux.desktop.Name="BPX Beacon Client" \

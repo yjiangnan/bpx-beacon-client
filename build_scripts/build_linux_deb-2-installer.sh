@@ -45,12 +45,12 @@ fi
 # need j2 for templating the control file
 pip install j2cli
 CLI_DEB_BASE="bpx-beacon-client-cli_$BPX_INSTALLER_VERSION-1_$PLATFORM"
-mkdir -p "dist/$CLI_DEB_BASE/opt/bpx"
+mkdir -p "dist/$CLI_DEB_BASE/opt/bpx-beacon-client"
 mkdir -p "dist/$CLI_DEB_BASE/usr/bin"
 mkdir -p "dist/$CLI_DEB_BASE/DEBIAN"
 j2 -o "dist/$CLI_DEB_BASE/DEBIAN/control" assets/deb/control.j2
-cp -r dist/daemon/* "dist/$CLI_DEB_BASE/opt/bpx/"
-ln -s ../../opt/bpx/bpx "dist/$CLI_DEB_BASE/usr/bin/bpx"
+cp -r dist/daemon/* "dist/$CLI_DEB_BASE/opt/bpx-beacon-client/"
+ln -s ../../opt/bpx-beacon-client/bpx "dist/$CLI_DEB_BASE/usr/bin/bpx"
 dpkg-deb --build --root-owner-group "dist/$CLI_DEB_BASE"
 # CLI only .deb done
 
@@ -64,7 +64,7 @@ cp package.json package.json.orig
 jq --arg VER "$BPX_INSTALLER_VERSION" '.version=$VER' package.json > temp.json && mv temp.json package.json
 
 echo "Building Linux(deb) Electron app"
-PRODUCT_NAME="bpx"
+PRODUCT_NAME="bpx-gui"
 if [ "$PLATFORM" = "arm64" ]; then
   # electron-builder does not work for arm64 as of Aug 16, 2022.
   # This is a temporary fix.
@@ -109,7 +109,7 @@ if [ "$LAST_EXIT_CODE" -ne 0 ]; then
 	exit $LAST_EXIT_CODE
 fi
 
-GUI_DEB_NAME=bpx-beacon-client_${BPX_INSTALLER_VERSION}_${PLATFORM}.deb
+GUI_DEB_NAME=bpx-beacon-client_${BPX_INSTALLER_VERSION}-1_${PLATFORM}.deb
 mv "dist/${PRODUCT_NAME}-${BPX_INSTALLER_VERSION}.deb" "../../../build_scripts/dist/${GUI_DEB_NAME}"
 cd ../../../build_scripts || exit 1
 

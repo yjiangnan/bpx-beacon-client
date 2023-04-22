@@ -3,5 +3,5 @@
 
 set -e
 
-ln -s /opt/bpx/resources/app.asar.unpacked/daemon/bpx /usr/bin/bpx || true
-ln -s /opt/bpx/bpx-beacon-client /usr/bin/bpx-beacon-client || true
+ln -s /opt/bpx-beacon-client/resources/app.asar.unpacked/daemon/bpx /usr/bin/bpx || true
+ln -s /opt/bpx-beacon-client/bpx-gui /usr/bin/bpx-gui || true

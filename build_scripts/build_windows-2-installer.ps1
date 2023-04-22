@@ -64,16 +64,16 @@ Write-Output "   ---"
 
 Write-Output "   ---"
 Write-Output "electron-builder"
-electron-builder build --win --x64 --config.productName="BPX"
+electron-builder build --win --x64 --config.productName="bpx-gui"
 Get-ChildItem dist\win-unpacked\resources
 Write-Output "   ---"
 
 Write-Output "   ---"
 Write-Output "Moving final installers to expected location"
 Write-Output "   ---"
-Copy-Item ".\dist\win-unpacked" -Destination "$env:GITHUB_WORKSPACE\bpx-gui\BPX-win32-x64" -Recurse
+Copy-Item ".\dist\win-unpacked" -Destination "$env:GITHUB_WORKSPACE\bpx-gui\bpx-gui-win32-x64" -Recurse
 mkdir "$env:GITHUB_WORKSPACE\bpx-gui\release-builds\windows-installer" -ea 0
-Copy-Item ".\dist\BPXSetup-$packageVersion.exe" -Destination "$env:GITHUB_WORKSPACE\bpx-gui\release-builds\windows-installer"
+Copy-Item ".\dist\bpx-guiSetup-$packageVersion.exe" -Destination "$env:GITHUB_WORKSPACE\bpx-gui\release-builds\windows-installer\bpx-beacon-client_$packageVersion_amd64.exe"
 
 Write-Output "   ---"
 Write-Output "Windows Installer complete"

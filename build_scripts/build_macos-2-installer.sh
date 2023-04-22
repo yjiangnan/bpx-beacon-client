@@ -44,7 +44,7 @@ OPT_ARCH="--x64"
 if [ "$(arch)" = "arm64" ]; then
   OPT_ARCH="--arm64"
 fi
-PRODUCT_NAME="BPX"
+PRODUCT_NAME="bpx-gui"
 echo electron-builder build --mac "${OPT_ARCH}" --config.productName="$PRODUCT_NAME"
 electron-builder build --mac "${OPT_ARCH}" --config.productName="$PRODUCT_NAME"
 LAST_EXIT_CODE=$?
@@ -62,9 +62,9 @@ mv dist/* ../../../build_scripts/dist/
 cd ../../../build_scripts || exit 1
 
 mkdir final_installer
-DMG_NAME="bpx-${BPX_INSTALLER_VERSION}.dmg"
+DMG_NAME="bpx-gui-${BPX_INSTALLER_VERSION}.dmg"
 if [ "$(arch)" = "arm64" ]; then
-  mv dist/"${DMG_NAME}" dist/bpx-"${BPX_INSTALLER_VERSION}"-arm64.dmg
+  mv dist/"${DMG_NAME}" dist/bpx-beacon-client-"${BPX_INSTALLER_VERSION}"-arm64.dmg
   DMG_NAME=bpx-${BPX_INSTALLER_VERSION}-arm64.dmg
 fi
 mv dist/"$DMG_NAME" final_installer/

@@ -153,7 +153,7 @@ jobs:
       run: |
         gh release upload \
           $RELEASE_TAG \
-          build_scripts/final_installer/bpx-beacon-client_${BPX_INSTALLER_VERSION}_arm64.deb \
+          build_scripts/final_installer/bpx-beacon-client_${BPX_INSTALLER_VERSION}-1_arm64.deb \
           build_scripts/final_installer/bpx-beacon-client-cli_${BPX_INSTALLER_VERSION}-1_arm64.deb
 
     - name: Clean up on self hosted runner

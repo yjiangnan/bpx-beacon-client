@@ -190,11 +190,11 @@ jobs:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         BPX_INSTALLER_VERSION: ${{ steps.version_number.outputs.BPX_INSTALLER_VERSION }}
       run: |
-        gh release upload $env:RELEASE_TAG ${{ github.workspace }}\bpx-gui\release-builds\windows-installer\BPXSetup-${{ steps.version_number.outputs.BPX_INSTALLER_VERSION }}.exe
+        gh release upload $env:RELEASE_TAG ${{ github.workspace }}\bpx-gui\release-builds\windows-installer\bpx-beacon-client-${{ steps.version_number.outputs.BPX_INSTALLER_VERSION }}_amd64.exe
 
     - name: Remove Windows exe and installer to exclude from cache
       run: |
         Remove-Item .\bpx-gui\packages\gui\dist -Recurse -Force
         Remove-Item .\bpx-gui\packages\gui\daemon -Recurse -Force
-        Remove-Item .\bpx-gui\BPX-win32-x64 -Recurse -Force
+        Remove-Item .\bpx-gui\bpx-gui-win32-x64 -Recurse -Force
         Remove-Item .\bpx-gui\release-builds -Recurse -Force
