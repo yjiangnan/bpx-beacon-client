@@ -57,7 +57,7 @@ fi
 if [ "$(uname -m)" = "armv7l" ]; then
   echo ""
   echo "WARNING:"
-  echo "The BPX Blockchain requires a 64 bit OS and this is 32 bit armv7l"
+  echo "The BPX Beacon Client requires a 64 bit OS and this is 32 bit armv7l"
   echo "Exiting."
   exit 1
 fi
@@ -353,7 +353,7 @@ if [ -n "$PLOTTER_INSTALL" ]; then
 fi
 
 echo ""
-echo "BPX blockchain install.sh complete."
+echo "BPX Beacon Client install.sh complete."
 echo ""
 echo "To install the GUI run '. ./activate' then 'sh install-gui.sh'."
 echo ""

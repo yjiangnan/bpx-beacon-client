@@ -153,8 +153,8 @@ jobs:
       run: |
         gh release upload \
           $RELEASE_TAG \
-          build_scripts/final_installer/bpx-blockchain_${BPX_INSTALLER_VERSION}_amd64.deb \
-          build_scripts/final_installer/bpx-blockchain-cli_${BPX_INSTALLER_VERSION}-1_amd64.deb
+          build_scripts/final_installer/bpx-beacon-client_${BPX_INSTALLER_VERSION}_amd64.deb \
+          build_scripts/final_installer/bpx-beacon-client-cli_${BPX_INSTALLER_VERSION}-1_amd64.deb
 
     - name: Remove working files to exclude from cache
       run: |

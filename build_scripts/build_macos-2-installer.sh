@@ -34,7 +34,7 @@ cp -r dist/daemon ../bpx-gui/packages/gui
 # Change to the gui package
 cd ../bpx-gui/packages/gui || exit 1
 
-# sets the version for bpx-blockchain in package.json
+# sets the version for bpx-beacon-client in package.json
 brew install jq
 cp package.json package.json.orig
 jq --arg VER "$BPX_INSTALLER_VERSION" '.version=$VER' package.json > temp.json && mv temp.json package.json

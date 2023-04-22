@@ -30,7 +30,7 @@ CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 
 @click.group(
-    help=f"\n  Manage bpx blockchain infrastructure ({__version__})\n",
+    help=f"\n  Manage bpx beacon chain infrastructure ({__version__})\n",
     epilog="Try 'bpx start beacon', 'bpx netspace -d 192', or 'bpx show -s'",
     context_settings=CONTEXT_SETTINGS,
 )

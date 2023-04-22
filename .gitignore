@@ -24,7 +24,7 @@ config/keys.yaml
 config/plots.yaml
 
 # Bundled code
-bpx-blockchain.tar.gz.tar.gz
+bpx-beacon-client.tar.gz.tar.gz
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -50,7 +50,7 @@ activate
 .idea
 
 # Packaging
-bpx-blockchain.tar.gz
+bpx-beacon-client.tar.gz
 
 # Timelord utilities
 vdf_bench
@@ -83,7 +83,7 @@ build_scripts\win_build
 build_scripts/win_build
 win_code_sign_cert.p12
 
-# bpx-blockchain wheel build folder
+# bpx-beacon-client wheel build folder
 build/
 
 # Temporal `n` (node version manager) directory

@@ -19,7 +19,7 @@ if [ -z "$VIRTUAL_ENV" ]; then
 fi
 
 if [ "$(id -u)" = 0 ]; then
-  echo "The BPX Blockchain GUI can not be installed or run by the root user."
+  echo "The BPX Beacon Client GUI can not be installed or run by the root user."
   exit 1
 fi
 
@@ -215,6 +215,6 @@ else
 fi
 
 echo ""
-echo "BPX blockchain install-gui.sh completed."
+echo "BPX Beacon Client install-gui.sh completed."
 echo ""
 echo "Type 'bash start-gui.sh &' to start the GUI."

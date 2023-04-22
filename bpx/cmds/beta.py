@@ -142,7 +142,7 @@ def prepare_submission_cmd(ctx: click.Context) -> None:
     except IndexError:
         raise click.ClickException(f"Invalid choice: {user_input}")
     plotting_path = Path(prepare_result / "plotting")
-    bpx_blockchain_path = Path(prepare_result / "bpx-blockchain")
+    bpx_blockchain_path = Path(prepare_result / "bpx-beacon-client")
     bpx_logs = prepare_logs(plotting_path, prepare_bpx_blockchain_log)
     plotting_logs = prepare_logs(bpx_blockchain_path, prepare_plotting_log)
 

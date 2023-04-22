@@ -17,7 +17,7 @@ default_log_level = "WARNING"
 
 def get_beta_logging_config() -> Dict[str, Any]:
     return {
-        "log_filename": f"{bpx_full_version_str()}/bpx-blockchain/beta.log",
+        "log_filename": f"{bpx_full_version_str()}/bpx-beacon-client/beta.log",
         "log_level": "DEBUG",
         "log_stdout": False,
         "log_maxfilesrotation": 100,

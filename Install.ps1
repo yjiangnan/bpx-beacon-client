@@ -118,7 +118,7 @@ if ($p)
 }
 
 Write-Output ""
-Write-Output "BPX blockchain .\Install.ps1 complete."
+Write-Output "BPX Beacon Client .\Install.ps1 complete."
 Write-Output ""
 Write-Output "To install the GUI run '.\venv\scripts\Activate.ps1' then '.\Install-gui.ps1'."
 Write-Output ""

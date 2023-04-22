@@ -79,7 +79,7 @@ class Service(Generic[_T_RpcServiceProtocol]):
 
         self._log = logging.getLogger(service_name)
         self._log.info(f"Starting service {self._service_name} ...")
-        self._log.info(f"bpx-blockchain version: {bpx_full_version_str()}")
+        self._log.info(f"bpx-beacon-client version: {bpx_full_version_str()}")
 
         self.service_config = self.config[service_name]
 

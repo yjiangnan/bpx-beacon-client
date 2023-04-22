@@ -4,4 +4,4 @@
 set -e
 
 unlink /usr/bin/bpx || true
-unlink /usr/bin/bpx-blockchain || true
+unlink /usr/bin/bpx-beacon-client || true

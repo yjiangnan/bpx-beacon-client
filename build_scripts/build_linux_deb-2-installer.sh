@@ -44,7 +44,7 @@ fi
 # Builds CLI only .deb
 # need j2 for templating the control file
 pip install j2cli
-CLI_DEB_BASE="bpx-blockchain-cli_$BPX_INSTALLER_VERSION-1_$PLATFORM"
+CLI_DEB_BASE="bpx-beacon-client-cli_$BPX_INSTALLER_VERSION-1_$PLATFORM"
 mkdir -p "dist/$CLI_DEB_BASE/opt/bpx"
 mkdir -p "dist/$CLI_DEB_BASE/usr/bin"
 mkdir -p "dist/$CLI_DEB_BASE/DEBIAN"
@@ -59,7 +59,7 @@ cp -r dist/daemon ../bpx-gui/packages/gui
 # Change to the gui package
 cd ../bpx-gui/packages/gui || exit 1
 
-# sets the version for bpx-blockchain in package.json
+# sets the version for bpx-beacon-client in package.json
 cp package.json package.json.orig
 jq --arg VER "$BPX_INSTALLER_VERSION" '.version=$VER' package.json > temp.json && mv temp.json package.json
 
@@ -80,23 +80,23 @@ if [ "$PLATFORM" = "arm64" ]; then
   sudo gem install public_suffix -v 4.0.7
   sudo gem install fpm
   echo USE_SYSTEM_FPM=true electron-builder build --linux deb --arm64 \
-    --config.extraMetadata.name=bpx-blockchain \
-    --config.productName="$PRODUCT_NAME" --config.linux.desktop.Name="BPX Blockchain" \
-    --config.deb.packageName="bpx-blockchain"
+    --config.extraMetadata.name=bpx-beacon-client \
+    --config.productName="$PRODUCT_NAME" --config.linux.desktop.Name="BPX Beacon Client" \
+    --config.deb.packageName="bpx-beacon-client"
   USE_SYSTEM_FPM=true electron-builder build --linux deb --arm64 \
-    --config.extraMetadata.name=bpx-blockchain \
-    --config.productName="$PRODUCT_NAME" --config.linux.desktop.Name="BPX Blockchain" \
-    --config.deb.packageName="bpx-blockchain"
+    --config.extraMetadata.name=bpx-beacon-client \
+    --config.productName="$PRODUCT_NAME" --config.linux.desktop.Name="BPX Beacon Client" \
+    --config.deb.packageName="bpx-beacon-client"
   LAST_EXIT_CODE=$?
 else
   echo electron-builder build --linux deb --x64 \
-    --config.extraMetadata.name=bpx-blockchain \
-    --config.productName="$PRODUCT_NAME" --config.linux.desktop.Name="BPX Blockchain" \
-    --config.deb.packageName="bpx-blockchain"
+    --config.extraMetadata.name=bpx-beacon-client \
+    --config.productName="$PRODUCT_NAME" --config.linux.desktop.Name="BPX Beacon Client" \
+    --config.deb.packageName="bpx-beacon-client"
   electron-builder build --linux deb --x64 \
-    --config.extraMetadata.name=bpx-blockchain \
-    --config.productName="$PRODUCT_NAME" --config.linux.desktop.Name="BPX Blockchain" \
-    --config.deb.packageName="bpx-blockchain"
+    --config.extraMetadata.name=bpx-beacon-client \
+    --config.productName="$PRODUCT_NAME" --config.linux.desktop.Name="BPX Beacon Client" \
+    --config.deb.packageName="bpx-beacon-client"
   LAST_EXIT_CODE=$?
 fi
 ls -l dist/linux*-unpacked/resources
@@ -109,7 +109,7 @@ if [ "$LAST_EXIT_CODE" -ne 0 ]; then
 	exit $LAST_EXIT_CODE
 fi
 
-GUI_DEB_NAME=bpx-blockchain_${BPX_INSTALLER_VERSION}_${PLATFORM}.deb
+GUI_DEB_NAME=bpx-beacon-client_${BPX_INSTALLER_VERSION}_${PLATFORM}.deb
 mv "dist/${PRODUCT_NAME}-${BPX_INSTALLER_VERSION}.deb" "../../../build_scripts/dist/${GUI_DEB_NAME}"
 cd ../../../build_scripts || exit 1
 

@@ -37,7 +37,7 @@ try {
     py ..\installhelper.py
 
     Write-Output ""
-    Write-Output "BPX blockchain Install-gui.ps1 completed."
+    Write-Output "BPX Beacon Client Install-gui.ps1 completed."
     Write-Output ""
     Write-Output "Type 'cd bpx-gui' and then 'npm run electron' to start the GUI."
 } finally {

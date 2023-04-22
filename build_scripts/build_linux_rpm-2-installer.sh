@@ -40,7 +40,7 @@ if [ "$LAST_EXIT_CODE" -ne 0 ]; then
 fi
 
 # Builds CLI only rpm
-CLI_RPM_BASE="bpx-blockchain-cli-$BPX_INSTALLER_VERSION-1.$REDHAT_PLATFORM"
+CLI_RPM_BASE="bpx-beacon-client-cli-$BPX_INSTALLER_VERSION-1.$REDHAT_PLATFORM"
 mkdir -p "dist/$CLI_RPM_BASE/opt/bpx"
 mkdir -p "dist/$CLI_RPM_BASE/usr/bin"
 cp -r dist/daemon/* "dist/$CLI_RPM_BASE/opt/bpx/"
@@ -55,7 +55,7 @@ rvm use ruby-3
 fpm -s dir -t rpm \
   -C "dist/$CLI_RPM_BASE" \
   -p "dist/$CLI_RPM_BASE.rpm" \
-  --name bpx-blockchain-cli \
+  --name bpx-beacon-client-cli \
   --license Apache-2.0 \
   --version "$BPX_INSTALLER_VERSION" \
   --architecture "$REDHAT_PLATFORM" \
@@ -69,7 +69,7 @@ cp -r dist/daemon ../bpx-gui/packages/gui
 # Change to the gui package
 cd ../bpx-gui/packages/gui || exit 1
 
-# sets the version for bpx-blockchain in package.json
+# sets the version for bpx-beacon-client in package.json
 cp package.json package.json.orig
 jq --arg VER "$BPX_INSTALLER_VERSION" '.version=$VER' package.json > temp.json && mv temp.json package.json
 
@@ -80,13 +80,13 @@ if [ "$REDHAT_PLATFORM" = "arm64" ]; then
 fi
 PRODUCT_NAME="bpx"
 echo electron-builder build --linux rpm "${OPT_ARCH}" \
-  --config.extraMetadata.name=bpx-blockchain \
-  --config.productName="${PRODUCT_NAME}" --config.linux.desktop.Name="BPX Blockchain" \
-  --config.rpm.packageName="bpx-blockchain"
+  --config.extraMetadata.name=bpx-beacon-client \
+  --config.productName="${PRODUCT_NAME}" --config.linux.desktop.Name="BPX Beacon Client" \
+  --config.rpm.packageName="bpx-beacon-client"
 electron-builder build --linux rpm "${OPT_ARCH}" \
-  --config.extraMetadata.name=bpx-blockchain \
-  --config.productName="${PRODUCT_NAME}" --config.linux.desktop.Name="BPX Blockchain" \
-  --config.rpm.packageName="bpx-blockchain"
+  --config.extraMetadata.name=bpx-beacon-client \
+  --config.productName="${PRODUCT_NAME}" --config.linux.desktop.Name="BPX Beacon Client" \
+  --config.rpm.packageName="bpx-beacon-client"
 LAST_EXIT_CODE=$?
 ls -l dist/linux*-unpacked/resources
 
@@ -98,7 +98,7 @@ if [ "$LAST_EXIT_CODE" -ne 0 ]; then
 	exit $LAST_EXIT_CODE
 fi
 
-GUI_RPM_NAME="bpx-blockchain-${BPX_INSTALLER_VERSION}-1.${REDHAT_PLATFORM}.rpm"
+GUI_RPM_NAME="bpx-beacon-client-${BPX_INSTALLER_VERSION}-1.${REDHAT_PLATFORM}.rpm"
 mv "dist/${PRODUCT_NAME}-${BPX_INSTALLER_VERSION}.rpm" "../../../build_scripts/dist/${GUI_RPM_NAME}"
 cd ../../../build_scripts || exit 1
 
