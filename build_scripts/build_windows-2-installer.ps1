@@ -49,7 +49,7 @@ editbin.exe /STACK:8000000 daemon\bpx.exe
 Write-Output "   ---"
 
 $packageVersion = "$env:BPX_INSTALLER_VERSION"
-$packageName = "BPX-$packageVersion"
+$packageName = "bpx-gui-$packageVersion"
 
 Write-Output "packageName is $packageName"
 
