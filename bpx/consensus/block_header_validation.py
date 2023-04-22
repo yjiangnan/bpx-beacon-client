@@ -835,6 +835,14 @@ def validate_unfinished_header_block(
             )
         ):
             return None, ValidationError(Err.INVALID_WITHDRAWAL_AMOUNT, "invalid block reward amount")
+        
+        # 28. Prefarm address != block reward address
+        # (because the execution client will only process one of withdrawals, ignoring the second one)
+        if (
+            prefarm_withdrawal is not None
+            and prefarm_withdrawal.address == reward_withdrawal.address
+        ):
+            return None, ValidationError(Err.WITHDRAWAL_ADDRESS_COLLISION)
     
     return required_iters, None  # Valid unfinished header block
 
