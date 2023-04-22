@@ -86,10 +86,16 @@ class ExecutionClient:
         
         ec_config = self.beacon.config.get("execution_client")
         selected_network = self.beacon.config.get("selected_network")
-        secret_path = path_from_root(
-            self.beacon.root_path,
-            "../execution/" + selected_network + "/geth/jwtsecret"
-        )
+        if selected_network == "mainnet":
+            secret_path = path_from_root(
+                self.beacon.root_path,
+                "../execution/geth/jwtsecret"
+            )
+        else:
+            secret_path = path_from_root(
+                self.beacon.root_path,
+                "../execution/" + selected_network + "/geth/jwtsecret"
+            )
         
         log.info(f"Initializing execution client connection: {ec_config['host']}:{ec_config['port']} using JWT secret {secret_path}")
 
