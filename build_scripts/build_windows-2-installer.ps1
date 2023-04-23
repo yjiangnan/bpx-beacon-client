@@ -73,7 +73,7 @@ Write-Output "Moving final installers to expected location"
 Write-Output "   ---"
 Copy-Item ".\dist\win-unpacked" -Destination "$env:GITHUB_WORKSPACE\bpx-gui\bpx-gui-win32-x64" -Recurse
 mkdir "$env:GITHUB_WORKSPACE\bpx-gui\release-builds\windows-installer" -ea 0
-Copy-Item ".\dist\bpx-guiSetup-$packageVersion.exe" -Destination "$env:GITHUB_WORKSPACE\bpx-gui\release-builds\windows-installer\bpx-beacon-client_$packageVersion_amd64.exe"
+Copy-Item ".\dist\bpx-beacon-client-$packageVersion.exe" -Destination "$env:GITHUB_WORKSPACE\bpx-gui\release-builds\windows-installer\bpx-beacon-client_$packageVersion_amd64.exe"
 
 Write-Output "   ---"
 Write-Output "Windows Installer complete"
