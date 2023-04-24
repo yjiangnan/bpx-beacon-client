@@ -185,15 +185,12 @@ jobs:
         echo "REPO_NAME=$(echo ${{ github.repository }} | cut -d'/' -f 2)" >>$GITHUB_OUTPUT
 
     - name: Upload release artifacts
-      if: github.event_name == 'release'
+      if: env.RELEASE == 'true'
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         BPX_INSTALLER_VERSION: ${{ steps.version_number.outputs.BPX_INSTALLER_VERSION }}
       run: |
-        gh release upload \
-          ${GITHUB_REF#refs/*/} \
-          ./bpx-gui/release-builds/bpx-beacon-client-*.exe
-      shell: bash
+        gh release upload $env:RELEASE_TAG ${{ github.workspace }}\bpx-gui\release-builds\windows-installer\bpx-beacon-client-${{ steps.version_number.outputs.BPX_INSTALLER_VERSION }}_amd64.exe
 
     - name: Remove Windows exe and installer to exclude from cache
       run: |
