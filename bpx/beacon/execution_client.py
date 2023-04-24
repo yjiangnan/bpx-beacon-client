@@ -182,7 +182,9 @@ class ExecutionClient:
             
             result = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
             
-            if result.payloadStatus.status != "VALID":
+            if result.payloadStatus.status == "ACCEPTED":
+                log.warning("Execution chain reorg!")
+            elif result.payloadStatus.status != "VALID":
                 raise RuntimeError(f"Payload status {result.payloadStatus.status}: {result.payloadStatus.validationError}")
             
             if result.payloadId is not None:
