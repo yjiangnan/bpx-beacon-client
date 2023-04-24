@@ -750,8 +750,8 @@ def validate_unfinished_header_block(
         if header_block.execution_payload.parentHash != prev_b.execution_block_hash:
             return None, ValidationError(Err.INVALID_PARENT_HASH)
     
-        # 21. Check prevRandao match ### TODO
-        if header_block.execution_payload.prevRandao != bytes.fromhex("0000000000000000000000000000000000000000000000000000000000000000"):
+        # 21. Check prevRandao match previous block reward chain block hash
+        if header_block.execution_payload.prevRandao != prev_b.reward_infusion_new_challenge:
             return None, ValidationError(Err.INVALID_PREV_RANDAO)
     
         # 22. Check execution block number match beacon block number

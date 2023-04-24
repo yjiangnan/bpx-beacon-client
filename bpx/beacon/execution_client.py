@@ -336,7 +336,7 @@ class ExecutionClient:
         
         return {
             "timestamp": Web3.to_hex(int(time.time())),
-            "prevRandao": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "prevRandao": "0x" + prev_block.reward_chain_block.get_hash().hex(),
             "suggestedFeeRecipient": coinbase,
             "withdrawals": withdrawals,
         }
