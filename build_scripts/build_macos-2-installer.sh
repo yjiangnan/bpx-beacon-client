@@ -44,7 +44,7 @@ OPT_ARCH="--x64"
 if [ "$(arch)" = "arm64" ]; then
   OPT_ARCH="--arm64"
 fi
-PRODUCT_NAME="bpx-gui"
+PRODUCT_NAME="BPX Beacon Client"
 echo electron-builder build --mac "${OPT_ARCH}" --config.productName="$PRODUCT_NAME"
 electron-builder build --mac "${OPT_ARCH}" --config.productName="$PRODUCT_NAME"
 LAST_EXIT_CODE=$?

@@ -64,7 +64,7 @@ cp package.json package.json.orig
 jq --arg VER "$BPX_INSTALLER_VERSION" '.version=$VER' package.json > temp.json && mv temp.json package.json
 
 echo "Building Linux(deb) Electron app"
-PRODUCT_NAME="bpx-gui"
+PRODUCT_NAME="bpx-beacon-client"
 if [ "$PLATFORM" = "arm64" ]; then
   # electron-builder does not work for arm64 as of Aug 16, 2022.
   # This is a temporary fix.

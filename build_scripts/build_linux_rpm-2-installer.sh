@@ -78,7 +78,7 @@ OPT_ARCH="--x64"
 if [ "$REDHAT_PLATFORM" = "arm64" ]; then
   OPT_ARCH="--arm64"
 fi
-PRODUCT_NAME="bpx-gui"
+PRODUCT_NAME="bpx-beacon-client"
 echo electron-builder build --linux rpm "${OPT_ARCH}" \
   --config.extraMetadata.name=bpx-beacon-client \
   --config.productName="${PRODUCT_NAME}" --config.linux.desktop.Name="BPX Beacon Client" \
