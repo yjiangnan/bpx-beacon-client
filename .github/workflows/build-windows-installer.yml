@@ -192,7 +192,7 @@ jobs:
       run: |
         gh release upload \
           ${GITHUB_REF#refs/*/} \
-          ${{ github.workspace }}\bpx-gui\release-builds\*.exe
+          bpx-gui/release-builds/*.exe
       shell: bash
 
     - name: Remove Windows exe and installer to exclude from cache
