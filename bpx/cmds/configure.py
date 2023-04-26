@@ -96,52 +96,36 @@ def configure(
         if testnet:
             if testnet == "true" or testnet == "t":
                 print("Setting Testnet")
-                testnet_port = "6201"
-                testnet_introducer = "introducer.testnet.bpxchain.cc"
-                testnet_dns_introducer = "dns-introducer.testnet.bpxchain.cc"
-                bootstrap_peers = ["node.testnet.bpxchain.cc"]
-                testnet = "testnet"
-                config["beacon"]["port"] = int(testnet_port)
-                if config["beacon"]["introducer_peer"] is None:
-                    config["beacon"]["introducer_peer"] = {}
-                assert config["beacon"]["introducer_peer"] is not None  # mypy
-                config["beacon"]["introducer_peer"]["port"] = int(testnet_port)
-                config["farmer"]["beacon_peer"]["port"] = int(testnet_port)
-                config["timelord"]["beacon_peer"]["port"] = int(testnet_port)
-                config["introducer"]["port"] = int(testnet_port)
-                config["beacon"]["introducer_peer"]["host"] = testnet_introducer
-                config["beacon"]["dns_servers"] = [testnet_dns_introducer]
-                config["selected_network"] = testnet
-                config["harvester"]["selected_network"] = testnet
-                config["farmer"]["selected_network"] = testnet
-                config["timelord"]["selected_network"] = testnet
-                config["beacon"]["selected_network"] = testnet
-                config["ui"]["selected_network"] = testnet
-                config["introducer"]["selected_network"] = testnet
-
-                if "seeder" in config:
-                    config["seeder"]["port"] = int(testnet_port)
-                    config["seeder"]["other_peers_port"] = int(testnet_port)
-                    config["seeder"]["selected_network"] = testnet
-                    config["seeder"]["bootstrap_peers"] = bootstrap_peers
-
-                print("Default beacon client port, introducer and network setting updated")
-                change_made = True
+                net_introducer = "introducer.testnet.bpxchain.cc"
+                net_dns_introducer = "dns-introducer.testnet.bpxchain.cc"
+                net_bootstrap_peers = ["node.testnet.bpxchain.cc"]
+                net = "testnet"
 
             elif testnet == "false" or testnet == "f":
                 print("Setting Mainnet")
-                mainnet_port = "6201"
-                mainnet_introducer = "introducer.mainnet.bpxchain.cc"
-                mainnet_dns_introducer = "dns-introducer.mainnet.bpxchain.cc"
-                bootstrap_peers = ["node.mainnet.bpxchain.cc"]
+                net_introducer = "introducer.mainnet.bpxchain.cc"
+                net_dns_introducer = "dns-introducer.mainnet.bpxchain.cc"
+                net_bootstrap_peers = ["node.mainnet.bpxchain.cc"]
                 net = "mainnet"
-                config["beacon"]["port"] = int(mainnet_port)
-                config["beacon"]["introducer_peer"]["port"] = int(mainnet_port)
-                config["farmer"]["beacon_peer"]["port"] = int(mainnet_port)
-                config["timelord"]["beacon_peer"]["port"] = int(mainnet_port)
-                config["introducer"]["port"] = int(mainnet_port)
-                config["beacon"]["introducer_peer"]["host"] = mainnet_introducer
-                config["beacon"]["dns_servers"] = [mainnet_dns_introducer]
+                
+            else:
+                print("Please choose True or False")
+                net = None
+            
+            if net is not None:
+                net_port = "6201"
+                net_introducer_port = "6202"
+            
+                config["beacon"]["port"] = int(net_port)
+                if config["beacon"]["introducer_peer"] is None:
+                    config["beacon"]["introducer_peer"] = {}
+                assert config["beacon"]["introducer_peer"] is not None  # mypy
+                config["beacon"]["introducer_peer"]["port"] = int(net_introducer_port)
+                config["farmer"]["beacon_peer"]["port"] = int(net_port)
+                config["timelord"]["beacon_peer"]["port"] = int(net_port)
+                config["introducer"]["port"] = int(net_introducer_port)
+                config["beacon"]["introducer_peer"]["host"] = net_introducer
+                config["beacon"]["dns_servers"] = [net_dns_introducer]
                 config["selected_network"] = net
                 config["harvester"]["selected_network"] = net
                 config["farmer"]["selected_network"] = net
@@ -151,15 +135,13 @@ def configure(
                 config["introducer"]["selected_network"] = net
 
                 if "seeder" in config:
-                    config["seeder"]["port"] = int(mainnet_port)
-                    config["seeder"]["other_peers_port"] = int(mainnet_port)
+                    config["seeder"]["port"] = int(net_port)
+                    config["seeder"]["other_peers_port"] = int(net_port)
                     config["seeder"]["selected_network"] = net
-                    config["seeder"]["bootstrap_peers"] = bootstrap_peers
+                    config["seeder"]["bootstrap_peers"] = net_bootstrap_peers
 
                 print("Default beacon client port, introducer and network setting updated")
                 change_made = True
-            else:
-                print("Please choose True or False")
 
         if peer_connect_timeout:
             config["beacon"]["peer_connect_timeout"] = int(peer_connect_timeout)
