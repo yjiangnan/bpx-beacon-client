@@ -186,6 +186,10 @@ class ExecutionClient:
             if result.payloadStatus.status == "ACCEPTED":
                 log.warning("Execution chain reorg!")
             elif result.payloadStatus.status == "SYNCING" and not after_replay:
+                self.replay_sync(
+                    result.payloadStatus.latestValidHash,
+                    block.height - 1,
+                )
                 self.forkchoice_update(block, synced, True)
             elif result.payloadStatus.status != "VALID":
                 raise RuntimeError(f"Payload status {result.payloadStatus.status}: {result.payloadStatus.validationError}")
