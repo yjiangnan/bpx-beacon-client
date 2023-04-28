@@ -141,6 +141,7 @@ class ExecutionClient:
         self,
         block: FullBlock,
         synced: bool,
+        after_replay: bool = False,
     ) -> None:
         log.info("Fork choice update")
         
@@ -184,6 +185,8 @@ class ExecutionClient:
             
             if result.payloadStatus.status == "ACCEPTED":
                 log.warning("Execution chain reorg!")
+            elif result.payloadStatus.status == "SYNCING" and not after_replay:
+                self.forkchoice_update(block, synced, True)
             elif result.payloadStatus.status != "VALID":
                 raise RuntimeError(f"Payload status {result.payloadStatus.status}: {result.payloadStatus.validationError}")
             
@@ -340,3 +343,25 @@ class ExecutionClient:
             "suggestedFeeRecipient": coinbase,
             "withdrawals": withdrawals,
         }
+    
+    
+    def replay_sync(
+        self,
+        latest_valid_hash: bytes32,
+        to_height: uint64,
+    ):
+        self.ensure_web3_init()
+        
+        from_height = self.w3.eth.get_block(latest_valid_hash)['blockNumber'] + 1
+        log.info(f"Replay sync latest valid hash: {latest_valid_hash}, from height: {from_height}, to height: {to_height}")
+        
+        for i in range(from_height, to_height):
+            log.info(f"Replaying block {i}")
+            
+            block = self.beacon.blockchain.get_full_block(
+                self.beacon.blockchain.height_to_hash(i)
+            )
+            
+            status = await execution_client.new_payload(block.execution_payload)
+            if status != "VALID":
+                raise RuntimeError(f"Payload {status} during replay sync")
