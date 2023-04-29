@@ -180,6 +180,9 @@ class ExecutionClient:
         
         result = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
         
+        if result.payloadStatus.validationError is not None:
+            log.error(f"Forkchoice update validation error: {result.validationError}")
+        
         if result.payloadId is not None:
             self.payload_head = head_hash
             self.payload_id = result.payloadId
