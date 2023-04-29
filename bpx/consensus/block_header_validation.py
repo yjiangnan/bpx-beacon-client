@@ -855,7 +855,6 @@ def validate_finished_header_block(
     expected_sub_slot_iters: uint64,
     check_sub_epoch_summary: bool = True,
 ) -> Tuple[Optional[uint64], Optional[ValidationError]]:
-    log.error(f"!!!! Validating block header {header_block.height} !!!!")
     """
     Fully validates the header of a block. Returns (required_iters, error).
     """

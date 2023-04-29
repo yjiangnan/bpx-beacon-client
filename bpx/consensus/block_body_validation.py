@@ -34,12 +34,11 @@ async def validate_block_body(
     This assumes the header block has been completely validated.
     Validates the body of the block. Returns None if everything validates correctly, or an Err if something does not validate.
     """
-    log.error(f"!!!! Validating block body {block.height} / {height} !!!!")
     if isinstance(block, FullBlock):
         assert height == block.height
     
     if block.execution_payload is None:
-        execution_client.forkchoice_update(block, False)
+        await execution_client.forkchoice_update(block, False)
         return None
         
     status = await execution_client.new_payload(block.execution_payload)
