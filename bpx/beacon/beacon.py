@@ -1249,7 +1249,7 @@ class Beacon:
 
         synced = self.sync_store.get_sync_mode() is False
         
-        await self.execution_client.forkchoice_update(block, synced)
+        #await self.execution_client.forkchoice_update(block, synced)
         
         if synced:
             await self.send_peak_to_timelords(block)
