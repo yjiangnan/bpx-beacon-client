@@ -190,6 +190,7 @@ class ExecutionClient:
             elif result.payloadStatus.status != "VALID":
                 if result.payloadStatus.status == "SYNCING" and not after_replay:
                     log.info(f"Trying to start replay sync")
+                    log.error(f"Lvh: {result.payloadStatus.latestValidHash}")
                     asyncio.create_task(
                         self.replay_sync(
                             result.payloadStatus.latestValidHash,
