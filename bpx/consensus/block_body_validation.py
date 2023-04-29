@@ -40,7 +40,7 @@ async def validate_block_body(
     if block.execution_payload is None:
         return None
     
-    if isintance(block, UnfinishedBlock):
+    if isinstance(block, UnfinishedBlock):
         status = await execution_client.new_payload(block.execution_payload)
     else:
         status = await execution_client.forkchoice_update(block)
