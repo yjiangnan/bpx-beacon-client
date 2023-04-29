@@ -303,12 +303,12 @@ class ExecutionClient:
     
     async def replay_sync(
         self,
-        latest_valid_hash: bytes32,
+        latest_valid_hash: str,
         to_height: uint64,
     ) -> None:
         self.ensure_web3_init()
         
-        from_height = self.w3.eth.get_block("0x" + latest_valid_hash.hex())['blockNumber'] + 1
+        from_height = self.w3.eth.get_block(latest_valid_hash)['blockNumber'] + 1
         log.info(f"Replay sync latest valid hash: {latest_valid_hash}, from height: {from_height}, to height: {to_height}")
         
         for i in range(from_height, to_height):
