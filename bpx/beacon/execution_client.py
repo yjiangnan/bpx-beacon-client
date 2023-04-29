@@ -185,12 +185,19 @@ class ExecutionClient:
             
             if result.payloadStatus.status == "ACCEPTED":
                 log.warning("Execution chain reorg!")
-            elif result.payloadStatus.status == "SYNCING" and not after_replay:
-                await self.replay_sync(
-                    result.payloadStatus.latestValidHash,
-                    block.height - 1,
+            elif (
+                result.payloadStatus.status == "SYNCING"
+                and not after_replay
+                and not self.replay_lock
+            ):
+                log.warning(f"Starting replay sync")
+                asyncio.create_task(
+                    self.replay_sync(
+                        result.payloadStatus.latestValidHash,
+                        block,
+                        synced,
+                    )
                 )
-                await self.forkchoice_update(block, synced, True)
             elif result.payloadStatus.status != "VALID":
                 raise RuntimeError(f"Payload status {result.payloadStatus.status}: {result.payloadStatus.validationError}")
             
@@ -304,11 +311,13 @@ class ExecutionClient:
     async def replay_sync(
         self,
         latest_valid_hash: str,
-        to_height: uint64,
+        to_block: FullBlock,
+        synced: bool,
     ) -> None:
         self.ensure_web3_init()
         
         from_height = self.w3.eth.get_block(latest_valid_hash)['blockNumber'] + 1
+        to_height = block.height
         log.info(f"Replay sync latest valid hash: {latest_valid_hash}, from height: {from_height}, to height: {to_height}")
         
         for i in range(from_height, to_height):
@@ -321,6 +330,8 @@ class ExecutionClient:
             status = await execution_client.new_payload(block.execution_payload)
             if status != "VALID":
                 raise RuntimeError(f"Payload {status} during replay sync")
+        
+        await self.forkchoice_update(to_block, synced, True)
     
     
     def _create_payload_attributes(
