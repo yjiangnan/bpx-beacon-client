@@ -37,13 +37,13 @@ async def validate_block_body(
     if isinstance(block, FullBlock):
         assert height == block.height
     
-    if block.execution_payload is None:
-        return None
-    
     if block.height == 1 or block.height == 0:
         log.error(f"!!! H = {height}, BEFORE FCU")
         await execution_client.forkchoice_update(block, False)
         log.error(f"!!! H = {height}, AFTER FCU")
+        return None
+    
+    if block.execution_payload is None:
         return None
         
     status = await execution_client.new_payload(block.execution_payload)
