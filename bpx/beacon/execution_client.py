@@ -328,7 +328,7 @@ class ExecutionClient:
                     log.info(f"Replay sync complete at height {block.height}")
                     break
                 else:
-                    raise RuntimeError(f"Status {status} during replay block {i}")
+                    raise RuntimeError(f"Status {status} during replay block {block.height}")
     
     
     def _create_payload_attributes(
