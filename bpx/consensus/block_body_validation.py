@@ -44,11 +44,6 @@ async def validate_block_body(
     if status == "INVALID":
         return Err.EXECUTION_INVALID_PAYLOAD
     elif status == "SYNCING":
-        if block.height == 1:
-            log.error(f"!!! H = {height}, BEFORE FCU")
-            await execution_client.forkchoice_update(block, False)
-            log.error(f"!!! H = {height}, AFTER FCU")
-            return None
         return Err.EXECUTION_SYNCING
     elif status == "ACCEPTED":
         log.warning("Execution chain reorg!")
