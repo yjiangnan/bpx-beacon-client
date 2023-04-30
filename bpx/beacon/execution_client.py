@@ -69,6 +69,7 @@ class ExecutionClient:
     w3: Web3
     payload_id: Optional[str]
     payload_head: Optional[bytes32]
+    replay_lock: bool
 
     def __init__(
         self,
@@ -78,6 +79,7 @@ class ExecutionClient:
         self.w3 = None
         self.payload_id = None
         self.payload_head = None
+        self.replay_lock = False
 
 
     def ensure_web3_init(self) -> None:
@@ -141,6 +143,7 @@ class ExecutionClient:
         self,
         block: FullBlock,
         synced: bool,
+        after_replay: bool = False,
     ) -> None:
         log.info("Fork choice update")
         
@@ -185,6 +188,16 @@ class ExecutionClient:
             if result.payloadStatus.status == "ACCEPTED":
                 log.warning("Execution chain reorg!")
             elif result.payloadStatus.status != "VALID":
+                if result.payloadStatus.status == "SYNCING" and not after_replay:
+                    log.info(f"Trying to start replay sync")
+                    log.error(f"Lvh: {result.payloadStatus.latestValidHash}")
+                    asyncio.create_task(
+                        self.replay_sync(
+                            result.payloadStatus.latestValidHash,
+                            block,
+                            synced,
+                        )
+                    )
                 raise RuntimeError(f"Payload status {result.payloadStatus.status}: {result.payloadStatus.validationError}")
             
             if result.payloadId is not None:
@@ -292,6 +305,42 @@ class ExecutionClient:
         if result.validationError is not None:
             log.error(f"New payload validation error: {result.validationError}")
         return result.status
+    
+    
+    async def replay_sync(
+        self,
+        latest_valid_hash: str,
+        to_block: FullBlock,
+        synced: bool,
+    ) -> None:
+        if self.replay_lock:
+            log.warning("Unable to start replay sync, the previous process has not finished yet")
+            return None
+        self.replay_lock = True
+        
+        try:
+            self.ensure_web3_init()
+            
+            from_height = self.w3.eth.get_block(latest_valid_hash)['blockNumber'] + 1
+            to_height = block.height
+            log.info(f"Replay sync latest valid hash: {latest_valid_hash}, from height: {from_height}, to height: {to_height}")
+            
+            for i in range(from_height, to_height):
+                log.info(f"Replaying block {i}")
+                
+                block = self.beacon.blockchain.get_full_block(
+                    self.beacon.blockchain.height_to_hash(i)
+                )
+                
+                status = await execution_client.new_payload(block.execution_payload)
+                if status != "VALID":
+                    raise RuntimeError(f"Status {status} during replay block {i} (hash {block.execution_payload.blockHash})")
+            
+            await self.forkchoice_update(to_block, synced, True)
+        except Exception as e:
+            log.error(f"Exception in replay sync: {e}")
+
+        self.replay_lock = False
     
     
     def _create_payload_attributes(
