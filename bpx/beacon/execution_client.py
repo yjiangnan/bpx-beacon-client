@@ -328,7 +328,7 @@ class ExecutionClient:
         from_height = self.w3.eth.get_block('latest')['number'] + 1
         log.info(f"Starting replay sync from block {from_height} to block {to_height}")
         
-        for i in range(from_height, to_height):
+        for i in range(from_height, to_height+1):
             block = await self.beacon.blockchain.get_full_block(
                 self.beacon.blockchain.height_to_hash(i)
             )
