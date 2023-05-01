@@ -107,7 +107,7 @@ class ExecutionClient:
             status = await self._forkchoice_update(block, synced)
             if status != "SYNCING":
                 return status
-        await self._replay_sync(block.prev_header_hash)
+        await self._replay_sync(block.header_hash)
         return await self._forkchoice_update(block, synced)
     
     
