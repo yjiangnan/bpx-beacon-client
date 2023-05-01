@@ -103,14 +103,25 @@ class ExecutionClient:
         block: FullBlock,
         synced: bool,
     ) -> None:
-        try:
+        async with self.sync_lock:
             status = await self._forkchoice_update(block, synced)
             if status != "SYNCING":
                 return status
-            await self._replay_sync(block.prev_header_hash)
-            return await self._forkchoice_update(block, synced)
-        except Exception as e:
-            log.error(f"Exception in fork choice update: {e}")
+        await self._replay_sync(block.prev_header_hash)
+        return await self._forkchoice_update(block, synced)
+    
+    
+    async def new_payload(
+        self,
+        payload: ExecutionPayloadV2,
+        prev_header_hash: bytes32,
+    ) -> str:
+        async with self.sync_lock:
+            status = await self._new_payload(payload)
+            if status != "SYNCING":
+                return status
+        await self._replay_sync(prev_header_hash)
+        return await self._new_payload(payload)
     
     
     def get_payload(
@@ -161,19 +172,6 @@ class ExecutionClient:
             transactions,
             withdrawals,
         )
-    
-    
-    async def new_payload(
-        self,
-        payload: ExecutionPayloadV2,
-        prev_header_hash: bytes32,
-    ) -> str:
-        async with self.sync_lock:
-            status = await self._new_payload(payload)
-            if status != "SYNCING":
-                return status
-        await self._replay_sync(prev_header_hash)
-        return await self._new_payload(payload)
 
 
     def _ensure_web3_init(self) -> None:
