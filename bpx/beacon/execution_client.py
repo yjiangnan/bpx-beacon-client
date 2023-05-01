@@ -107,20 +107,19 @@ class ExecutionClient:
             status = await self._forkchoice_update(block, synced)
             if status != "SYNCING":
                 return status
-            await self._replay_sync(block.header_hash)
+            await self._replay_sync(block.height)
             return await self._forkchoice_update(block, synced)
     
     
     async def new_payload(
         self,
         payload: ExecutionPayloadV2,
-        prev_header_hash: bytes32,
     ) -> str:
         async with self.sync_lock:
             status = await self._new_payload(payload)
             if status != "SYNCING":
                 return status
-            await self._replay_sync(prev_header_hash)
+            await self._replay_sync(payload.blockNumber - 1)
             return await self._new_payload(payload)
     
     
@@ -324,24 +323,23 @@ class ExecutionClient:
     
     async def _replay_sync(
         self,
-        header_hash: bytes32,
+        to_height: uint64,
     ) -> None:
-        log.info(f"Starting replay sync to block {header_hash}")
+        from_height = self.w3.eth.get_block('latest')['blockNumber'] + 1
+        log.info(f"Starting replay sync from block {from_height} to block {to_height}")
         
-        while True:
-            block = await self.beacon.blockchain.get_full_block(header_hash)
-            log.info(f"Replaying block: height={block.height}, hash={header_hash}, "
-                      "execution hash={block.foliage.foliage_block_data.execution_block_hash}")
+        for i in range(from_height, to_height):
+            block = await self.beacon.blockchain.get_full_block(
+                self.beacon.blockchain.height_to_hash(i)
+            )
+            
+            log.info(f"Replaying block: height={block.height}, hash={block.foliage.foliage_block_data.execution_block_hash}")
             
             status = await self._new_payload(block.execution_payload)
-            if status == "SYNCING":
-                header_hash = block.prev_header_hash
-                continue
-            elif status == "VALID":
-                log.info(f"Replay sync complete at height {block.height}")
-                break
-            else:
+            if status != "VALID":
                 raise RuntimeError(f"Status {status} during replay block {block.height}")
+        
+        log.info("Replay sync completed")
     
     
     def _create_payload_attributes(
