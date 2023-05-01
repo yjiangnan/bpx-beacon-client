@@ -98,20 +98,19 @@ class ExecutionClient:
             await asyncio.sleep(60)
     
     
-    async def new_peak(
+    async def forkchoice_update(
         self,
         block: FullBlock,
         synced: bool,
     ) -> None:
         try:
             status = await self._forkchoice_update(block, synced)
-            if status == "SYNCING":
-                await self._replay_sync(block.prev_header_hash)
-                status = await self._forkchoice_update(block, synced)
-            if status == "ACCEPTED":
-                log.warning(f"Execution chain reorg at height {block.height}!")
+            if status != "SYNCING":
+                return status
+            await self._replay_sync(block.prev_header_hash)
+            return await self._forkchoice_update(block, synced)
         except Exception as e:
-            log.error(f"Exception in new peak processing: {e}")
+            log.error(f"Exception in fork choice update: {e}")
     
     
     def get_payload(
@@ -339,7 +338,7 @@ class ExecutionClient:
                 
                 status = await self._new_payload(block.execution_payload)
                 if status == "SYNCING":
-                    header_hash = block.header_hash
+                    header_hash = block.prev_header_hash
                     continue
                 elif status == "VALID":
                     log.info(f"Replay sync complete at height {block.height}")

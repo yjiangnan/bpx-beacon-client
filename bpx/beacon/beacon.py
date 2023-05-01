@@ -1249,12 +1249,12 @@ class Beacon:
 
         synced = self.sync_store.get_sync_mode() is False
         
-        asyncio.create_task(
-            self.execution_client.new_peak(
-                block,
-                synced,
-            )
+        status = await self.execution_client.new_peak(
+            block,
+            synced,
         )
+        if status == "ACCEPTED":
+            log.warning(f"Execution chain reorg at height {block.height}!")
         
         if synced:
             await self.send_peak_to_timelords(block)
