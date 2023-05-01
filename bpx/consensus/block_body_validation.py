@@ -40,7 +40,10 @@ async def validate_block_body(
     if block.execution_payload is None:
         return None
     
-    status = await execution_client.new_payload(block.execution_payload)
+    status = await execution_client.new_payload(
+        block.execution_payload,
+        block.prev_header_hash,
+    )
 
     if status == "INVALID":
         return Err.EXECUTION_INVALID_PAYLOAD

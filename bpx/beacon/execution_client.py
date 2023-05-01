@@ -167,9 +167,14 @@ class ExecutionClient:
     async def new_payload(
         self,
         payload: ExecutionPayloadV2,
+        prev_header_hash: bytes32,
     ) -> str:
         async with self.sync_lock:
-            return await self._new_payload(payload)
+            status = await self._new_payload(payload)
+            if status != "SYNCING":
+                return status
+        await self._replay_sync(prev_header_hash)
+        return await self._new_payload(payload)
 
 
     def _ensure_web3_init(self) -> None:
@@ -328,7 +333,7 @@ class ExecutionClient:
             log.info(f"Starting replay sync to block {header_hash}")
             
             while True:
-                block = self.beacon.blockchain.get_full_block(header_hash)
+                block = await self.beacon.blockchain.get_full_block(header_hash)
                 log.info(f"Replaying block: height={block.height}, hash={header_hash}, "
                           "execution hash={block.foliage.foliage_block_data.execution_block_hash}")
                 
