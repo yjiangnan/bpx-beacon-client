@@ -325,7 +325,7 @@ class ExecutionClient:
         self,
         to_height: uint64,
     ) -> None:
-        from_height = self.w3.eth.get_block('latest')['blockNumber'] + 1
+        from_height = self.w3.eth.get_block('latest')['number'] + 1
         log.info(f"Starting replay sync from block {from_height} to block {to_height}")
         
         for i in range(from_height, to_height):
