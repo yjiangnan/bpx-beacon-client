@@ -41,12 +41,17 @@ async def validate_block_body(
         return None
         
     status = await execution_client.new_payload(block.execution_payload)
+    
+    if status == "SYNCING":
+        await execution_client.replay_sync(block.prev_header_hash)
+        status = await execution_client.new_payload(block.execution_payload)
+    
     if status == "INVALID":
         return Err.EXECUTION_INVALID_PAYLOAD
     elif status == "SYNCING":
         return Err.EXECUTION_SYNCING
     elif status == "ACCEPTED":
-        log.warning("Execution chain reorg!")
+        log.warning(f"Execution chain reorg at height {block.height}!")
     elif status != "VALID":
         return Err.UNKNOWN
     

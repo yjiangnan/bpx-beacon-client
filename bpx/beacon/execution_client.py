@@ -143,73 +143,59 @@ class ExecutionClient:
         self,
         block: FullBlock,
         synced: bool,
-        after_replay: bool = False,
     ) -> None:
         log.info("Fork choice update")
         
         self.payload_head = None
         self.payload_id = None
         
-        try:
-            self.ensure_web3_init()
-            
-            head_hash = block.foliage.foliage_block_data.execution_block_hash
-            log.info(f" |- New head height: {block.height}, hash: {head_hash}")
-            
-            safe_hash = head_hash
-            log.info(f" |- New safe height: {block.height}, hash: {safe_hash}")
-            
-            if block.height > 32:
-                final_height = (block.height - 32) - (block.height % 32)
-                final_hash = self.beacon.blockchain.height_to_block_record(final_height).execution_block_hash
-            else:
-                final_height = None
-                final_hash = BLOCK_HASH_NULL
-            log.info(f" |- New final height: {final_height}, hash: {final_hash}")
-            
-            forkchoice_state = {
-                "headBlockHash": "0x" + head_hash.hex(),
-                "safeBlockHash": "0x" + safe_hash.hex(),
-                "finalizedBlockHash": "0x" + final_hash.hex(),
-            }
-            payload_attributes = None
-            
-            if synced:
-                coinbase = self.beacon.config.get("coinbase")
-                if coinbase == COINBASE_NULL:
-                    log.error("Coinbase not set! FARMING NOT POSSIBLE!")
-                elif not Web3.is_address(coinbase):
-                    log.error("Coinbase address invalid! FARMING NOT POSSIBLE!")
-                else:
-                    payload_attributes = self._create_payload_attributes(block, coinbase)
-            
-            result = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
-            
-            if result.payloadStatus.status == "ACCEPTED":
-                log.warning("Execution chain reorg!")
-            elif result.payloadStatus.status != "VALID":
-                if result.payloadStatus.status == "SYNCING" and not after_replay:
-                    log.info(f"Trying to start replay sync")
-                    log.error(f"Lvh: {result.payloadStatus.latestValidHash}")
-                    asyncio.create_task(
-                        self.replay_sync(
-                            result.payloadStatus.latestValidHash,
-                            block,
-                            synced,
-                        )
-                    )
-                raise RuntimeError(f"Payload status {result.payloadStatus.status}: {result.payloadStatus.validationError}")
-            
-            if result.payloadId is not None:
-                self.payload_head = head_hash
-                self.payload_id = result.payloadId
-        except Exception as e:
-            log.error(f"Exception in fork choice update: {e}")
+        self.ensure_web3_init()
         
-        if self.payload_id is not None:
+        head_hash = block.foliage.foliage_block_data.execution_block_hash
+        log.info(f" |- New head height: {block.height}, hash: {head_hash}")
+        
+        safe_hash = head_hash
+        log.info(f" |- New safe height: {block.height}, hash: {safe_hash}")
+        
+        if block.height > 32:
+            final_height = (block.height - 32) - (block.height % 32)
+            final_hash = self.beacon.blockchain.height_to_block_record(final_height).execution_block_hash
+        else:
+            final_height = None
+            final_hash = BLOCK_HASH_NULL
+        log.info(f" |- New final height: {final_height}, hash: {final_hash}")
+        
+        forkchoice_state = {
+            "headBlockHash": "0x" + head_hash.hex(),
+            "safeBlockHash": "0x" + safe_hash.hex(),
+            "finalizedBlockHash": "0x" + final_hash.hex(),
+        }
+        payload_attributes = None
+        
+        if synced:
+            coinbase = self.beacon.config.get("coinbase")
+            if coinbase == COINBASE_NULL:
+                log.error("Coinbase not set! FARMING NOT POSSIBLE!")
+            elif not Web3.is_address(coinbase):
+                log.error("Coinbase address invalid! FARMING NOT POSSIBLE!")
+            else:
+                payload_attributes = self._create_payload_attributes(block, coinbase)
+        
+        result = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
+        if result.payloadStatus.validationError is not None:
+            log.error(f"New payload status: {result.payloadStatus.status}, "
+                       "validation error: {result.payloadStatus.validationError}")
+        else:
+            log.info(f"New payload status: {result.payloadStatus.status}")
+        
+        if result.payloadId is not None:
+            self.payload_head = head_hash
+            self.payload_id = result.payloadId
             log.info(f"Payload building started, id: {self.payload_id}")
         else:
-            log.error(f"Payload building not started")
+            log.warning(f"Payload building not started")
+        
+        return result.payloadStatus.status
     
     
     def get_payload(
@@ -303,7 +289,10 @@ class ExecutionClient:
         
         result = self.w3.engine.new_payload_v2(raw_payload)
         if result.validationError is not None:
-            log.error(f"New payload validation error: {result.validationError}")
+            log.error(f"New payload status: {result.status}, validation error: {result.validationError}")
+        else:
+            log.info(f"New payload status: {result.status}")
+        
         return result.status
     
     
@@ -318,7 +307,8 @@ class ExecutionClient:
             
             while True:
                 block = self.beacon.blockchain.get_full_block(header_hash)
-                log.info(f"Replaying block: height={blok.height}, hash={header_hash}, execution hash={block.foliage.foliage_block_data.execution_block_hash}")
+                log.info(f"Replaying block: height={blok.height}, hash={header_hash}, "
+                          "execution hash={block.foliage.foliage_block_data.execution_block_hash}")
                 
                 status = await self.new_payload(block.execution_payload)
                 if status == "SYNCING":
