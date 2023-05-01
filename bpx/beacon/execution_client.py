@@ -69,7 +69,7 @@ class ExecutionClient:
     w3: Web3
     payload_id: Optional[str]
     payload_head: Optional[bytes32]
-    replay_lock: asyncio.Lock
+    sync_lock: asyncio.Lock
 
     def __init__(
         self,
@@ -79,10 +79,100 @@ class ExecutionClient:
         self.w3 = None
         self.payload_id = None
         self.payload_head = None
-        self.replay_lock = asyncio.Lock()
+        self.sync_lock = asyncio.Lock()
+    
+    
+    async def exchange_transition_configuration_task(self):
+        log.info("Starting exchange transition configuration loop")
+
+        while True:
+            try:
+                self._ensure_web3_init()
+                self.w3.engine.exchange_transition_configuration_v1({
+                    "terminalTotalDifficulty": "0x0",
+                    "terminalBlockHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                    "terminalBlockNumber": "0x0"
+                })
+            except Exception as e:
+                log.error(f"Exception in exchange transition configuration: {e}")
+            await asyncio.sleep(60)
+    
+    
+    async def new_peak(
+        self,
+        block: FullBlock,
+        synced: bool,
+    ) -> None:
+        try:
+            status = await self._forkchoice_update(block, synced)
+            if status == "SYNCING":
+                await self._replay_sync(block.prev_header_hash)
+                status = await self._forkchoice_update(block, synced)
+            if status == "ACCEPTED":
+                log.warning(f"Execution chain reorg at height {block.height}!")
+        except Exception as e:
+            log.error(f"Exception in new peak processing: {e}")
+    
+    
+    def get_payload(
+        self,
+        prev_block: BlockRecord
+    ) -> ExecutionPayloadV2:
+        log.info(f"Get payload for head: height={prev_block.height}, hash={prev_block.execution_block_hash}")
+        
+        self._ensure_web3_init()
+        
+        if self.payload_id is None:
+            raise RuntimeError("Execution payload not built")
+        
+        if self.payload_head != prev_block.execution_block_hash:
+            raise RuntimeError(f"Payload head ({self.payload_head}) differs from requested ({prev_block.execution_block_hash})")
+        
+        raw_payload = self.w3.engine.get_payload_v2(self.payload_id).executionPayload
+        
+        transactions: List[bytes] = []
+        for raw_transaction in raw_payload.transactions:
+            transactions.append(hexstr_to_bytes(raw_transaction))
+        
+        withdrawals: List[WithdrawalV1] = []
+        for raw_withdrawal in raw_payload.withdrawals:
+            withdrawals.append(
+                WithdrawalV1(
+                    uint64(Web3.to_int(HexBytes(raw_withdrawal.index))),
+                    uint64(Web3.to_int(HexBytes(raw_withdrawal.validatorIndex))),
+                    bytes20.from_hexstr(raw_withdrawal.address),
+                    uint64(Web3.to_int(HexBytes(raw_withdrawal.amount))),
+                )
+            )
+        
+        return ExecutionPayloadV2(
+            bytes32.from_hexstr(raw_payload.parentHash),
+            bytes20.from_hexstr(raw_payload.feeRecipient),
+            bytes32.from_hexstr(raw_payload.stateRoot),
+            bytes32.from_hexstr(raw_payload.receiptsRoot),
+            bytes256.from_hexstr(raw_payload.logsBloom),
+            bytes32.from_hexstr(raw_payload.prevRandao),
+            uint64(Web3.to_int(HexBytes(raw_payload.blockNumber))),
+            uint64(Web3.to_int(HexBytes(raw_payload.gasLimit))),
+            uint64(Web3.to_int(HexBytes(raw_payload.gasUsed))),
+            uint64(Web3.to_int(HexBytes(raw_payload.timestamp))),
+            hexstr_to_bytes(raw_payload.extraData),
+            uint256(Web3.to_int(HexBytes(raw_payload.baseFeePerGas))),
+            bytes32.from_hexstr(raw_payload.blockHash),
+            transactions,
+            withdrawals,
+        )
+    
+    
+    async def new_payload(
+        self,
+        payload: ExecutionPayloadV2,
+    ) -> str:
+        async with self.sync_lock:
+            return await self._new_payload(payload)
 
 
-    def ensure_web3_init(self) -> None:
+    def _ensure_web3_init(self) -> None:
         if self.w3 is not None:
             return None
         
@@ -121,25 +211,9 @@ class ExecutionClient:
         })
 
         log.info("Initialized execution client connection")
-
-
-    async def exchange_transition_configuration_task(self):
-        log.info("Starting exchange transition configuration loop")
-
-        while True:
-            try:
-                self.ensure_web3_init()
-                self.w3.engine.exchange_transition_configuration_v1({
-                    "terminalTotalDifficulty": "0x0",
-                    "terminalBlockHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-                    "terminalBlockNumber": "0x0"
-                })
-            except Exception as e:
-                log.error(f"Exception in exchange transition configuration: {e}")
-            await asyncio.sleep(60)
     
     
-    async def forkchoice_update(
+    async def _forkchoice_update(
         self,
         block: FullBlock,
         synced: bool,
@@ -149,7 +223,7 @@ class ExecutionClient:
         self.payload_head = None
         self.payload_id = None
         
-        self.ensure_web3_init()
+        self._ensure_web3_init()
         
         head_hash = block.foliage.foliage_block_data.execution_block_hash
         log.info(f" |- New head height: {block.height}, hash: {head_hash}")
@@ -198,63 +272,13 @@ class ExecutionClient:
         return result.payloadStatus.status
     
     
-    def get_payload(
-        self,
-        prev_block: BlockRecord
-    ) -> ExecutionPayloadV2:
-        log.info(f"Get payload for head: height={prev_block.height}, hash={prev_block.execution_block_hash}")
-        
-        self.ensure_web3_init()
-        
-        if self.payload_id is None:
-            raise RuntimeError("Execution payload not built")
-        
-        if self.payload_head != prev_block.execution_block_hash:
-            raise RuntimeError(f"Payload head ({self.payload_head}) differs from requested ({prev_block.execution_block_hash})")
-        
-        raw_payload = self.w3.engine.get_payload_v2(self.payload_id).executionPayload
-        
-        transactions: List[bytes] = []
-        for raw_transaction in raw_payload.transactions:
-            transactions.append(hexstr_to_bytes(raw_transaction))
-        
-        withdrawals: List[WithdrawalV1] = []
-        for raw_withdrawal in raw_payload.withdrawals:
-            withdrawals.append(
-                WithdrawalV1(
-                    uint64(Web3.to_int(HexBytes(raw_withdrawal.index))),
-                    uint64(Web3.to_int(HexBytes(raw_withdrawal.validatorIndex))),
-                    bytes20.from_hexstr(raw_withdrawal.address),
-                    uint64(Web3.to_int(HexBytes(raw_withdrawal.amount))),
-                )
-            )
-        
-        return ExecutionPayloadV2(
-            bytes32.from_hexstr(raw_payload.parentHash),
-            bytes20.from_hexstr(raw_payload.feeRecipient),
-            bytes32.from_hexstr(raw_payload.stateRoot),
-            bytes32.from_hexstr(raw_payload.receiptsRoot),
-            bytes256.from_hexstr(raw_payload.logsBloom),
-            bytes32.from_hexstr(raw_payload.prevRandao),
-            uint64(Web3.to_int(HexBytes(raw_payload.blockNumber))),
-            uint64(Web3.to_int(HexBytes(raw_payload.gasLimit))),
-            uint64(Web3.to_int(HexBytes(raw_payload.gasUsed))),
-            uint64(Web3.to_int(HexBytes(raw_payload.timestamp))),
-            hexstr_to_bytes(raw_payload.extraData),
-            uint256(Web3.to_int(HexBytes(raw_payload.baseFeePerGas))),
-            bytes32.from_hexstr(raw_payload.blockHash),
-            transactions,
-            withdrawals,
-        )
-    
-    
-    async def new_payload(
+    async def _new_payload(
         self,
         payload: ExecutionPayloadV2,
     ) -> str:
         log.info(f"New payload: height={payload.blockNumber}, hash={payload.blockHash}")
         
-        self.ensure_web3_init()
+        self._ensure_web3_init()
         
         raw_transactions = []
         for transaction in payload.transactions:
@@ -296,21 +320,19 @@ class ExecutionClient:
         return result.status
     
     
-    async def replay_sync(
+    async def _replay_sync(
         self,
         header_hash: bytes32,
     ) -> None:
-        async with self.replay_lock:
+        async with self.sync_lock:
             log.info(f"Starting replay sync to block {header_hash}")
-            
-            self.ensure_web3_init()
             
             while True:
                 block = self.beacon.blockchain.get_full_block(header_hash)
                 log.info(f"Replaying block: height={blok.height}, hash={header_hash}, "
                           "execution hash={block.foliage.foliage_block_data.execution_block_hash}")
                 
-                status = await self.new_payload(block.execution_payload)
+                status = await self._new_payload(block.execution_payload)
                 if status == "SYNCING":
                     header_hash = block.header_hash
                     continue

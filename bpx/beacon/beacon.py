@@ -1249,15 +1249,12 @@ class Beacon:
 
         synced = self.sync_store.get_sync_mode() is False
         
-        try:
-            status = await self.execution_client.forkchoice_update(block, synced)
-            if status == "SYNCING":
-                await self.execution_client.replay_sync(block.prev_header_hash)
-                status = await self.execution_client.forkchoice_update(block, synced)
-            if status == "ACCEPTED":
-                log.warning(f"Execution chain reorg at height {block.height}!")
-        except Exception as e:
-            log.error(f"Exception in fork choice update: {e}")
+        asyncio.create_task(
+            self.execution_client.new_peak(
+                block,
+                synced,
+            )
+        )
         
         if synced:
             await self.send_peak_to_timelords(block)

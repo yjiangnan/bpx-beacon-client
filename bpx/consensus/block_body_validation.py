@@ -39,13 +39,9 @@ async def validate_block_body(
     
     if block.execution_payload is None:
         return None
-        
+    
     status = await execution_client.new_payload(block.execution_payload)
-    
-    if status == "SYNCING":
-        await execution_client.replay_sync(block.prev_header_hash)
-        status = await execution_client.new_payload(block.execution_payload)
-    
+
     if status == "INVALID":
         return Err.EXECUTION_INVALID_PAYLOAD
     elif status == "SYNCING":
