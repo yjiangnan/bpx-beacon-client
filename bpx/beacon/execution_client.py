@@ -258,10 +258,10 @@ class ExecutionClient:
         
         result = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
         if result.payloadStatus.validationError is not None:
-            log.error(f"New payload status: {result.payloadStatus.status}, "
+            log.error(f"Fork choice update status: {result.payloadStatus.status}, "
                        "validation error: {result.payloadStatus.validationError}")
         else:
-            log.info(f"New payload status: {result.payloadStatus.status}")
+            log.info(f"Fork choice update status: {result.payloadStatus.status}")
         
         if result.payloadId is not None:
             self.payload_head = head_hash
