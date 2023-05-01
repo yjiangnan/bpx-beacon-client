@@ -329,7 +329,7 @@ class ExecutionClient:
             
             while True:
                 block = self.beacon.blockchain.get_full_block(header_hash)
-                log.info(f"Replaying block: height={blok.height}, hash={header_hash}, "
+                log.info(f"Replaying block: height={block.height}, hash={header_hash}, "
                           "execution hash={block.foliage.foliage_block_data.execution_block_hash}")
                 
                 status = await self._new_payload(block.execution_payload)
