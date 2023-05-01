@@ -107,8 +107,8 @@ class ExecutionClient:
             status = await self._forkchoice_update(block, synced)
             if status != "SYNCING":
                 return status
-        await self._replay_sync(block.header_hash)
-        return await self._forkchoice_update(block, synced)
+            await self._replay_sync(block.header_hash)
+            return await self._forkchoice_update(block, synced)
     
     
     async def new_payload(
@@ -120,8 +120,8 @@ class ExecutionClient:
             status = await self._new_payload(payload)
             if status != "SYNCING":
                 return status
-        await self._replay_sync(prev_header_hash)
-        return await self._new_payload(payload)
+            await self._replay_sync(prev_header_hash)
+            return await self._new_payload(payload)
     
     
     def get_payload(
@@ -326,23 +326,22 @@ class ExecutionClient:
         self,
         header_hash: bytes32,
     ) -> None:
-        async with self.sync_lock:
-            log.info(f"Starting replay sync to block {header_hash}")
+        log.info(f"Starting replay sync to block {header_hash}")
+        
+        while True:
+            block = await self.beacon.blockchain.get_full_block(header_hash)
+            log.info(f"Replaying block: height={block.height}, hash={header_hash}, "
+                      "execution hash={block.foliage.foliage_block_data.execution_block_hash}")
             
-            while True:
-                block = await self.beacon.blockchain.get_full_block(header_hash)
-                log.info(f"Replaying block: height={block.height}, hash={header_hash}, "
-                          "execution hash={block.foliage.foliage_block_data.execution_block_hash}")
-                
-                status = await self._new_payload(block.execution_payload)
-                if status == "SYNCING":
-                    header_hash = block.prev_header_hash
-                    continue
-                elif status == "VALID":
-                    log.info(f"Replay sync complete at height {block.height}")
-                    break
-                else:
-                    raise RuntimeError(f"Status {status} during replay block {block.height}")
+            status = await self._new_payload(block.execution_payload)
+            if status == "SYNCING":
+                header_hash = block.prev_header_hash
+                continue
+            elif status == "VALID":
+                log.info(f"Replay sync complete at height {block.height}")
+                break
+            else:
+                raise RuntimeError(f"Status {status} during replay block {block.height}")
     
     
     def _create_payload_attributes(
