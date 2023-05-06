@@ -15,6 +15,7 @@ def get_block_header(block: FullBlock) -> HeaderBlock:
         block.reward_chain_ip_proof,
         block.infused_challenge_chain_ip_proof,
         block.foliage,
+        block.foliage_transaction_block,
         block.execution_payload,
     )
 
