@@ -1218,7 +1218,7 @@ def validate_recent_blocks(
         if summary.new_difficulty is not None:
             diff = summary.new_difficulty
 
-    ses_blocks, sub_slots = 0, 0
+    ses_blocks, sub_slots, transaction_blocks = 0, 0, 0
     challenge, prev_challenge = recent_chain.recent_chain_data[0].reward_chain_block.pos_ss_cc_challenge_hash, None
     tip_height = recent_chain.recent_chain_data[-1].height
     prev_block_record: Optional[BlockRecord] = None
@@ -1253,9 +1253,9 @@ def validate_recent_blocks(
                 adjusted = True
             deficit = get_deficit(constants, deficit, prev_block_record, overflow, len(block.finished_sub_slots))
             log.debug(f"wp, validate block {block.height}")
-            if sub_slots > 2 and (tip_height - block.height < last_blocks_to_validate):
+            if sub_slots > 2 and transaction_blocks > 11 and (tip_height - block.height < last_blocks_to_validate):
                 caluclated_required_iters, error = validate_finished_header_block(
-                    constants, sub_blocks, block, diff, ssi, ses_blocks > 2
+                    constants, sub_blocks, block, False, diff, ssi, ses_blocks > 2
                 )
                 if error is not None:
                     log.error(f"block {block.header_hash} failed validation {error}")
@@ -1271,13 +1271,15 @@ def validate_recent_blocks(
 
         curr_block_ses = None if not ses else summaries[ses_idx - 1]
         block_record = header_block_to_sub_block_record(
-            constants, required_iters, block, ssi, overflow, deficit, curr_block_ses
+            constants, required_iters, block, ssi, overflow, deficit, height, curr_block_ses
         )
         log.debug(f"add block {block_record.height} to tmp sub blocks")
         sub_blocks.add_block_record(block_record)
 
         if block.first_in_sub_slot:
             sub_slots += 1
+        if block.is_transaction_block:
+            transaction_blocks += 1
         if ses:
             ses_blocks += 1
         prev_block_record = block_record

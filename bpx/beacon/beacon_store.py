@@ -799,3 +799,4 @@ class BeaconStore:
             log.warning(f"Did not find hash {last_challenge_to_add} connected to {challenge_in_chain}")
             return None
         return collected_sub_slots
+        

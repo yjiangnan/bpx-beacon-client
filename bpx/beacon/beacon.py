@@ -665,10 +665,14 @@ class Beacon:
         curr: Optional[BlockRecord] = self.blockchain.get_peak()
         if curr is None:
             return False
+        
+        while curr is not None and not curr.is_transaction_block:
+            curr = self.blockchain.try_block_record(curr.prev_hash)
 
         now = time.time()
         if (
             curr is None
+            or curr.timestamp is None
             or curr.timestamp < uint64(int(now - 60 * 7))
             or self.sync_store.get_sync_mode()
         ):
@@ -1387,13 +1391,16 @@ class Beacon:
             await self.sync_store.clear_sync_info()  # Occasionally clear sync peer info
 
         state_changed_data: Dict[str, Any] = {
+            "transaction_block": False,
             "k_size": block.reward_chain_block.proof_of_space.size,
             "header_hash": block.header_hash,
             "height": block.height,
             "validation_time": validation_time,
             "pre_validation_time": pre_validation_time,
-            "timestamp": block.foliage.foliage_block_data.timestamp,
         }
+        
+        if block.foliage_transaction_block is not None:
+            state_changed_data["timestamp"] = block.foliage_transaction_block.timestamp
 
         if added is not None:
             state_changed_data["receive_block_result"] = added.value

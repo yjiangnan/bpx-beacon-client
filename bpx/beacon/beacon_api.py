@@ -637,6 +637,16 @@ class BeaconAPI:
                 request.signage_point_index,
                 required_iters,
             )
+            
+            # The block's timestamp must be greater than the previous transaction block's timestamp
+            timestamp = uint64(int(time.time()))
+            curr: Optional[BlockRecord] = prev_b
+            while curr is not None and not curr.is_transaction_block and curr.height != 0:
+                curr = self.full_node.blockchain.try_block_record(curr.prev_hash)
+            if curr is not None:
+                assert curr.timestamp is not None
+                if timestamp <= curr.timestamp:
+                    timestamp = uint64(int(curr.timestamp + 1))
 
             self.log.info("Starting to make the unfinished block")
             unfinished_block: UnfinishedBlock = create_unfinished_block(
@@ -651,9 +661,11 @@ class BeaconAPI:
                 cc_challenge_hash,
                 get_plot_sig,
                 sp_vdfs,
+                timestamp,
                 self.beacon.blockchain,
                 prev_b,
                 finished_sub_slots,
+                False,
             )
             self.log.info("Made the unfinished block")
             if prev_b is not None:
@@ -663,11 +675,43 @@ class BeaconAPI:
             self.beacon.beacon_store.add_candidate_block(quality_string, height, unfinished_block)
 
             foliage_sb_data_hash = unfinished_block.foliage.foliage_block_data.get_hash()
+            if unfinished_block.is_transaction_block():
+                foliage_transaction_block_hash = unfinished_block.foliage.foliage_transaction_block_hash
+            else:
+                foliage_transaction_block_hash = bytes32([0] * 32)
+            assert foliage_transaction_block_hash is not None
+
             message = farmer_protocol.RequestSignedValues(
                 quality_string,
                 foliage_sb_data_hash,
+                foliage_transaction_block_hash,
             )
             await peer.send_message(make_msg(ProtocolMessageTypes.request_signed_values, message))
+            
+            # Adds backup in case the first one fails
+            if unfinished_block.is_transaction_block() and unfinished_block.transactions_generator is not None:
+                unfinished_block_backup = create_unfinished_block(
+                    self.beacon.constants,
+                    self.beacon.execution_client,
+                    total_iters_pos_slot,
+                    sub_slot_iters,
+                    request.signage_point_index,
+                    sp_iters,
+                    ip_iters,
+                    request.proof_of_space,
+                    cc_challenge_hash,
+                    get_plot_sig,
+                    sp_vdfs,
+                    timestamp,
+                    self.beacon.blockchain,
+                    prev_b,
+                    finished_sub_slots,
+                    True,
+                )
+
+                self.full_node.full_node_store.add_candidate_block(
+                    quality_string, height, unfinished_block_backup, backup=True
+                )
 
         return None
 
@@ -701,6 +745,10 @@ class BeaconAPI:
             candidate.foliage,
             foliage_block_data_signature=farmer_request.foliage_block_data_signature,
         )
+        if candidate.is_transaction_block():
+            fsb2 = dataclasses.replace(
+                fsb2, foliage_transaction_block_signature=farmer_request.foliage_transaction_block_signature
+            )
 
         new_candidate = dataclasses.replace(candidate, foliage=fsb2)
 
@@ -709,6 +757,22 @@ class BeaconAPI:
             await self.beacon.add_unfinished_block(new_candidate, None, True)
         except Exception as e:
 	        self.beacon.log.error(f"Error farming block {e} {new_candidate}")
+            candidate_tuple = self.full_node.full_node_store.get_candidate_block(
+                farmer_request.quality_string, backup=True
+            )
+            if candidate_tuple is not None:
+                height, unfinished_block = candidate_tuple
+                self.full_node.full_node_store.add_candidate_block(
+                    farmer_request.quality_string, height, unfinished_block, False
+                )
+                # All unfinished blocks that we create will have the foliage transaction block and hash
+                assert unfinished_block.foliage.foliage_transaction_block_hash is not None
+                message = farmer_protocol.RequestSignedValues(
+                    farmer_request.quality_string,
+                    unfinished_block.foliage.foliage_block_data.get_hash(),
+                    unfinished_block.foliage.foliage_transaction_block_hash,
+                )
+                await peer.send_message(make_msg(ProtocolMessageTypes.request_signed_values, message))
             
         return None
 
