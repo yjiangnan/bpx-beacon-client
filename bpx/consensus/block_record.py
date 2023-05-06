@@ -26,6 +26,18 @@ class BlockRecordProtocol(Protocol):
     @property
     def timestamp(self) -> Optional[uint64]:
         ...
+    
+    @property
+    def prev_transaction_block_height(self) -> uint32:
+        ...
+
+    @property
+    def prev_transaction_block_hash(self) -> Optional[bytes32]:
+        ...
+
+    @property
+    def is_transaction_block(self) -> bool:
+        return self.timestamp is not None
 
 
 @streamable
@@ -50,11 +62,16 @@ class BlockRecord(Streamable):
     reward_infusion_new_challenge: bytes32  # The reward chain infusion output, input to next VDF
     challenge_block_info_hash: bytes32  # Hash of challenge chain data, used to validate end of slots in the future
     sub_slot_iters: uint64  # Current network sub_slot_iters parameter
+    coinbase: bytes32
     required_iters: uint64  # The number of iters required for this proof of space
     deficit: uint8  # A deficit of 16 is an overflow block after an infusion. Deficit of 15 is a challenge block
     overflow: bool
-    timestamp: uint64
-    execution_block_hash: bytes32
+    prev_transaction_block_height: uint32
+
+    # Transaction block (present iff is_transaction_block)
+    timestamp: Optional[uint64]
+    prev_transaction_block_hash: Optional[bytes32]  # Header hash of the previous transaction block
+    execution_block_hash: Optional[bytes32]
     last_withdrawal_index: Optional[uint64]
 
     # Slot (present iff this is the first SB in sub slot)
@@ -64,6 +81,10 @@ class BlockRecord(Streamable):
 
     # Sub-epoch (present iff this is the first SB after sub-epoch)
     sub_epoch_summary_included: Optional[SubEpochSummary]
+    
+    @property
+    def is_transaction_block(self) -> bool:
+        return self.timestamp is not None
 
     @property
     def first_in_sub_slot(self) -> bool:
