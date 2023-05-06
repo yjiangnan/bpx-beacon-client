@@ -120,7 +120,11 @@ def _get_second_to_last_transaction_block_in_previous_epoch(
         fetched_index += 1
 
     # Backtrack to find the second to last tx block
-    curr_b = blocks.block_record(curr_b.prev_hash)
+    found_tx_block = 1 if curr_b.is_transaction_block else 0
+    while found_tx_block < 2:
+        curr_b = blocks.block_record(curr_b.prev_hash)
+        if curr_b.is_transaction_block:
+            found_tx_block += 1
 
     return curr_b
 
@@ -236,7 +240,7 @@ def _get_next_sub_slot_iters(
     # is not a transaction block, that means there was exactly one other tx block included in between our signage
     # point and infusion point, and therefore last_block_curr is the second to last as well.
     last_block_curr = prev_b
-    while last_block_curr.total_iters > signage_point_total_iters:
+    while last_block_curr.total_iters > signage_point_total_iters or not last_block_curr.is_transaction_block:
         last_block_curr = blocks.block_record(last_block_curr.prev_hash)
     assert last_block_curr.timestamp is not None and last_block_prev.timestamp is not None
 
@@ -316,7 +320,7 @@ def _get_next_difficulty(
     # is not a transaction block, that means there was exactly one other tx block included in between our signage
     # point and infusion point, and therefore last_block_curr is the second to last as well.
     last_block_curr = prev_b
-    while last_block_curr.total_iters > signage_point_total_iters:
+    while last_block_curr.total_iters > signage_point_total_iters or not last_block_curr.is_transaction_block:
         last_block_curr = blocks.block_record(last_block_curr.prev_hash)
 
     assert last_block_curr.timestamp is not None

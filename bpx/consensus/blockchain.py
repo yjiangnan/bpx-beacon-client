@@ -461,6 +461,7 @@ class Blockchain(BlockchainInterface):
             block.challenge_chain_sp_proof,
             block.reward_chain_sp_proof,
             block.foliage,
+            block.foliage_transaction_block,
             block.execution_payload,
         )
         prev_b = self.try_block_record(unfinished_header_block.prev_header_hash)

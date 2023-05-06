@@ -145,7 +145,8 @@ async def pre_validate_blocks_multiprocessing(
                 assert curr.finished_challenge_slot_hashes is not None
                 num_sub_slots_found += len(curr.finished_challenge_slot_hashes)
             recent_blocks[curr.header_hash] = curr
-            num_blocks_seen += 1
+            if curr.is_transaction_block:
+                num_blocks_seen += 1
             curr = block_records.block_record(curr.prev_hash)
         recent_blocks[curr.header_hash] = curr
         recent_blocks_compressed[curr.header_hash] = curr

@@ -68,6 +68,14 @@ def block_to_block_record(
         if ses.get_hash() != found_ses_hash:
             raise ValueError(Err.INVALID_SUB_EPOCH_SUMMARY)
 
+    prev_transaction_block_height = uint32(0)
+    curr: Optional[BlockRecord] = blocks.try_block_record(block.prev_header_hash)
+    while curr is not None and not curr.is_transaction_block:
+        curr = blocks.try_block_record(curr.prev_hash)
+
+    if curr is not None and curr.is_transaction_block:
+        prev_transaction_block_height = curr.height
+
     return header_block_to_sub_block_record(
         constants,
         required_iters,
@@ -75,6 +83,7 @@ def block_to_block_record(
         sub_slot_iters,
         overflow,
         deficit,
+        prev_transaction_block_height,
         ses,
     )
 
@@ -86,6 +95,7 @@ def header_block_to_sub_block_record(
     sub_slot_iters: uint64,
     overflow: bool,
     deficit: uint8,
+    prev_transaction_block_height: uint32,
     ses: Optional[SubEpochSummary],
 ) -> BlockRecord:
     cbi = ChallengeBlockInfo(
@@ -120,6 +130,12 @@ def header_block_to_sub_block_record(
         finished_challenge_slot_hashes = None
         finished_reward_slot_hashes = None
         finished_infused_challenge_slot_hashes = None
+    prev_transaction_block_hash = (
+        block.foliage_transaction_block.prev_transaction_block_hash
+        if block.foliage_transaction_block is not None
+        else None
+    )
+    timestamp = block.foliage_transaction_block.timestamp if block.foliage_transaction_block is not None else None
     
     if (
         block.execution_payload is None
@@ -128,6 +144,11 @@ def header_block_to_sub_block_record(
         last_withdrawal_index = None
     else:
         last_withdrawal_index = block.execution_payload.withdrawals[-1].index
+    
+    if block.foliage_transaction_block is not None:
+        execution_block_hash = block.foliage_transaction_block.execution_block_hash
+    else:
+        execution_block_hash = None
 
     return BlockRecord(
         block.header_hash,
@@ -141,11 +162,14 @@ def header_block_to_sub_block_record(
         block.reward_chain_block.get_hash(),
         cbi.get_hash(),
         sub_slot_iters,
+        block.foliage.foliage_block_data.coinbase,
         required_iters,
         deficit,
         overflow,
-        block.foliage.foliage_block_data.timestamp,
-        block.foliage.foliage_block_data.execution_block_hash,
+        prev_transaction_block_height,
+        timestamp,
+        prev_transaction_block_hash,
+        execution_block_hash,
         last_withdrawal_index,
         finished_challenge_slot_hashes,
         finished_infused_challenge_slot_hashes,
