@@ -52,7 +52,17 @@ async def print_blockchain_state(node_client: BeaconRpcClient, config: Dict[str,
         print("You may be able to expedite with 'bpx peer beacon -a host:port' using a known node.\n")
 
     if peak is not None:
-        peak_time = peak.timestamp
+        if peak.is_transaction_block:
+            peak_time = peak.timestamp
+        else:
+            peak_hash = peak.header_hash
+            curr = await node_client.get_block_record(peak_hash)
+            while curr is not None and not curr.is_transaction_block:
+                curr = await node_client.get_block_record(curr.prev_hash)
+            if curr is not None:
+                peak_time = curr.timestamp
+            else:
+                peak_time = uint64(0)
         peak_time_struct = time.struct_time(time.localtime(peak_time))
 
         print(
@@ -103,12 +113,16 @@ async def print_block_from_hash(
             difficulty = block.weight - prev_b.weight
         else:
             difficulty = block.weight
-        block_time = time.struct_time(
-            time.localtime(
-                full_block.foliage.foliage_block_data.timestamp
+        if block.is_transaction_block:
+            assert full_block.transactions_info is not None
+            block_time = time.struct_time(
+                time.localtime(
+                    full_block.foliage_transaction_block.timestamp if full_block.foliage_transaction_block else None
+                )
             )
-        )
-        block_time_string = time.strftime("%a %b %d %Y %T %Z", block_time)
+            block_time_string = time.strftime("%a %b %d %Y %T %Z", block_time)
+        else:
+            block_time_string = "Not a transaction block"
         pool_pk = (
             full_block.reward_chain_block.proof_of_space.pool_public_key
             if full_block.reward_chain_block.proof_of_space.pool_public_key is not None
