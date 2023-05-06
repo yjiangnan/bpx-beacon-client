@@ -44,6 +44,7 @@ class DeclareProofOfSpace(Streamable):
 class RequestSignedValues(Streamable):
     quality_string: bytes32
     foliage_block_data_hash: bytes32
+    foliage_transaction_block_hash: bytes32
 
 
 @streamable
@@ -62,3 +63,4 @@ class FarmingInfo(Streamable):
 class SignedValues(Streamable):
     quality_string: bytes32
     foliage_block_data_signature: G2Element
+    foliage_transaction_block_signature: G2Element

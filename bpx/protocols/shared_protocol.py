@@ -7,7 +7,7 @@ from typing import List, Tuple
 from bpx.util.ints import uint8, uint16
 from bpx.util.streamable import Streamable, streamable
 
-protocol_version = "0.0.34"
+protocol_version = "0.0.1"
 
 """
 Handshake when establishing a connection between two servers.
@@ -19,8 +19,6 @@ Note: When changing this file, also change protocol_message_types.py
 # These are passed in as uint16 into the Handshake
 class Capability(IntEnum):
     BASE = 1  # Base capability just means it supports the bpx protocol at mainnet
-    # a node can handle a None response and not wait the full timeout
-    NONE_RESPONSE = 2
 
 
 @streamable
@@ -37,5 +35,4 @@ class Handshake(Streamable):
 # "1" means capability is enabled
 capabilities = [
     (uint16(Capability.BASE.value), "1"),
-    # (uint16(Capability.NONE_RESPONSE.value), "1"), # capability removed but functionality is still supported
 ]
