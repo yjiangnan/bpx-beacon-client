@@ -12,11 +12,18 @@ from bpx.util.streamable import Streamable, streamable
 
 @streamable
 @dataclass(frozen=True)
+class FoliageTransactionBlock(Streamable):
+    prev_transaction_block_hash: bytes32
+    timestamp: uint64
+    execution_block_hash: bytes32
+
+
+@streamable
+@dataclass(frozen=True)
 class FoliageBlockData(Streamable):
     # Part of the block that is signed by the plot key
     unfinished_reward_block_hash: bytes32
-    timestamp: uint64
-    execution_block_hash: bytes32
+    coinbase: bytes32
 
 
 @streamable
@@ -29,3 +36,5 @@ class Foliage(Streamable):
     reward_block_hash: bytes32
     foliage_block_data: FoliageBlockData
     foliage_block_data_signature: G2Element
+    foliage_transaction_block_hash: Optional[bytes32]
+    foliage_transaction_block_signature: Optional[G2Element]

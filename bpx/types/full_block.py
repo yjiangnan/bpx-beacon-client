@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List, Optional, Set
 
-from bpx.types.blockchain_format.foliage import Foliage
+from bpx.types.blockchain_format.foliage import Foliage, FoliageTransactionBlock
 from bpx.types.blockchain_format.reward_chain_block import RewardChainBlock
 from bpx.types.blockchain_format.sized_bytes import bytes32
 from bpx.types.blockchain_format.vdf import VDFProof
@@ -25,6 +25,7 @@ class FullBlock(Streamable):
     reward_chain_ip_proof: VDFProof
     infused_challenge_chain_ip_proof: Optional[VDFProof]  # Iff deficit < 4
     foliage: Foliage  # Reward chain foliage data
+    foliage_transaction_block: Optional[FoliageTransactionBlock]  # Reward chain foliage data (tx block)
     execution_payload: Optional[ExecutionPayloadV2]
 
     @property
@@ -46,6 +47,9 @@ class FullBlock(Streamable):
     @property
     def header_hash(self) -> bytes32:
         return self.foliage.get_hash()
+    
+    def is_transaction_block(self) -> bool:
+        return self.foliage_transaction_block is not None
 
     def is_fully_compactified(self) -> bool:
         for sub_slot in self.finished_sub_slots:

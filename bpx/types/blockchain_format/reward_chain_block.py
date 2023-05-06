@@ -23,6 +23,7 @@ class RewardChainBlockUnfinished(Streamable):
     challenge_chain_sp_signature: G2Element
     reward_chain_sp_vdf: Optional[VDFInfo]  # Not present for first sp in slot
     reward_chain_sp_signature: G2Element
+    is_transaction_block: bool
 
 
 @streamable

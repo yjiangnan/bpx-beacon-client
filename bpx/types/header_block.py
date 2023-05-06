@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List, Optional
 
-from bpx.types.blockchain_format.foliage import Foliage
+from bpx.types.blockchain_format.foliage import Foliage, FoliageTransactionBlock
 from bpx.types.blockchain_format.reward_chain_block import RewardChainBlock
 from bpx.types.blockchain_format.sized_bytes import bytes32
 from bpx.types.blockchain_format.vdf import VDFProof
@@ -24,6 +24,7 @@ class HeaderBlock(Streamable):
     reward_chain_ip_proof: VDFProof
     infused_challenge_chain_ip_proof: Optional[VDFProof]  # Iff deficit < 4
     foliage: Foliage  # Reward chain foliage data
+    foliage_transaction_block: Optional[FoliageTransactionBlock]  # Reward chain foliage data (tx block)
     execution_payload: Optional[ExecutionPayloadV2]
 
     @property
@@ -53,6 +54,10 @@ class HeaderBlock(Streamable):
     @property
     def log_string(self) -> str:
         return "block " + str(self.header_hash) + " sb_height " + str(self.height) + " "
+    
+    @property
+    def is_transaction_block(self) -> bool:
+        return self.reward_chain_block.is_transaction_block
 
     @property
     def first_in_sub_slot(self) -> bool:
