@@ -1764,7 +1764,7 @@ class Beacon:
                 )
         return None, False
     
-    async def get_coinbase(self) -> Dict[str, Any]:
+    async def get_coinbase(self) -> str:
         return self.config["coinbase"]
 
     def set_coinbase(self, coinbase: str) -> None:

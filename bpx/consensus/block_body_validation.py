@@ -5,6 +5,7 @@ import logging
 from typing import Awaitable, Callable, Dict, List, Optional, Set, Tuple, Union
 
 from bpx.consensus.block_record import BlockRecord
+from chia.consensus.blockchain_interface import BlockchainInterface
 from bpx.consensus.constants import ConsensusConstants
 from bpx.consensus.find_fork_point import find_fork_point_in_chain
 from bpx.beacon.block_store import BlockStore
@@ -23,7 +24,7 @@ log = logging.getLogger(__name__)
 async def validate_block_body(
     constants: ConsensusConstants,
     execution_client: ExecutionClient,
-    blocks: Blockchain,
+    blocks: BlockchainInterface,
     block_store: BlockStore,
     peak: Optional[BlockRecord],
     block: Union[FullBlock, UnfinishedBlock],
@@ -35,7 +36,7 @@ async def validate_block_body(
     Validates the body of the block. Returns None if everything validates correctly, or an Err if something does not validate.
     """
     if isinstance(block, FullBlock):
-        assert height == block.height
+        assert height == block.height            
     
     if block.execution_payload is None:
         return None
