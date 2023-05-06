@@ -68,7 +68,8 @@ class LastState:
             self.last_peak_challenge = state.reward_chain_block.get_hash()
             self.difficulty = state.difficulty
             self.sub_slot_iters = state.sub_slot_iters
-            self.last_block_total_iters = self.total_iters
+            if state.reward_chain_block.is_transaction_block:
+                self.last_block_total_iters = self.total_iters
             self.reward_challenge_cache = state.previous_reward_challenges
             self.last_challenge_sb_or_eos_total_iters = self.peak.last_challenge_sb_or_eos_total_iters
             self.new_epoch = False
