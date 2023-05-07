@@ -344,47 +344,27 @@ class ExecutionClient:
     
     def _create_payload_attributes(
         self,
-        prev_block: FullBlock,
+        prev_tx_block: BlockRecord,
         coinbase: str,
     ) -> Dict[str, Any]:
-        withdrawals = []
-        height = prev_block.height + 1
-        
-        if height == 1:
-            prefarm_amount = calculate_v3_prefarm(
-                self.beacon.constants.V3_PREFARM_AMOUNT,
-                self.beacon.constants.V2_EOL_HEIGHT,
-            )
-            
-            if prefarm_amount > 0:
-                reward_withdrawal_index = 1
-                
-                withdrawals.append({
-                    "index": "0x0",
-                    "validatorIndex": "0x0",
-                    "address": "0x" + self.beacon.constants.PREFARM_ADDRESS.hex(),
-                    "amount": Web3.to_hex(prefarm_amount)
-                })
-            else:
-                reward_withdrawal_index = 0
-        else:
-            reward_withdrawal_index = prev_block.execution_payload.withdrawals[-1].index + 1
-        
-        reward_amount = calculate_v3_reward(
-            height,
-            self.beacon.constants.V2_EOL_HEIGHT,
+        withdrawals = create_withdrawals(
+            self.beacon.constants,
+            prev_tx_block,
+            self.beacon.blockchain,
         )
+        raw_withdrawals = []
         
-        withdrawals.append({
-            "index": Web3.to_hex(reward_withdrawal_index),
-            "validatorIndex": "0x1",
-            "address": coinbase,
-            "amount": Web3.to_hex(reward_amount)
-        })
+        for wd in withdrawals:
+            raw_withdrawals.append({
+                "index": Web3.to_hex(wd.index),
+                "validatorIndex": Web3.to_hex(wd.validatorIndex),
+                "address": "0x" + wd.address.hex(),
+                "amount": Web3.to_hex(wd.amount)
+            })
         
         return {
             "timestamp": Web3.to_hex(int(time.time())),
             "prevRandao": "0x" + prev_block.reward_chain_block.get_hash().hex(),
             "suggestedFeeRecipient": coinbase,
-            "withdrawals": withdrawals,
+            "withdrawals": raw_withdrawals,
         }

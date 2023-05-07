@@ -62,7 +62,7 @@ def create_foliage(
         res = get_prev_transaction_block(prev_block, blocks, total_iters_sp)
         is_transaction_block: bool = res[0]
         prev_transaction_block: Optional[BlockRecord] = res[1]
-        execution_payload = execution_client.get_payload(prev_transaction_block.header_hash)
+        execution_payload = execution_client.get_payload(prev_transaction_block)
         execution_block_hash = execution_payload.blockHash
     else:
         # Genesis is a transaction block

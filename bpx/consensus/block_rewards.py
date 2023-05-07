@@ -91,6 +91,9 @@ def _calculate_v3_reward(
 def _calculate_v2_reward(
     v2_height: uint64
 ) -> uint64:
+    assert v2_height != 0
+    # Do not use V2 prefarm in any calculations
+    
     if v2_height == 0:
         return uint64(20000000 * _bpx_to_gwei)
     elif v2_height < 1000000:
