@@ -76,7 +76,7 @@ def _calculate_v3_bridge(
 ) -> uint64:
     bridge: uint64 = 0
     
-    for i in range(0, v2_eol_height):
+    for i in range(1, v2_eol_height):
         bridge += _calculate_v2_reward(i)
     
     return bridge
