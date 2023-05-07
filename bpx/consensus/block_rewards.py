@@ -85,13 +85,15 @@ def _calculate_v3_reward(
     v3_height: uint64,
     v2_eol_height: uint64,
 ) -> uint64:
-    v2_equiv_height = v2_eol_height + v3_height
+    v2_equiv_height = v2_eol_height + v3_height + 1
     return _calculate_v2_reward(v2_equiv_height)
 
 def _calculate_v2_reward(
     v2_height: uint64
 ) -> uint64:
-    if v2_height < 1000000:
+    if v2_height == 0:
+        return uint64(20000000 * _bpx_to_gwei)
+    elif v2_height < 1000000:
         return uint64(200 * _bpx_to_gwei)
     elif v2_height < 1000000 + (3 * _blocks_per_year):
         return uint64(20 * _bpx_to_gwei)
