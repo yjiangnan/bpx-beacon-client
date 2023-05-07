@@ -1,31 +1,92 @@
 from __future__ import annotations
 
+from typing import List
+
 from bpx.util.ints import uint64
+from bpx.types.blockchain_format.execution_payload import WithdrawalV1
+from bpx.consensus.block_record import BlockRecord
+from bpx.consensus.blockchain_interface import BlockchainInterface
+from bpx.consensus.constants import ConsensusConstants
 
 _bpx_to_gwei = 1000000000
 _blocks_per_year = 1681920  # 32 * 6 * 24 * 365
 
-def calculate_v3_reward(
+def create_withdrawals(
+    constants: ConsensusConstants,
+    prev_tx_block: BlockRecord,
+    blocks: BlockchainInterface,
+) -> List[WithdrawalV1]:
+    withdrawals: List[WithdrawalV1] = []
+    
+    next_wd_index: uint64
+    if prev_tx_block.last_withdrawal_index is None:
+        next_wd_index = 0
+    else:
+        next_wd_index = prev_tx_block.last_withdrawal_index + 1
+    
+    if prev_tx_block.height == 0:
+        # Add prefarm withdrawal
+        if constants.V3_PREFARM > 0:
+            withdrawals.append(
+                WithdrawalV1(
+                    next_wd_index,
+                    uint64(0),
+                    constants.PREFARM_ADDRESS,
+                    constants.V3_PREFARM_AMOUNT,
+                )
+            )
+            next_wd_index++
+        
+        # Add bridge withdrawal
+        bridge_amount = _calculate_v3_bridge(constants.V2_EOL_HEIGHT)
+        if bridge_amount > 0:
+            withdrawals.append(
+                WithdrawalV1(
+                    next_wd_index,
+                    uint64(1),
+                    constants.BRIDGE_ADDRESS,
+                    bridge_amount,
+                )
+            )
+            next_wd_index++
+    
+    # Add blocks rewards
+    curr: BlockRecord = prev_tx_block
+    while True:
+        withdrawals.append(
+            WithdrawalV1(
+                next_wd_index,
+                uint64(2),
+                curr.coinbase,
+                _calculate_v3_reward(curr.height),
+            )
+        )
+        next_wd_index++
+        
+        if curr.prev_hash == constants.GENESIS_CHALLENGE:
+            break
+        curr = blocks.block_record(curr.prev_hash)
+        if curr.is_transaction_block:
+            break
+    
+    return withdrawals
+
+def _calculate_v3_bridge(
+    v2_eol_height: uint64,
+) -> uint64:
+    bridge: uint64 = 0
+    
+    for i in range(0, v2_eol_height):
+        bridge += _calculate_v2_reward(i)
+    
+    return bridge
+
+def _calculate_v3_reward(
     v3_height: uint64,
     v2_eol_height: uint64,
 ) -> uint64:
-    if v3_height == 0:
-        return uint64(0)
-    
-    v2_equiv_height = v2_eol_height + v3_height - 2
-    # -2 -> skip V2 EOL block and V3 genesis block 
+    v2_equiv_height = v2_eol_height + v3_height + 1
     return _calculate_v2_reward(v2_equiv_height)
-
-def calculate_v3_prefarm(
-    v3_prefarm_amount: uint64,
-    v2_eol_height: uint64
-) -> uint64:
-    prefarm: uint64 = v3_prefarm_amount
-    
-    for i in range(0, v2_eol_height):
-        prefarm += _calculate_v2_reward(i)
-    
-    return prefarm
 
 def _calculate_v2_reward(
     v2_height: uint64

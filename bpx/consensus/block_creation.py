@@ -30,6 +30,7 @@ log = logging.getLogger(__name__)
 
 def create_foliage(
     constants: ConsensusConstants,
+    execution_client: ExecutionClient,
     reward_block_unfinished: RewardChainBlockUnfinished,
     prev_block: Optional[BlockRecord],
     blocks: BlockchainInterface,
@@ -37,7 +38,6 @@ def create_foliage(
     timestamp: uint64,
     coinbase: bytes32,
     get_plot_signature: Callable[[bytes32, G1Element], G2Element],
-    execution_block_hash: bytes32,
     seed: bytes = b"",
 ) -> Foliage:
     """
@@ -46,6 +46,7 @@ def create_foliage(
 
     Args:
         constants: consensus constants being used for this chain
+        execution_client: execution client instance
         reward_block_unfinished: the reward block to look at, potentially at the signage point
         prev_block: the previous block at the signage point
         blocks: dict from header hash to blocks, of all ancestor blocks
@@ -53,7 +54,6 @@ def create_foliage(
         timestamp: timestamp to put into the foliage block
         coinbase: where to pay out farmer rewards
         get_plot_signature: retrieve the signature corresponding to the plot public key
-        execution_block_hash: execution block hash to put into foliage transaction block
         seed: seed to randomize block
 
     """
@@ -62,10 +62,14 @@ def create_foliage(
         res = get_prev_transaction_block(prev_block, blocks, total_iters_sp)
         is_transaction_block: bool = res[0]
         prev_transaction_block: Optional[BlockRecord] = res[1]
+        execution_payload = execution_client.get_payload(prev_transaction_block.header_hash)
+        execution_block_hash = execution_payload.blockHash
     else:
         # Genesis is a transaction block
         prev_transaction_block = None
         is_transaction_block = True
+        execution_payload = None
+        execution_block_hash = constants.GENESIS_EXECUTION_BLOCK_HASH
     
     random.seed(seed)
     # Use the extension data to create different blocks based on header hash
@@ -125,7 +129,7 @@ def create_foliage(
         foliage_transaction_block_signature,
     )
 
-    return foliage, foliage_transaction_block
+    return foliage, foliage_transaction_block, execution_payload
 
 
 def create_unfinished_block(
@@ -224,15 +228,9 @@ def create_unfinished_block(
         rc_sp_signature,
     )
     
-    if prev_block is not None:
-        execution_payload = execution_client.get_payload()
-        execution_block_hash = execution_payload.blockHash
-    else:
-        execution_payload = None
-        execution_block_hash = constants.GENESIS_EXECUTION_BLOCK_HASH
-    
-    (foliage, foliage_transaction_block) = create_foliage(
+    (foliage, foliage_transaction_block, execution_payload) = create_foliage(
         constants,
+        execution_client,
         rc_block,
         prev_block,
         blocks,
@@ -240,7 +238,6 @@ def create_unfinished_block(
         timestamp,
         coinbase,
         get_plot_signature,
-        execution_block_hash,
         seed,
     )
     return UnfinishedBlock(
