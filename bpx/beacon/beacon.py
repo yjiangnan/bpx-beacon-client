@@ -1254,8 +1254,8 @@ class Beacon:
         synced = self.sync_store.get_sync_mode() is False
         
         try:
-            status = await self.execution_client.forkchoice_update(
-                block,
+            status = await self.execution_client.new_peak(
+                record,
                 synced,
             )
             if status == "ACCEPTED":

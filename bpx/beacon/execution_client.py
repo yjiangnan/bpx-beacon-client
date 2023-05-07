@@ -22,7 +22,7 @@ from bpx.types.blockchain_format.sized_bytes import bytes20, bytes32, bytes256
 from bpx.util.ints import uint64, uint256
 from bpx.types.blockchain_format.execution_payload import ExecutionPayloadV2, WithdrawalV1
 from bpx.util.byte_types import hexstr_to_bytes
-from bpx.consensus.block_rewards import calculate_v3_reward, calculate_v3_prefarm
+from bpx.consensus.block_rewards import create_withdrawals
 
 COINBASE_NULL = "0x0000000000000000000000000000000000000000"
 BLOCK_HASH_NULL = bytes32.fromhex("0000000000000000000000000000000000000000000000000000000000000000")
@@ -67,8 +67,8 @@ class EngineModule(Module):
 class ExecutionClient:
     beacon: Beacon
     w3: Web3
+    peak_txb_hash: Optional[bytes32]
     payload_id: Optional[str]
-    payload_head: Optional[bytes32]
     sync_lock: asyncio.Lock
 
     def __init__(
@@ -77,8 +77,8 @@ class ExecutionClient:
     ):
         self.beacon = beacon
         self.w3 = None
+        self.peak_txb_hash = None
         self.payload_id = None
-        self.payload_head = None
         self.sync_lock = asyncio.Lock()
     
     
@@ -98,17 +98,24 @@ class ExecutionClient:
             await asyncio.sleep(60)
     
     
-    async def forkchoice_update(
+    async def new_peak(
         self,
-        block: FullBlock,
+        block: BlockRecord,
         synced: bool,
-    ) -> None:
+    ) -> Optional[str]:
+        curr: BlockRecord = block
+        while not curr.is_transaction_block:
+            curr = self.beacon.blockchain.block_record(curr.prev_hash)
+        
+        if curr.header_hash == self.peak_txb_hash:
+            return None
+                
         async with self.sync_lock:
-            status = await self._forkchoice_update(block, synced)
+            status = await self._forkchoice_update(curr, synced)
             if status != "SYNCING":
                 return status
-            await self._replay_sync(block.height)
-            return await self._forkchoice_update(block, synced)
+            await self._replay_sync(curr.height)
+            return await self._forkchoice_update(curr, synced)
     
     
     async def new_payload(
@@ -127,15 +134,15 @@ class ExecutionClient:
         self,
         prev_block: BlockRecord
     ) -> ExecutionPayloadV2:
-        log.info(f"Get payload for head: height={prev_block.height}, hash={prev_block.execution_block_hash}")
+        log.info(f"Get payload for: height={prev_block.height}, hash={prev_block.header_hash}")
         
         self._ensure_web3_init()
         
+        if self.peak_txb_hash != prev_block.header_hash:
+            raise RuntimeError(f"Payload build on ({self.peak_txb_hash}) but requested ({prev_block.header_hash})")
+        
         if self.payload_id is None:
             raise RuntimeError("Execution payload not built")
-        
-        if self.payload_head != prev_block.execution_block_hash:
-            raise RuntimeError(f"Payload head ({self.payload_head}) differs from requested ({prev_block.execution_block_hash})")
         
         raw_payload = self.w3.engine.get_payload_v2(self.payload_id).executionPayload
         
@@ -216,7 +223,7 @@ class ExecutionClient:
     
     async def _forkchoice_update(
         self,
-        block: FullBlock,
+        block: BlockRecord,
         synced: bool,
     ) -> None:
         log.info("Fork choice update")
