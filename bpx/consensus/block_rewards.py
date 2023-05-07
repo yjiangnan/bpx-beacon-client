@@ -25,38 +25,24 @@ def create_withdrawals(
         next_wd_index = prev_tx_block.last_withdrawal_index + 1
     
     if prev_tx_block.height == 0:
-        # Add prefarm withdrawal
-        if constants.V3_PREFARM > 0:
-            withdrawals.append(
-                WithdrawalV1(
-                    next_wd_index,
-                    uint64(0),
-                    constants.PREFARM_ADDRESS,
-                    constants.V3_PREFARM_AMOUNT,
-                )
-            )
-            next_wd_index += 1
-        
         # Add bridge withdrawal
-        bridge_amount = _calculate_v3_bridge(constants.V2_EOL_HEIGHT)
-        if bridge_amount > 0:
-            withdrawals.append(
-                WithdrawalV1(
-                    next_wd_index,
-                    uint64(1),
-                    constants.BRIDGE_ADDRESS,
-                    bridge_amount,
-                )
+        withdrawals.append(
+            WithdrawalV1(
+                next_wd_index,
+                uint64(0),
+                constants.BRIDGE_ADDRESS,
+                _calculate_v3_bridge(constants.V2_EOL_HEIGHT),
             )
-            next_wd_index += 1
+        )
+        next_wd_index += 1
     
-    # Add blocks rewards
+    # Add block rewards
     curr: BlockRecord = prev_tx_block
     while True:
         withdrawals.append(
             WithdrawalV1(
                 next_wd_index,
-                uint64(2),
+                uint64(1),
                 curr.coinbase,
                 _calculate_v3_reward(curr.height),
             )
@@ -76,7 +62,7 @@ def _calculate_v3_bridge(
 ) -> uint64:
     bridge: uint64 = 0
     
-    for i in range(1, v2_eol_height+1):
+    for i in range(0, v2_eol_height+1):
         bridge += _calculate_v2_reward(i)
     
     return bridge
@@ -91,9 +77,6 @@ def _calculate_v3_reward(
 def _calculate_v2_reward(
     v2_height: uint64
 ) -> uint64:
-    assert v2_height != 0
-    # Do not use V2 prefarm in any calculations
-    
     if v2_height == 0:
         return uint64(20000000 * _bpx_to_gwei)
     elif v2_height < 1000000:

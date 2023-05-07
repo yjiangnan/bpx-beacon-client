@@ -49,8 +49,7 @@ class ConsensusConstants:
     
     GENESIS_EXECUTION_BLOCK_HASH: bytes32
     V2_EOL_HEIGHT: uint64
-    V3_PREFARM_AMOUNT: uint64
-    PREFARM_ADDRESS: bytes20
+    BRIDGE_ADDRESS: bytes20
 
     def replace(self, **changes: object) -> "ConsensusConstants":
         return dataclasses.replace(self, **changes)
