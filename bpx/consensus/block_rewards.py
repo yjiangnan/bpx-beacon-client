@@ -35,7 +35,7 @@ def create_withdrawals(
                     constants.V3_PREFARM_AMOUNT,
                 )
             )
-            next_wd_index++
+            next_wd_index += 1
         
         # Add bridge withdrawal
         bridge_amount = _calculate_v3_bridge(constants.V2_EOL_HEIGHT)
@@ -48,7 +48,7 @@ def create_withdrawals(
                     bridge_amount,
                 )
             )
-            next_wd_index++
+            next_wd_index += 1
     
     # Add blocks rewards
     curr: BlockRecord = prev_tx_block
@@ -61,7 +61,7 @@ def create_withdrawals(
                 _calculate_v3_reward(curr.height),
             )
         )
-        next_wd_index++
+        next_wd_index += 1
         
         if curr.prev_hash == constants.GENESIS_CHALLENGE:
             break
