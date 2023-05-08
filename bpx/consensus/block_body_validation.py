@@ -5,7 +5,7 @@ import logging
 from typing import Awaitable, Callable, Dict, List, Optional, Set, Tuple, Union
 
 from bpx.consensus.block_record import BlockRecord
-from chia.consensus.blockchain_interface import BlockchainInterface
+from bpx.consensus.blockchain_interface import BlockchainInterface
 from bpx.consensus.constants import ConsensusConstants
 from bpx.consensus.find_fork_point import find_fork_point_in_chain
 from bpx.beacon.block_store import BlockStore
