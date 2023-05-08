@@ -148,8 +148,8 @@ def create_unfinished_block(
     timestamp: uint64,
     blocks: BlockchainInterface,
     seed: bytes = b"",
-    prev_block: Optional[BlockRecord],
-    finished_sub_slots_input: Optional[List[EndOfSubSlotBundle]],
+    prev_block: Optional[BlockRecord] = None,
+    finished_sub_slots_input: Optional[List[EndOfSubSlotBundle]] = None,
 ) -> UnfinishedBlock:
     """
     Creates a new unfinished block using all the information available at the signage point. This will have to be
