@@ -228,23 +228,36 @@ class ExecutionClient:
     ) -> None:
         log.info("Fork choice update")
         
-        self.payload_head = None
         self.payload_id = None
         
         self._ensure_web3_init()
         
-        head_hash = block.foliage.foliage_block_data.execution_block_hash
+        head_hash = block.execution_block_hash
         log.info(f" |- New head height: {block.height}, hash: {head_hash}")
         
         safe_hash = head_hash
         log.info(f" |- New safe height: {block.height}, hash: {safe_hash}")
         
-        if block.height > 32:
-            final_height = (block.height - 32) - (block.height % 32)
-            final_hash = self.beacon.blockchain.height_to_block_record(final_height).execution_block_hash
-        else:
-            final_height = None
-            final_hash = BLOCK_HASH_NULL
+        final_height: Optional[uint64]
+        final_hash: bytes32
+        sub_slots = 0
+        curr = block
+        while True:
+            if curr.first_in_sub_slot():
+                sub_slots += 1
+            
+            final_height = curr.height
+            final_hash = curr.execution_block_hash
+            
+            if sub_slots == 2:
+                break
+            
+            if curr.prev_transaction_block_hash == self.beacon.constants.GENESIS_CHALLENGE:
+                final_height = None
+                final_hash = BLOCK_HASH_NULL
+                break
+            
+            curr = self.beacon.blockchain.block_record(curr.prev_transaction_block_hash)
         log.info(f" |- New final height: {final_height}, hash: {final_hash}")
         
         forkchoice_state = {
@@ -264,6 +277,9 @@ class ExecutionClient:
                 payload_attributes = self._create_payload_attributes(block, coinbase)
         
         result = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
+        
+        self.peak_txb_hash = block.hash
+        
         if result.payloadStatus.validationError is not None:
             log.error(f"Fork choice update status: {result.payloadStatus.status}, "
                        "validation error: {result.payloadStatus.validationError}")
@@ -271,7 +287,6 @@ class ExecutionClient:
             log.info(f"Fork choice update status: {result.payloadStatus.status}")
         
         if result.payloadId is not None:
-            self.payload_head = head_hash
             self.payload_id = result.payloadId
             log.info(f"Payload building started, id: {self.payload_id}")
         else:
@@ -371,7 +386,7 @@ class ExecutionClient:
         
         return {
             "timestamp": Web3.to_hex(int(time.time())),
-            "prevRandao": "0x" + prev_block.reward_chain_block.get_hash().hex(),
+            "prevRandao": "0x" + prev_tx_block.reward_chain_block.get_hash().hex(),
             "suggestedFeeRecipient": coinbase,
             "withdrawals": raw_withdrawals,
         }
