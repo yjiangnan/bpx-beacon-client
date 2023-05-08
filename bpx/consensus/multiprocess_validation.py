@@ -197,6 +197,8 @@ async def pre_validate_blocks_multiprocessing(
                 None,
             )
         except ValueError:
+            tb = traceback.format_exc()
+            self.log.warning(f"Exception in block to block record {tb}")
             return [PreValidationResult(uint16(Err.INVALID_SUB_EPOCH_SUMMARY.value), None)]
 
         if block_rec.sub_epoch_summary_included is not None and wp_summaries is not None:
