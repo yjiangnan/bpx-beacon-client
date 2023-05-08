@@ -278,7 +278,7 @@ class ExecutionClient:
         
         result = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
         
-        self.peak_txb_hash = block.hash
+        self.peak_txb_hash = block.header_hash
         
         if result.payloadStatus.validationError is not None:
             log.error(f"Fork choice update status: {result.payloadStatus.status}, "
