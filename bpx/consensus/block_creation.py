@@ -338,7 +338,7 @@ def unfinished_block_to_full_block(
         rc_ip_proof,
         icc_ip_proof,
         new_foliage,
-        new_foliage_transaction_info,
+        new_foliage_transaction_block,
         new_execution_payload,
     )
     ret = recursive_replace(
