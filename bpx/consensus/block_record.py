@@ -8,7 +8,7 @@ from typing_extensions import Protocol
 from bpx.consensus.constants import ConsensusConstants
 from bpx.consensus.pot_iterations import calculate_ip_iters, calculate_sp_iters
 from bpx.types.blockchain_format.classgroup import ClassgroupElement
-from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.types.blockchain_format.sized_bytes import bytes20, bytes32
 from bpx.types.blockchain_format.sub_epoch_summary import SubEpochSummary
 from bpx.util.ints import uint8, uint32, uint64, uint128
 from bpx.util.streamable import Streamable, streamable
@@ -62,7 +62,7 @@ class BlockRecord(Streamable):
     reward_infusion_new_challenge: bytes32  # The reward chain infusion output, input to next VDF
     challenge_block_info_hash: bytes32  # Hash of challenge chain data, used to validate end of slots in the future
     sub_slot_iters: uint64  # Current network sub_slot_iters parameter
-    coinbase: bytes32
+    coinbase: bytes20
     required_iters: uint64  # The number of iters required for this proof of space
     deficit: uint8  # A deficit of 16 is an overflow block after an infusion. Deficit of 15 is a challenge block
     overflow: bool
