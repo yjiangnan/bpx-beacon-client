@@ -880,6 +880,7 @@ def validate_finished_header_block(
         header_block.challenge_chain_sp_proof,
         header_block.reward_chain_sp_proof,
         header_block.foliage,
+        header_block.foliage_transaction_block,
         header_block.execution_payload,
     )
 
