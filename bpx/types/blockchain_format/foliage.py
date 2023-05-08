@@ -5,7 +5,7 @@ from typing import List, Optional
 
 from blspy import G2Element
 
-from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.types.blockchain_format.sized_bytes import bytes20, bytes32
 from bpx.util.ints import uint64
 from bpx.util.streamable import Streamable, streamable
 
@@ -23,7 +23,7 @@ class FoliageTransactionBlock(Streamable):
 class FoliageBlockData(Streamable):
     # Part of the block that is signed by the plot key
     unfinished_reward_block_hash: bytes32
-    coinbase: bytes32
+    coinbase: bytes20
     extension_data: bytes32  # Used for future updates. Can be any 32 byte value initially
 
 
