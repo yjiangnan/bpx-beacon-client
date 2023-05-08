@@ -385,7 +385,7 @@ class ExecutionClient:
             })
         
         return {
-            "timestamp": Web3.to_hex(int(time.time())),
+            "timestamp": Web3.to_hex(prev_tx_block.timestamp),
             "prevRandao": "0x" + prev_tx_block.reward_chain_block.get_hash().hex(),
             "suggestedFeeRecipient": coinbase,
             "withdrawals": raw_withdrawals,
