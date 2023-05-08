@@ -146,7 +146,6 @@ def create_unfinished_block(
     get_plot_signature: Callable[[bytes32, G1Element], G2Element],
     signage_point: SignagePoint,
     timestamp: uint64,
-    seed: seed to randomize chain
     blocks: BlockchainInterface,
     seed: bytes = b"",
     prev_block: Optional[BlockRecord],
@@ -170,7 +169,9 @@ def create_unfinished_block(
         get_plot_signature: function that returns signature corresponding to plot public key
         signage_point: signage point information (VDFs)
         prev_block: previous block (already in chain) from the signage point
+        timestamp: timestamp to add to the foliage block, if created
         blocks: dictionary from header hash to SBR of all included SBR
+        seed: seed to randomize chain
         finished_sub_slots_input: finished_sub_slots at the signage point
 
     Returns:
