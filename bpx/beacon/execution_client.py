@@ -243,7 +243,7 @@ class ExecutionClient:
         sub_slots = 0
         curr = block
         while True:
-            if curr.first_in_sub_slot():
+            if curr.first_in_sub_slot:
                 sub_slots += 1
             
             final_height = curr.height
