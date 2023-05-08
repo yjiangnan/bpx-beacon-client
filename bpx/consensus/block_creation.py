@@ -15,7 +15,7 @@ from bpx.beacon.signage_point import SignagePoint
 from bpx.types.blockchain_format.foliage import Foliage, FoliageBlockData
 from bpx.types.blockchain_format.proof_of_space import ProofOfSpace
 from bpx.types.blockchain_format.reward_chain_block import RewardChainBlock, RewardChainBlockUnfinished
-from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.types.blockchain_format.sized_bytes import bytes20, bytes32
 from bpx.types.blockchain_format.vdf import VDFInfo, VDFProof
 from bpx.types.end_of_slot_bundle import EndOfSubSlotBundle
 from bpx.types.full_block import FullBlock
@@ -36,7 +36,7 @@ def create_foliage(
     blocks: BlockchainInterface,
     total_iters_sp: uint128,
     timestamp: uint64,
-    coinbase: bytes32,
+    coinbase: bytes20,
     get_plot_signature: Callable[[bytes32, G1Element], G2Element],
     seed: bytes = b"",
 ) -> Foliage:
@@ -142,7 +142,7 @@ def create_unfinished_block(
     ip_iters: uint64,
     proof_of_space: ProofOfSpace,
     slot_cc_challenge: bytes32,
-    coinbase: bytes32,
+    coinbase: bytes20,
     get_plot_signature: Callable[[bytes32, G1Element], G2Element],
     signage_point: SignagePoint,
     timestamp: uint64,

@@ -25,7 +25,7 @@ from bpx.server.server import BpxServer
 from bpx.server.ws_connection import WSBpxConnection
 from bpx.types.block_protocol import BlockInfo
 from bpx.types.blockchain_format.proof_of_space import verify_and_get_quality_string
-from bpx.types.blockchain_format.sized_bytes import bytes32
+from bpx.types.blockchain_format.sized_bytes import bytes20, bytes32
 from bpx.types.blockchain_format.sub_epoch_summary import SubEpochSummary
 from bpx.types.end_of_slot_bundle import EndOfSubSlotBundle
 from bpx.types.full_block import FullBlock
@@ -660,7 +660,7 @@ class BeaconAPI:
                 ip_iters,
                 request.proof_of_space,
                 cc_challenge_hash,
-                bytes32.from_hexstr(self.beacon.config["coinbase"]),
+                bytes20.from_hexstr(self.beacon.config["coinbase"]),
                 get_plot_sig,
                 sp_vdfs,
                 timestamp,
