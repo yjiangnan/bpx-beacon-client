@@ -33,7 +33,7 @@ from bpx.types.unfinished_header_block import UnfinishedHeaderBlock
 from bpx.util.errors import Err, ValidationError
 from bpx.util.hash import std_hash
 from bpx.util.ints import uint8, uint32, uint64, uint128
-from bpx.consensus.block_rewards import calculate_v3_reward, calculate_v3_prefarm
+from bpx.consensus.block_rewards import create_withdrawals
 
 log = logging.getLogger(__name__)
 
@@ -688,161 +688,177 @@ def validate_unfinished_header_block(
         header_block.reward_chain_block.challenge_chain_sp_signature,
     ):
         return None, ValidationError(Err.INVALID_CC_SIGNATURE, "invalid cc sp sig")
+    
+    # 15. Check is_transaction_block
+    if genesis_block:
+        if header_block.foliage.foliage_transaction_block_hash is None:
+            return None, ValidationError(Err.INVALID_IS_TRANSACTION_BLOCK, "invalid genesis")
+    else:
+        assert prev_b is not None
+        # Finds the previous block
+        curr = prev_b
+        while not curr.is_transaction_block:
+            curr = blocks.block_record(curr.prev_hash)
 
-    # 15. Check foliage block signature by plot key
+        # The first block to have an sp > the last tx block's infusion iters, is a tx block
+        if overflow:
+            our_sp_total_iters: uint128 = uint128(total_iters - ip_iters + sp_iters - expected_sub_slot_iters)
+        else:
+            our_sp_total_iters = uint128(total_iters - ip_iters + sp_iters)
+        if (our_sp_total_iters > curr.total_iters) != (header_block.foliage.foliage_transaction_block_hash is not None):
+            return None, ValidationError(Err.INVALID_IS_TRANSACTION_BLOCK)
+        if (our_sp_total_iters > curr.total_iters) != (
+            header_block.foliage.foliage_transaction_block_signature is not None
+        ):
+            return None, ValidationError(Err.INVALID_IS_TRANSACTION_BLOCK)
+
+    # 16. Check foliage block signature by plot key
     if not AugSchemeMPL.verify(
         header_block.reward_chain_block.proof_of_space.plot_public_key,
         header_block.foliage.foliage_block_data.get_hash(),
         header_block.foliage.foliage_block_data_signature,
     ):
         return None, ValidationError(Err.INVALID_PLOT_SIGNATURE)
+    
+    # 17. Check foliage block signature by plot key
+    if header_block.foliage.foliage_transaction_block_hash is not None:
+        if not AugSchemeMPL.verify(
+            header_block.reward_chain_block.proof_of_space.plot_public_key,
+            header_block.foliage.foliage_transaction_block_hash,
+            header_block.foliage.foliage_transaction_block_signature,
+        ):
+            return None, ValidationError(Err.INVALID_PLOT_SIGNATURE)
 
-    # 16. Check unfinished reward chain block hash
+    # 18. Check unfinished reward chain block hash
     if (
         header_block.reward_chain_block.get_hash()
         != header_block.foliage.foliage_block_data.unfinished_reward_block_hash
     ):
         return None, ValidationError(Err.INVALID_URSB_HASH)
     
-    # 17a. The timestamp must not be over 15 seconds in the future
-    if header_block.foliage.foliage_block_data.timestamp > int(time.time() + constants.MAX_FUTURE_TIME):
-        return None, ValidationError(Err.TIMESTAMP_TOO_FAR_IN_FUTURE)
+    # 19. Check if foliage block is present
+    if (header_block.foliage.foliage_transaction_block_hash is not None) != (
+        header_block.foliage_transaction_block is not None
+    ):
+        return None, ValidationError(Err.INVALID_FOLIAGE_BLOCK_PRESENCE)
 
-    # 17b. The timestamp must be greater than the previous block timestamp
-    if (
-        not genesis_block
-        and header_block.foliage.foliage_block_data.timestamp <= prev_b.timestamp
+    if (header_block.foliage.foliage_transaction_block_signature is not None) != (
+        header_block.foliage_transaction_block is not None
     ):
-        return None, ValidationError(Err.TIMESTAMP_TOO_FAR_IN_PAST)
+        return None, ValidationError(Err.INVALID_FOLIAGE_BLOCK_PRESENCE)
     
-    # 18a. Genesis block cannot contain payload
-    if (
-        genesis_block
-        and header_block.execution_payload is not None
-    ):
-        return None, ValidationError(Err.PAYLOAD_IN_GENESIS_BLOCK)
+    # 20. Check if execution payload is present
+    if header_block.foliage_transaction_block is not None:
+        if (
+            genesis_block
+            and header_block.execution_payload is not None
+        ):
+            return None, ValidationError(Err.INVALID_EXECUTION_PAYLOAD_PRESENCE)
+        if (
+            not genesis_block
+            and header_block.execution_payload is None
+        ):
+            return None, ValidationError(Err.INVALID_EXECUTION_PAYLOAD_PRESENCE)
+    else:
+        if header_block.execution_payload is not None:
+            return None, ValidationError(Err.INVALID_EXECUTION_PAYLOAD_PRESENCE)
     
-    # 18b. Non-genesis block must contain payload
-    if (
-        not genesis_block
-        and header_block.execution_payload is None
-    ):
-        return None, ValidationError(Err.NO_PAYLOAD)
+    if header_block.foliage_transaction_block is not None:
+        # 21. Check foliage block hash
+        if header_block.foliage_transaction_block.get_hash() != header_block.foliage.foliage_transaction_block_hash:
+            return None, ValidationError(Err.INVALID_FOLIAGE_BLOCK_HASH)
+
+        if genesis_block:
+            # 22a. Check prev block hash for genesis
+            if header_block.foliage_transaction_block.prev_transaction_block_hash != constants.GENESIS_CHALLENGE:
+                return None, ValidationError(Err.INVALID_PREV_BLOCK_HASH)
+        else:
+            assert prev_b is not None
+            # 22b. Check prev block hash for non-genesis
+            curr_b: BlockRecord = prev_b
+            while not curr_b.is_transaction_block:
+                curr_b = blocks.block_record(curr_b.prev_hash)
+            if not header_block.foliage_transaction_block.prev_transaction_block_hash == curr_b.header_hash:
+                log.error(
+                    f"Prev BH: {header_block.foliage_transaction_block.prev_transaction_block_hash} "
+                    f"{curr_b.header_hash} curr sb: {curr_b}"
+                )
+                return None, ValidationError(Err.INVALID_PREV_BLOCK_HASH)
     
-    # 19a. Check genesis block hash match constant
-    if (
-        genesis_block
-        and header_block.foliage.foliage_block_data.execution_block_hash
-        != constants.GENESIS_EXECUTION_BLOCK_HASH
-    ):
-        return None, ValidationError(Err.INVALID_BLOCK_HASH, "genesis block hash not match to predefined constant")
+        # 23a. The timestamp must not be over 15 seconds in the future
+        if header_block.foliage_transaction_block.timestamp > int(time.time() + constants.MAX_FUTURE_TIME):
+            return None, ValidationError(Err.TIMESTAMP_TOO_FAR_IN_FUTURE)
+
+        if prev_b is not None:
+            # 23b. The timestamp must be greater than the previous block timestamp
+            prev_transaction_b = blocks.block_record(header_block.foliage_transaction_block.prev_transaction_block_hash)
+            assert prev_transaction_b.timestamp is not None
+            if header_block.foliage_transaction_block.timestamp <= prev_transaction_b.timestamp:
+                return None, ValidationError(Err.TIMESTAMP_TOO_FAR_IN_PAST)
     
-    # 19b. Check execution payload blockHash match execution_block_hash in foliage
-    if (
-        not genesis_block
-        and header_block.foliage.foliage_block_data.execution_block_hash
-        != header_block.execution_payload.blockHash
-    ):
-        return None, ValidationError(Err.INVALID_BLOCK_HASH, "foliage and payload block hash mismatch")
+        # 24a. Check genesis block hash match constant
+        if (
+            genesis_block
+            and header_block.foliage_transaction_block.execution_block_hash
+            != constants.GENESIS_EXECUTION_BLOCK_HASH
+        ):
+            return None, ValidationError(Err.INVALID_BLOCK_HASH, "genesis block hash not match to predefined constant")
     
-    if not genesis_block:
-        # 20. Check parentHash match blockHash of the previous block
-        if header_block.execution_payload.parentHash != prev_b.execution_block_hash:
+    if header_block.execution_payload is not None:
+        # 24b. Check execution payload blockHash match execution_block_hash in foliage
+        if header_block.execution_payload.blockHash != header_block.foliage_transaction_block.execution_block_hash:
+            return None, ValidationError(Err.INVALID_BLOCK_HASH, "foliage and payload block hash mismatch")
+    
+        prev_transaction_b = blocks.block_record(header_block.foliage_transaction_block.prev_transaction_block_hash)
+        
+        # 25. Check parentHash match blockHash of the previous block
+        if header_block.execution_payload.parentHash != prev_transaction_b.execution_block_hash:
             return None, ValidationError(Err.INVALID_PARENT_HASH)
     
-        # 21. Check prevRandao match previous block reward chain block hash
-        if header_block.execution_payload.prevRandao != prev_b.reward_infusion_new_challenge:
+        # 26. Check prevRandao match previous block reward chain block hash
+        if header_block.execution_payload.prevRandao != prev_transaction_b.reward_infusion_new_challenge:
             return None, ValidationError(Err.INVALID_PREV_RANDAO)
     
-        # 22. Check execution block number match beacon block number
-        if header_block.execution_payload.blockNumber != height:
+        # 27. Check execution block number is previous execution block number + 1
+        if header_block.execution_payload.blockNumber != prev_transaction_b.execution_block_height + 1:
             return None, ValidationError(Err.INVALID_BLOCK_NUMBER)
     
-        # 23. Check execution timestamp match beacon timestamp
-        if (
-            header_block.execution_payload.timestamp
-            != header_block.foliage.foliage_block_data.timestamp
-        ):
-            return None, ValidationError(Err.INVALID_TIMESTAMP)
+        # 28a. The timestamp must not be over 15 seconds in the future
+        if header_block.execution_payload.timestamp > int(time.time() + constants.MAX_FUTURE_TIME):
+            return None, ValidationError(Err.TIMESTAMP_TOO_FAR_IN_FUTURE)
+
+        # 28b. The timestamp must be greater than the previous block timestamp
+        if header_block.execution_payload.timestamp <= prev_transaction_b.execution_timestamp:
+            return None, ValidationError(Err.TIMESTAMP_TOO_FAR_IN_PAST)
             
-        # 24. Check extraData size <= 32 bytes
+        # 29. Check extraData size <= 32 bytes
         if len(header_block.execution_payload.extraData) > 32:
             return None, ValidationError(Err.INVALID_EXTRA_DATA_SIZE)
     
-        if height == 1:
-            prefarm_amount = calculate_v3_prefarm(
-                constants.V3_PREFARM_AMOUNT,
-                constants.V2_EOL_HEIGHT,
-            )
-        else:
-            prefarm_amount = 0
-            
-        if prefarm_amount > 0:
-            # 25a. If prefarm exists, the block must contain exactly 2 withdrawals
-            if len(header_block.execution_payload.withdrawals) != 2:
-                return None, ValidationError(Err.INVALID_WITHDRAWALS_COUNT, "withdrawals count != 2 in prefarm block")
+        withdrawals_ref = create_withdrawals(
+            constants,
+            prev_transaction_b,
+            blocks,
+        )
+        withdrawals_ref_count = len(withdrawals_ref)
         
-            prefarm_withdrawal = header_block.execution_payload.withdrawals[0]
-            reward_withdrawal = header_block.execution_payload.withdrawals[1]
-            reward_withdrawal_index = 1
-            
-        else:
-            # 25b. If prefarm not exists, the block must contain exactly 1 withdrawal
-            if len(header_block.execution_payload.withdrawals) != 1:
-                return None, ValidationError(Err.INVALID_WITHDRAWALS_COUNT, "withdrawals count != 1")
-                
-            prefarm_withdrawal = None
-            reward_withdrawal = header_block.execution_payload.withdrawals[0]
-            if height == 1:
-                reward_withdrawal_index = 0
-            else:
-                reward_withdrawal_index = prev_b.last_withdrawal_index + 1
-            
-        if prefarm_withdrawal is not None:
-            # 26a. Prefarm withdrawal index must be 0
-            if prefarm_withdrawal.index != 0:
-                return None, ValidationError(Err.INVALID_WITHDRAWAL_INDEX, "prefarm withdrawal index != 0")
-            
-            # 26b. Prefarm validatorIndex must be 0
-            if prefarm_withdrawal.validatorIndex != 0:
-                return None, ValidationError(Err.INVALID_WITHDRAWAL_VALIDATOR_INDEX, "prefarm validator index != 0")
-                
-            # 26c. Check prefarm address
-            if prefarm_withdrawal.address != constants.PREFARM_ADDRESS:
-                return None, ValidationError(Err.INVALID_WITHDRAWAL_ADDRESS, "invalid prefarm address")
-                
-            # 26d. Check prefarm value
-            if prefarm_withdrawal.amount != prefarm_amount:
-                return None, ValidationError(Err.INVALID_WITHDRAWAL_AMOUNT, "invalid prefarm amount")
+        # 30. Check withdrawals count
+        if len(header_block.execution_payload.withdrawals) != withdrawals_ref_count:
+             return None, ValidationError(Err.INVALID_WITHDRAWALS_COUNT)
         
-        # 27a. Check withdrawal index
-        if reward_withdrawal.index != reward_withdrawal_index:
-            return None, ValidationError(Err.INVALID_WITHDRAWAL_INDEX, "invalid withdrawal index")
-        
-        # 27b. Check withdrawal validatorIndex
-        # We use this field as a reward type
-        # 0 - prefarm
-        # 1 - standard farmer block reward
-        # Other types may be added in the future, like timelord reward
-        if reward_withdrawal.validatorIndex != 1:
-            return None, ValidationError(Err.INVALID_WITHDRAWAL_VALIDATOR_INDEX, "invalid withdrawal validator index")
-        
-        # 27c. Check block reward amount
-        if (
-            reward_withdrawal.amount != calculate_v3_reward(
-                header_block.execution_payload.blockNumber,
-                constants.V2_EOL_HEIGHT,
-            )
-        ):
-            return None, ValidationError(Err.INVALID_WITHDRAWAL_AMOUNT, "invalid block reward amount")
-        
-        # 28. Prefarm address != block reward address
-        # (because the execution client will only process one of withdrawals, ignoring the second one)
-        if (
-            prefarm_withdrawal is not None
-            and prefarm_withdrawal.address == reward_withdrawal.address
-        ):
-            return None, ValidationError(Err.WITHDRAWAL_ADDRESS_COLLISION)
+        for i in range(0, withdrawals_ref_count):
+            # 31a. Check withdrawal index
+            if header_block.execution_payload.withdrawals[i].index != withdrawals_ref[i].index:
+                return None, ValidationError(Err.INVALID_WITHDRAWAL_INDEX)
+            # 31b. Check withdrawal validatorIndex (type)
+            if header_block.execution_payload.withdrawals[i].validatorIndex != withdrawals_ref[i].validatorIndex:
+                return None, ValidationError(Err.INVALID_WITHDRAWAL_VALIDATOR_INDEX)
+            # 31c. Check withdrawal address
+            if header_block.execution_payload.withdrawals[i].address != withdrawals_ref[i].address:
+                return None, ValidationError(Err.INVALID_WITHDRAWAL_ADDRESS)
+            # 31d. Check withdrawal amount
+            if header_block.execution_payload.withdrawals[i].amount != withdrawals_ref[i].amount:
+                return None, ValidationError(Err.INVALID_WITHDRAWAL_AMOUNT)
     
     return required_iters, None  # Valid unfinished header block
 
@@ -1072,5 +1088,11 @@ def validate_finished_header_block(
     # 32. Check reward block hash
     if header_block.foliage.reward_block_hash != header_block.reward_chain_block.get_hash():
         return None, ValidationError(Err.INVALID_REWARD_BLOCK_HASH)
+    
+    # 33. Check reward block is_transaction_block
+    if (
+        header_block.foliage.foliage_transaction_block_hash is not None
+    ) != header_block.reward_chain_block.is_transaction_block:
+        return None, ValidationError(Err.INVALID_FOLIAGE_BLOCK_PRESENCE)
 
     return required_iters, None

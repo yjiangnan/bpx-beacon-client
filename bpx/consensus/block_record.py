@@ -71,8 +71,10 @@ class BlockRecord(Streamable):
     # Transaction block (present iff is_transaction_block)
     timestamp: Optional[uint64]
     prev_transaction_block_hash: Optional[bytes32]  # Header hash of the previous transaction block
+    execution_block_height: Optional[uint64]
     execution_block_hash: Optional[bytes32]
     last_withdrawal_index: Optional[uint64]
+    execution_timestamp: Optional[uint64]
 
     # Slot (present iff this is the first SB in sub slot)
     finished_challenge_slot_hashes: Optional[List[bytes32]]
