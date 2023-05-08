@@ -1669,8 +1669,7 @@ class Beacon:
         try:
             await self.add_block(block, raise_on_disconnected=True)
         except Exception as e:
-            tb = traceback.format_exc()
-            self.log.warning(f"Consensus error validating block: {e}{tb}")
+            self.log.warning(f"Consensus error validating block: {e}")
             if timelord_peer is not None:
                 # Only sends to the timelord who sent us this VDF, to reset them to the correct peak
                 await self.send_peak_to_timelords(peer=timelord_peer)
