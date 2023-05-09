@@ -241,7 +241,7 @@ class Beacon:
         self.state_changed_callback = callback
 
     async def _start(self) -> None:
-        if not Web3.is_address(self.get_coinbase()):
+        if not Web3.is_address(self.config["coinbase"]):
             raise ValueError("Coinbase is not a valid address, please check your config file")
         self.execution_client = ExecutionClient(self)
         
