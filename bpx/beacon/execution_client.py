@@ -126,7 +126,7 @@ class ExecutionClient:
             status = await self._new_payload(payload)
             if status != "SYNCING":
                 return status
-            await self._replay_sync(payload.prevHash)
+            await self._replay_sync(payload.parentHash)
             return await self._new_payload(payload)
     
     
