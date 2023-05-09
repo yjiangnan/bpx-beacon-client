@@ -177,6 +177,9 @@ def create_unfinished_block(
     Returns:
 
     """
+    if coinbase == bytes20.fromhex("0000000000000000000000000000000000000000"):
+        raise RuntimeError("Coinbase not set! Farming not possible!")
+    
     if finished_sub_slots_input is None:
         finished_sub_slots: List[EndOfSubSlotBundle] = []
     else:
