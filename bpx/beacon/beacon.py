@@ -1261,8 +1261,7 @@ class Beacon:
             if status == "ACCEPTED":
                 log.warning(f"Execution chain reorg at height {block.height}!")
         except Exception as e:
-            tb = traceback.format_exc()
-            self.log.error(f"Exception in fork choice update: {e}{tb}")
+            self.log.error(f"Exception in fork choice update: {e}")
         
         if synced:
             await self.send_peak_to_timelords(block)
