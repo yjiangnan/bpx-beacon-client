@@ -18,7 +18,7 @@ network_overrides: &network_overrides
       GENESIS_CHALLENGE: 03515416e1e82ef436bf8894e895ff65610866ba5eeec22d4c625fd433225ac6
       GENESIS_EXECUTION_BLOCK_HASH: 8c4015fcc0c3b05492e613a60c1c45d578ae5ff9fdbde9cc17986d235b31f7d4
       V2_EOL_HEIGHT: 0
-      BRIDGE_ADDRESS: 2693c649ac9aa03b4b447d9afba931ed45c7faed
+      BRIDGE_ADDRESS: a88c06452724fd9e0dd15afe664463413d585ef8
   config:
     mainnet:
       default_beacon_port: 6201
