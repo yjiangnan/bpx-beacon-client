@@ -114,7 +114,7 @@ class ExecutionClient:
             status = await self._forkchoice_update(curr, synced)
             if status != "SYNCING":
                 return status
-            await self._replay_sync(curr.height)
+            await self._replay_sync(curr.execution_block_hash)
             return await self._forkchoice_update(curr, synced)
     
     
@@ -126,7 +126,7 @@ class ExecutionClient:
             status = await self._new_payload(payload)
             if status != "SYNCING":
                 return status
-            await self._replay_sync(payload.blockNumber - 1)
+            await self._replay_sync(payload.prevHash)
             return await self._new_payload(payload)
     
     
@@ -345,21 +345,43 @@ class ExecutionClient:
     
     async def _replay_sync(
         self,
-        to_height: uint64,
+        to_hash: bytes32,
     ) -> None:
-        from_height = self.w3.eth.get_block('latest')['number'] + 1
-        log.info(f"Starting replay sync from block {from_height} to block {to_height}")
+        log.info(f"Starting replay sync to hash {to_hash}")
         
-        for i in range(from_height, to_height+1):
-            block = await self.beacon.blockchain.get_full_block(
-                self.beacon.blockchain.height_to_hash(i)
-            )
+        latest_hash = bytes32.from_hexstr(
+            self.w3.eth.get_block('latest')['hash']
+        )
+        log.info(f"Latest known hash is {latest_hash}")
+        
+        curr = self.beacon.blockchain.get_peak()
+        assert curr is not None
+        while not curr.is_transaction_block:
+            curr = self.beacon.blockchain.block_record(curr.prev_hash)
+        prev: Optional[BlockRecord] = None
+        while curr.execution_block_hash != latest_hash:
+            prev = curr
+            curr = self.beacon.blockchain.block_record(curr.prev_transaction_block_hash)
+        assert prev is not None
+        
+        record = prev
+        h = record.height
+        log.info(f"Replay sync from height = {h}, hash = {record.execution_block_hash}") 
+        
+        while True:
+            if record.is_transaction_block:
+                log.info(f"Replaying block: height={record.height}, hash={record.execution_block_hash}")
+                
+                block = await self.beacon.blockchain.get_full_block(record.header_hash)
+                status = await self._new_payload(block.execution_payload)
+                if status != "VALID":
+                    raise RuntimeError(f"Status {status} during replay block {record.height}")
+                
+                if record.execution_block_hash == to_hash:
+                    break
             
-            log.info(f"Replaying block: height={block.height}, hash={block.foliage.foliage_block_data.execution_block_hash}")
-            
-            status = await self._new_payload(block.execution_payload)
-            if status != "VALID":
-                raise RuntimeError(f"Status {status} during replay block {block.height}")
+            h += 1
+            record = self.beacon.blockchain.height_to_block_record(h)
         
         log.info("Replay sync completed")
     
