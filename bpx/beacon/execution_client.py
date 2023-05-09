@@ -349,9 +349,7 @@ class ExecutionClient:
     ) -> None:
         log.info(f"Starting replay sync to hash {to_hash}")
         
-        latest_hash = bytes32.from_hexstr(
-            self.w3.eth.get_block('latest')['hash']
-        )
+        latest_hash = bytes32(self.w3.eth.get_block('latest')['hash'])
         log.info(f"Latest known hash is {latest_hash}")
         
         curr = self.beacon.blockchain.get_peak()
