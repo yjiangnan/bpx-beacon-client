@@ -1260,8 +1260,6 @@ class Beacon:
                 record,
                 synced,
             )
-            if status == "ACCEPTED":
-                log.warning(f"Execution chain reorg at height {block.height}!")
         except Exception as e:
             self.log.error(f"Exception in fork choice update: {e}")
         
