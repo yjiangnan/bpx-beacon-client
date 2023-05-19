@@ -73,6 +73,7 @@ class Err(Enum):
     
     EXECUTION_INVALID_PAYLOAD = 53
     EXECUTION_SYNCING = 54
+    EXECUTION_ACCEPTED = 55
 
 
 class ValidationError(Exception):

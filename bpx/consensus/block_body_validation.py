@@ -48,7 +48,7 @@ async def validate_block_body(
     elif status == "SYNCING":
         return Err.EXECUTION_SYNCING
     elif status == "ACCEPTED":
-        log.warning(f"Execution chain reorg at height {block.height}!")
+        return Err.EXECUTION_ACCEPTED
     elif status != "VALID":
         return Err.UNKNOWN
     
