@@ -30,24 +30,24 @@ async def get_blockchain_state(rpc_port: Optional[int]) -> Optional[Dict[str, An
 
 async def get_average_block_time(rpc_port: Optional[int]) -> float:
     client, _, _ = node_config_fp
-        if client is not None:
-            blocks_to_compare = 500
-            blockchain_state = await client.get_blockchain_state()
-            curr: Optional[BlockRecord] = blockchain_state["peak"]
-            if curr is None or curr.height < (blocks_to_compare + 100):
-                return SECONDS_PER_BLOCK
-            while curr is not None and curr.height > 0 and not curr.is_transaction_block:
-                curr = await client.get_block_record(curr.prev_hash)
-            if curr is None or curr.timestamp is None or curr.height is None:
-                # stupid mypy
-                return SECONDS_PER_BLOCK
-            past_curr = await client.get_block_record_by_height(curr.height - blocks_to_compare)
-            while past_curr is not None and past_curr.height > 0 and not past_curr.is_transaction_block:
-                past_curr = await client.get_block_record(past_curr.prev_hash)
-            if past_curr is None or past_curr.timestamp is None or past_curr.height is None:
-                # stupid mypy
-                return SECONDS_PER_BLOCK
-            return (curr.timestamp - past_curr.timestamp) / (curr.height - past_curr.height)
+    if client is not None:
+        blocks_to_compare = 500
+        blockchain_state = await client.get_blockchain_state()
+        curr: Optional[BlockRecord] = blockchain_state["peak"]
+        if curr is None or curr.height < (blocks_to_compare + 100):
+            return SECONDS_PER_BLOCK
+        while curr is not None and curr.height > 0 and not curr.is_transaction_block:
+            curr = await client.get_block_record(curr.prev_hash)
+        if curr is None or curr.timestamp is None or curr.height is None:
+            # stupid mypy
+            return SECONDS_PER_BLOCK
+        past_curr = await client.get_block_record_by_height(curr.height - blocks_to_compare)
+        while past_curr is not None and past_curr.height > 0 and not past_curr.is_transaction_block:
+            past_curr = await client.get_block_record(past_curr.prev_hash)
+        if past_curr is None or past_curr.timestamp is None or past_curr.height is None:
+            # stupid mypy
+            return SECONDS_PER_BLOCK
+        return (curr.timestamp - past_curr.timestamp) / (curr.height - past_curr.height)
     return SECONDS_PER_BLOCK
 
 
