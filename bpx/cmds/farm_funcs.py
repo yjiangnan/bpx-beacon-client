@@ -29,7 +29,7 @@ async def get_blockchain_state(rpc_port: Optional[int]) -> Optional[Dict[str, An
 
 
 async def get_average_block_time(rpc_port: Optional[int]) -> float:
-    async with get_any_service_client(FullNodeRpcClient, rpc_port) as node_config_fp:
+    async with get_any_service_client(BeaconRpcClient, rpc_port) as node_config_fp:
         client, _, _ = node_config_fp
         if client is not None:
             blocks_to_compare = 500
