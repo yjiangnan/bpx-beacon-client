@@ -105,7 +105,7 @@ class ExecutionClient:
     ) -> Optional[str]:
         curr: BlockRecord = block
         while not curr.is_transaction_block:
-            curr = self.beacon.blockchain.block_record(curr.prev_hash)
+            curr = await self.beacon.blockchain.get_block_record_from_db(curr.prev_hash)
         
         if curr.header_hash == self.peak_txb_hash:
             return None
@@ -257,7 +257,7 @@ class ExecutionClient:
                 final_hash = BLOCK_HASH_NULL
                 break
             
-            curr = self.beacon.blockchain.get_block_record_from_db(curr.prev_transaction_block_hash)
+            curr = await self.beacon.blockchain.get_block_record_from_db(curr.prev_transaction_block_hash)
         log.info(f" |- New final height: {final_height}, hash: {final_hash}")
         
         forkchoice_state = {
@@ -353,11 +353,11 @@ class ExecutionClient:
         curr = self.beacon.blockchain.get_peak()
         assert curr is not None
         while not curr.is_transaction_block:
-            curr = self.beacon.blockchain.get_block_record_from_db(curr.prev_hash)
+            curr = await self.beacon.blockchain.get_block_record_from_db(curr.prev_hash)
         prev: Optional[BlockRecord] = None
         while curr.execution_block_hash != latest_hash:
             prev = curr
-            curr = self.beacon.blockchain.get_block_record_from_db(curr.prev_transaction_block_hash)
+            curr = await self.beacon.blockchain.get_block_record_from_db(curr.prev_transaction_block_hash)
         assert prev is not None
         
         record = prev
@@ -377,7 +377,7 @@ class ExecutionClient:
                     break
             
             h += 1
-            record = self.beacon.blockchain.get_block_record_from_db(
+            record = await self.beacon.blockchain.get_block_record_from_db(
                 self.beacon.blockchain.height_to_hash(h)
             )
         
