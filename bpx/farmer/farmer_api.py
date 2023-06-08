@@ -268,6 +268,7 @@ class FarmerAPI:
             new_signage_point.sub_slot_iters,
             new_signage_point.signage_point_index,
             new_signage_point.challenge_chain_sp,
+            []
         )
 
         msg = make_msg(ProtocolMessageTypes.new_signage_point_harvester, message)
