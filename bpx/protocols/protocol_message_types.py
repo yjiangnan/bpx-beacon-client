@@ -8,13 +8,13 @@ class ProtocolMessageTypes(Enum):
     handshake = 1
 
     # Harvester protocol (harvester <-> farmer)
-    harvester_handshake = 2
-    new_proof_of_space = 3
-    request_signatures = 4
-    respond_signatures = 5
-    new_signage_point_harvester = 6
-    request_plots = 7
-    respond_plots = 8
+    harvester_handshake = 3
+    new_proof_of_space = 5
+    request_signatures = 6
+    respond_signatures = 7
+    new_signage_point_harvester = 66
+    request_plots = 67
+    respond_plots = 68
     plot_sync_start = 9
     plot_sync_loaded = 10
     plot_sync_removed = 11
