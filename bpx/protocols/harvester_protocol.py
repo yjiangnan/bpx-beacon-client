@@ -31,7 +31,7 @@ class NewSignagePointHarvester(Streamable):
     sub_slot_iters: uint64
     signage_point_index: uint8
     sp_hash: bytes32
-
+    pool_difficulties: List[uint8]
 
 @streamable
 @dataclass(frozen=True)
