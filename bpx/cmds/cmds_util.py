@@ -71,11 +71,12 @@ async def get_any_service_client(
         raise ValueError(f"Invalid client type requested: {client_type.__name__}")
     # load variables from config file
     config = load_config(root_path, "config.yaml")
-    self_hostname = config["self_hostname"]
+    if f"{node_type}_peer" in config['farmer']:  hostname = config['farmer'][f"{node_type}_peer"]['host']
+    else: hostname = '127.0.0.1'
     if rpc_port is None:
         rpc_port = config[node_type]["rpc_port"]
     # select node client type based on string
-    node_client = await client_type.create(self_hostname, uint16(rpc_port), root_path, config)
+    node_client = await client_type.create(hostname, uint16(rpc_port), root_path, config)
     try:
         # check if we can connect to node, and if we can then validate
         # fingerprint access, otherwise return fingerprint and shutdown client
