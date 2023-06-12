@@ -251,7 +251,7 @@ def bpx_init(
     db_path = path_from_root(root_path, db_path_replaced)
     db_path.parent.mkdir(parents=True, exist_ok=True)
     try:
-        # create new v2 db file
+        # create new v1 db file
         with sqlite3.connect(db_path) as connection:
             set_db_version(connection, 1)
     except sqlite3.OperationalError:
