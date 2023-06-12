@@ -24,12 +24,12 @@ def db_validate_func(
         db_path_replaced: str = db_pattern.replace("CHALLENGE", selected_network)
         in_db_path = path_from_root(root_path, db_path_replaced)
 
-    validate_v2(in_db_path, validate_blocks=validate_blocks)
+    validate_v1(in_db_path, validate_blocks=validate_blocks)
 
     print(f"\n\nDATABASE IS VALID: {in_db_path}\n")
 
 
-def validate_v2(in_path: Path, *, validate_blocks: bool) -> None:
+def validate_v1(in_path: Path, *, validate_blocks: bool) -> None:
     import sqlite3
     from contextlib import closing
 
@@ -47,8 +47,8 @@ def validate_v2(in_path: Path, *, validate_blocks: bool) -> None:
                 row = cursor.fetchone()
                 if row is None or row == []:
                     raise RuntimeError("Database is missing version field")
-                if row[0] != 2:
-                    raise RuntimeError(f"Database has the wrong version ({row[0]} expected 2)")
+                if row[0] != 1:
+                    raise RuntimeError(f"Database has the wrong version ({row[0]} expected 1)")
         except sqlite3.OperationalError:
             raise RuntimeError("Database is missing version table")
 
