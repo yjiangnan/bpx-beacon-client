@@ -147,6 +147,11 @@ class Beacon:
         db_path_replaced: str = config["database_path"].replace("CHALLENGE", config["selected_network"])
         self.db_path = path_from_root(root_path, db_path_replaced)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # TODO: To be removed in the future
+        db_path_old_replaced: str = "db/blockchain_v2_CHALLENGE.sqlite".replace("CHALLENGE", config["selected_network"])
+        db_path_old = path_from_root(root_path, db_path_old_replaced)
+        db_path_old.replace(self.db_path)
 
         self._sync_task = None
         self._compact_vdf_sem = None

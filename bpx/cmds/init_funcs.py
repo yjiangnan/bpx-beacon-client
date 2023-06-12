@@ -250,6 +250,12 @@ def bpx_init(
     db_path_replaced = config["database_path"].replace("CHALLENGE", config["selected_network"])
     db_path = path_from_root(root_path, db_path_replaced)
     db_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    # TODO: To be removed in the future
+    db_path_old_replaced: str = "db/blockchain_v2_CHALLENGE.sqlite".replace("CHALLENGE", config["selected_network"])
+    db_path_old = path_from_root(root_path, db_path_old_replaced)
+    db_path_old.replace(db_path)
+    
     try:
         # create new v1 db file
         with sqlite3.connect(db_path) as connection:
