@@ -209,9 +209,7 @@ class Farmer:
     async def plot_sync_callback(self, peer_id: bytes32, delta: Optional[Delta]) -> None:
         log.debug(f"plot_sync_callback: peer_id {peer_id}, delta {delta}")
         receiver: Receiver = self.plot_sync_receivers[peer_id]
-        harvester_updated: bool = delta is not None and not delta.empty()
-        if receiver.initial_sync() or harvester_updated:
-            self.state_changed("harvester_update", receiver.to_dict(True))
+        self.state_changed("harvester_update", receiver.to_dict(True))
 
     def get_public_keys(self) -> List[G1Element]:
         return [child_sk.get_g1() for child_sk in self._private_keys]
