@@ -143,6 +143,12 @@ class Beacon:
         self.multiprocessing_context = None
 
         self._ui_tasks = set()
+        
+        # TODO: To be removed in the future
+        if config["database_path"] == "db/blockchain_v2_CHALLENGE.sqlite":
+            config["database_path"] = "db/blockchain_v1_CHALLENGE.sqlite"
+            save_config(root_path, "config.yaml", config)
+        #
 
         db_path_replaced: str = config["database_path"].replace("CHALLENGE", config["selected_network"])
         self.db_path = path_from_root(root_path, db_path_replaced)
@@ -152,6 +158,7 @@ class Beacon:
         db_path_old_replaced: str = "db/blockchain_v2_CHALLENGE.sqlite".replace("CHALLENGE", config["selected_network"])
         db_path_old = path_from_root(root_path, db_path_old_replaced)
         db_path_old.replace(self.db_path)
+        #
 
         self._sync_task = None
         self._compact_vdf_sem = None
