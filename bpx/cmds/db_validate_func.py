@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from bpx.consensus.block_record import BlockRecord
-from bpx.consensus.default_constants import DEFAULT_CONSTANTS
 from bpx.types.blockchain_format.sized_bytes import bytes32
 from bpx.types.full_block import FullBlock
 from bpx.util.config import load_config
@@ -171,14 +170,6 @@ def validate_v1(in_path: Path, *, validate_blocks: bool) -> None:
 
         if current_height != 0:
             raise RuntimeError(f"Database is missing blocks below height {current_height}")
-
-        # make sure the prev_hash pointer of block height 0 is the genesis
-        # challenge
-        if next_hash != DEFAULT_CONSTANTS.GENESIS_CHALLENGE:
-            raise RuntimeError(
-                f"Blockchain has invalid genesis challenge {next_hash}, expected "
-                f"{DEFAULT_CONSTANTS.GENESIS_CHALLENGE.hex()}"
-            )
 
         if num_orphans > 0:
             print(f"{num_orphans} orphaned blocks")
