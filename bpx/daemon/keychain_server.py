@@ -12,6 +12,7 @@ from bpx.util.errors import KeychainException, KeychainFingerprintNotFound
 from bpx.util.ints import uint32
 from bpx.util.keychain import Keychain, KeyData, generate_mnemonic
 from bpx.util.streamable import Streamable, streamable
+from bpx.util.default_root import DEFAULT_ROOT_PATH
 
 # Commands that are handled by the KeychainServer
 keychain_commands = [
@@ -184,6 +185,8 @@ class KeychainServer:
                 "success": False,
                 "error": str(e),
             }
+        
+        check_keys(DEFAULT_ROOT_PATH)
 
         return {"success": True, "fingerprint": sk.get_g1().get_fingerprint()}
 

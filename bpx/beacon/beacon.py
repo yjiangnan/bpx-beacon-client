@@ -157,7 +157,10 @@ class Beacon:
         # TODO: To be removed in the future
         db_path_old_replaced: str = "db/blockchain_v2_CHALLENGE.sqlite".replace("CHALLENGE", config["selected_network"])
         db_path_old = path_from_root(root_path, db_path_old_replaced)
-        db_path_old.replace(self.db_path)
+        try:
+            db_path_old.replace(self.db_path)
+        except FileNotFoundError:
+            pass
         #
 
         self._sync_task = None
