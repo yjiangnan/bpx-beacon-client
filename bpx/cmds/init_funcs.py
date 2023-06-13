@@ -249,8 +249,9 @@ def bpx_init(
     config = load_config(root_path, "config.yaml")["beacon"]
     # TODO: To be removed in the future
     if config["database_path"] == "db/blockchain_v2_CHALLENGE.sqlite":
-        config["database_path"] = "db/blockchain_v1_CHALLENGE.sqlite"
-        save_config(root_path, "config.yaml", config)
+        with lock_and_load_config(root_path, "config.yaml") as config_full:
+            config_full["beacon"]["database_path"] = "db/blockchain_v1_CHALLENGE.sqlite"
+            save_config(root_path, "config.yaml", config_full)
     #
     db_path_replaced = config["database_path"].replace("CHALLENGE", config["selected_network"])
     db_path = path_from_root(root_path, db_path_replaced)

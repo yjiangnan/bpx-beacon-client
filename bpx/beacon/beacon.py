@@ -146,8 +146,9 @@ class Beacon:
         
         # TODO: To be removed in the future
         if config["database_path"] == "db/blockchain_v2_CHALLENGE.sqlite":
-            config["database_path"] = "db/blockchain_v1_CHALLENGE.sqlite"
-            save_config(root_path, "config.yaml", config)
+            with lock_and_load_config(root_path, "config.yaml") as config_full:
+                config_full["beacon"]["database_path"] = "db/blockchain_v1_CHALLENGE.sqlite"
+                save_config(root_path, "config.yaml", config)
         #
 
         db_path_replaced: str = config["database_path"].replace("CHALLENGE", config["selected_network"])
