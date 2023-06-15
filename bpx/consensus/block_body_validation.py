@@ -43,13 +43,7 @@ async def validate_block_body(
     
     status = await execution_client.new_payload(block.execution_payload)
 
-    if status == "INVALID":
+    if status == "INVALID" or status == "INVALID_BLOCK_HASH":
         return Err.EXECUTION_INVALID_PAYLOAD
-    elif status == "SYNCING":
-        return Err.EXECUTION_SYNCING
-    elif status == "ACCEPTED":
-        return Err.EXECUTION_ACCEPTED
-    elif status != "VALID":
-        return Err.UNKNOWN
     
     return None
