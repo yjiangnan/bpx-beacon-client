@@ -81,7 +81,7 @@ class ExecutionClient:
     
     
     async def exchange_transition_configuration_task(self):
-        log.info("Starting exchange transition configuration loop")
+        log.debug("Starting exchange transition configuration loop")
 
         while True:
             try:
@@ -91,212 +91,50 @@ class ExecutionClient:
                     "terminalBlockHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
                     "terminalBlockNumber": "0x0"
                 })
+                log.info("Exchanged transition configuration with execution client")
             except Exception as e:
                 log.error(f"Exception in exchange transition configuration: {e}")
+                
             await asyncio.sleep(60)
     
     
     async def new_peak(
         self,
-        block: BlockRecord,
+        record: BlockRecord,
         synced: bool,
     ) -> Optional[str]:
-        curr: BlockRecord = block
+        curr: BlockRecord = record
         while not curr.is_transaction_block:
             curr = await self.beacon.blockchain.get_block_record_from_db(curr.prev_hash)
         
+        # Peak updated to non-transactional block and latest transactional block is already processed
+        # There is nothing to do
         if curr.header_hash == self.peak_txb_hash:
+            log.debug(f"Ignoring new peak: Bheight={curr.height}, Bhash={curr.header_hash}")
             return None
+        log.debug(f"Processing new peak: Bheight={curr.height}, Bhash={curr.header_hash}")
+        
+        # This is the initial new peak loaded from database after starting the client
+        # We need to post a payload to execution client first
+        # This is normally done during block validation
+        if self.peak_txb_hash == None:
+            full_block = await self.beacon.blockchain.get_full_block(curr.header_hash)
+            if full_block.execution_payload is not None:
+                status = await self.new_payload(full_block.execution_payload)
+                if status == "INVALID" or status == "INVALID_BLOCK_HASH":
+                    raise RuntimeError(f"Payload status {status}")
+            else:
+                log.debug("Initial peak block without execution payload")
                 
-        async with self.sync_lock:
-            status = await self._forkchoice_update(curr, synced)
-            if status != "SYNCING":
-                return status
-            await self._replay_sync(curr.execution_block_hash)
-            return await self._forkchoice_update(curr, synced)
+        status = await self._forkchoice_update(curr, synced)
+        if status == "INVALID":
+            raise RuntimeError(f"Fork choice status {status}")
     
     
     async def new_payload(
         self,
         payload: ExecutionPayloadV2,
     ) -> str:
-        async with self.sync_lock:
-            status = await self._new_payload(payload)
-            if status != "SYNCING":
-                return status
-            await self._replay_sync(payload.parentHash)
-            return await self._new_payload(payload)
-    
-    
-    def get_payload(
-        self,
-        prev_block: BlockRecord
-    ) -> ExecutionPayloadV2:
-        log.info(f"Get payload for: height={prev_block.height}, hash={prev_block.header_hash}")
-        
-        self._ensure_web3_init()
-        
-        if self.peak_txb_hash != prev_block.header_hash:
-            raise RuntimeError(f"Payload build on ({self.peak_txb_hash}) but requested ({prev_block.header_hash})")
-        
-        if self.payload_id is None:
-            raise RuntimeError("Execution payload not built")
-        
-        raw_payload = self.w3.engine.get_payload_v2(self.payload_id).executionPayload
-        
-        transactions: List[bytes] = []
-        for raw_transaction in raw_payload.transactions:
-            transactions.append(hexstr_to_bytes(raw_transaction))
-        
-        withdrawals: List[WithdrawalV1] = []
-        for raw_withdrawal in raw_payload.withdrawals:
-            withdrawals.append(
-                WithdrawalV1(
-                    uint64(Web3.to_int(HexBytes(raw_withdrawal.index))),
-                    uint64(Web3.to_int(HexBytes(raw_withdrawal.validatorIndex))),
-                    bytes20.from_hexstr(raw_withdrawal.address),
-                    uint64(Web3.to_int(HexBytes(raw_withdrawal.amount))),
-                )
-            )
-        
-        return ExecutionPayloadV2(
-            bytes32.from_hexstr(raw_payload.parentHash),
-            bytes20.from_hexstr(raw_payload.feeRecipient),
-            bytes32.from_hexstr(raw_payload.stateRoot),
-            bytes32.from_hexstr(raw_payload.receiptsRoot),
-            bytes256.from_hexstr(raw_payload.logsBloom),
-            bytes32.from_hexstr(raw_payload.prevRandao),
-            uint64(Web3.to_int(HexBytes(raw_payload.blockNumber))),
-            uint64(Web3.to_int(HexBytes(raw_payload.gasLimit))),
-            uint64(Web3.to_int(HexBytes(raw_payload.gasUsed))),
-            uint64(Web3.to_int(HexBytes(raw_payload.timestamp))),
-            hexstr_to_bytes(raw_payload.extraData),
-            uint256(Web3.to_int(HexBytes(raw_payload.baseFeePerGas))),
-            bytes32.from_hexstr(raw_payload.blockHash),
-            transactions,
-            withdrawals,
-        )
-
-
-    def _ensure_web3_init(self) -> None:
-        if self.w3 is not None:
-            return None
-        
-        ec_config = self.beacon.config.get("execution_client")
-        selected_network = self.beacon.config.get("selected_network")
-        if selected_network == "mainnet":
-            secret_path = path_from_root(
-                self.beacon.root_path,
-                "../execution/geth/jwtsecret"
-            )
-        else:
-            secret_path = path_from_root(
-                self.beacon.root_path,
-                "../execution/" + selected_network + "/geth/jwtsecret"
-            )
-        
-        log.info(f"Initializing execution client connection: {ec_config['host']}:{ec_config['port']} using JWT secret {secret_path}")
-
-        try:
-            secret_file = open(secret_path, 'r')
-            secret = secret_file.readline()
-            secret_file.close()
-        except Exception as e:
-            log.error(f"Exception in Web3 init: {e}")
-            raise RuntimeError("Cannot open JWT secret file. Execution client is not running or needs more time to start")
-        
-        self.w3 = Web3(
-            HTTPAuthProvider(
-                hexstr_to_bytes(secret),
-                "http://" + ec_config["host"] + ":" + str(ec_config["port"]),
-            )
-        )
-
-        self.w3.attach_modules({
-            "engine": EngineModule
-        })
-
-        log.info("Initialized execution client connection")
-    
-    
-    async def _forkchoice_update(
-        self,
-        block: BlockRecord,
-        synced: bool,
-    ) -> None:
-        log.info("Fork choice update")
-        
-        self.payload_id = None
-        
-        self._ensure_web3_init()
-        
-        head_hash = block.execution_block_hash
-        log.info(f" |- New head height: {block.height}, hash: {head_hash}")
-        
-        safe_hash = head_hash
-        log.info(f" |- New safe height: {block.height}, hash: {safe_hash}")
-        
-        final_height: Optional[uint64]
-        final_hash: bytes32
-        sub_slots = 0
-        curr = block
-        while True:
-            if curr.first_in_sub_slot:
-                sub_slots += 1
-            
-            final_height = curr.height
-            final_hash = curr.execution_block_hash
-            
-            if sub_slots == 2:
-                break
-            
-            if curr.prev_transaction_block_hash == self.beacon.constants.GENESIS_CHALLENGE:
-                final_height = None
-                final_hash = BLOCK_HASH_NULL
-                break
-            
-            curr = await self.beacon.blockchain.get_block_record_from_db(curr.prev_transaction_block_hash)
-        log.info(f" |- New final height: {final_height}, hash: {final_hash}")
-        
-        forkchoice_state = {
-            "headBlockHash": "0x" + head_hash.hex(),
-            "safeBlockHash": "0x" + safe_hash.hex(),
-            "finalizedBlockHash": "0x" + final_hash.hex(),
-        }
-        payload_attributes = None
-        
-        if synced:
-            coinbase = self.beacon.config["coinbase"]
-            if bytes20.from_hexstr(coinbase) == COINBASE_NULL:
-                log.warning("Coinbase not set! Farming not possible!")
-            else:
-                payload_attributes = self._create_payload_attributes(block, coinbase)
-        
-        result = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
-        
-        self.peak_txb_hash = block.header_hash
-        
-        if result.payloadStatus.validationError is not None:
-            log.error(f"Fork choice update status: {result.payloadStatus.status}, "
-                       "validation error: {result.payloadStatus.validationError}")
-        else:
-            log.info(f"Fork choice update status: {result.payloadStatus.status}")
-        
-        if result.payloadId is not None:
-            self.payload_id = result.payloadId
-            log.info(f"Payload building started, id: {self.payload_id}")
-        else:
-            log.warning(f"Payload building not started")
-        
-        return result.payloadStatus.status
-    
-    
-    async def _new_payload(
-        self,
-        payload: ExecutionPayloadV2,
-    ) -> str:
-        log.info(f"New payload: height={payload.blockNumber}, hash={payload.blockHash}")
-        
         self._ensure_web3_init()
         
         raw_transactions = []
@@ -332,11 +170,195 @@ class ExecutionClient:
         
         result = self.w3.engine.new_payload_v2(raw_payload)
         if result.validationError is not None:
-            log.error(f"New payload status: {result.status}, validation error: {result.validationError}")
+            log.error(
+                f"Payload validation error: Eheight={payload.blockNumber}, Ehash={payload.blockHash}, "
+                f"status={result.status}, error={result.validationError}"
+            )
         else:
-            log.info(f"New payload status: {result.status}")
+            log.info(
+                f"Processed execution payload: Eheight={payload.blockNumber}, Ehash={payload.blockHash}, "
+                f"status={result.status}"
+            )
         
         return result.status
+    
+    
+    def get_payload(
+        self,
+        prev_block: BlockRecord
+    ) -> ExecutionPayloadV2:
+        log.debug(f"Fetching execution payload for block: Bheight={prev_block.height}, Bhash={prev_block.header_hash}")
+        
+        self._ensure_web3_init()
+        
+        if self.peak_txb_hash != prev_block.header_hash:
+            raise RuntimeError(f"Payload build on Bhash {self.peak_txb_hash} but requested {prev_block.header_hash}")
+        
+        if self.payload_id is None:
+            raise RuntimeError("Execution payload was not built")
+        
+        raw_payload = self.w3.engine.get_payload_v2(self.payload_id).executionPayload
+        
+        transactions: List[bytes] = []
+        for raw_transaction in raw_payload.transactions:
+            transactions.append(hexstr_to_bytes(raw_transaction))
+        
+        withdrawals: List[WithdrawalV1] = []
+        for raw_withdrawal in raw_payload.withdrawals:
+            withdrawals.append(
+                WithdrawalV1(
+                    uint64(Web3.to_int(HexBytes(raw_withdrawal.index))),
+                    uint64(Web3.to_int(HexBytes(raw_withdrawal.validatorIndex))),
+                    bytes20.from_hexstr(raw_withdrawal.address),
+                    uint64(Web3.to_int(HexBytes(raw_withdrawal.amount))),
+                )
+            )
+        
+        payload = ExecutionPayloadV2(
+            bytes32.from_hexstr(raw_payload.parentHash),
+            bytes20.from_hexstr(raw_payload.feeRecipient),
+            bytes32.from_hexstr(raw_payload.stateRoot),
+            bytes32.from_hexstr(raw_payload.receiptsRoot),
+            bytes256.from_hexstr(raw_payload.logsBloom),
+            bytes32.from_hexstr(raw_payload.prevRandao),
+            uint64(Web3.to_int(HexBytes(raw_payload.blockNumber))),
+            uint64(Web3.to_int(HexBytes(raw_payload.gasLimit))),
+            uint64(Web3.to_int(HexBytes(raw_payload.gasUsed))),
+            uint64(Web3.to_int(HexBytes(raw_payload.timestamp))),
+            hexstr_to_bytes(raw_payload.extraData),
+            uint256(Web3.to_int(HexBytes(raw_payload.baseFeePerGas))),
+            bytes32.from_hexstr(raw_payload.blockHash),
+            transactions,
+            withdrawals,
+        )
+        
+        log.info(
+            f"Fetched execution payload: Bheight={prev_block.height}, Bhash={prev_block.header_hash}, "
+            f"payload_id={self.payload_id}, Eheight={payload.blockNumber}, Ehash={payload.blockHash}"
+        )
+        
+        return payload
+
+
+    def _ensure_web3_init(self) -> None:
+        if self.w3 is not None:
+            return None
+        
+        ec_config = self.beacon.config.get("execution_client")
+        selected_network = self.beacon.config.get("selected_network")
+        if selected_network == "mainnet":
+            secret_path = path_from_root(
+                self.beacon.root_path,
+                "../execution/geth/jwtsecret"
+            )
+        else:
+            secret_path = path_from_root(
+                self.beacon.root_path,
+                "../execution/" + selected_network + "/geth/jwtsecret"
+            )
+        
+        log.info(
+            f"Initializing execution client connection to http://{ec_config['host']}:{ec_config['port']} "
+            f"using JWT secret: {secret_path}"
+        )
+
+        try:
+            secret_file = open(secret_path, 'r')
+            secret = secret_file.readline()
+            secret_file.close()
+        except Exception as e:
+            log.error(f"Exception in Web3 init: {e}")
+            raise RuntimeError("Cannot open JWT secret file. Execution client is not running or needs more time to start.")
+        
+        self.w3 = Web3(
+            HTTPAuthProvider(
+                hexstr_to_bytes(secret),
+                "http://" + ec_config["host"] + ":" + str(ec_config["port"]),
+            )
+        )
+
+        self.w3.attach_modules({
+            "engine": EngineModule
+        })
+    
+    
+    async def _forkchoice_update(
+        self,
+        block: BlockRecord,
+        synced: bool,
+    ) -> None:
+        log.info("Fork choice update")
+        
+        self.payload_id = None
+        
+        self._ensure_web3_init()
+        
+        head_ehash = block.execution_block_hash
+        log.info(f" |- Head: Bheight={block.height}, Bhash={block.header_hash}, Ehash={head_ehash}")
+        
+        safe_ehash = head_ehash
+        log.info(f" |- Safe: Bheight={block.height}, Bhash={block.header_hash}, Ehash={safe_ehash}")
+        
+        final_bheight: Optional[uint64]
+        final_bhash: bytes32
+        final_ehash: bytes32
+        sub_slots = 0
+        curr = block
+        while True:
+            if curr.first_in_sub_slot:
+                sub_slots += 1
+            
+            final_bheight = curr.height
+            final_bhash = curr.header_hash
+            final_ehash = curr.execution_block_hash
+            
+            if sub_slots == 2:
+                break
+            
+            if curr.prev_transaction_block_hash == self.beacon.constants.GENESIS_CHALLENGE:
+                final_bheight = None
+                final_bhash = None
+                final_ehash = BLOCK_HASH_NULL
+                break
+            
+            curr = await self.beacon.blockchain.get_block_record_from_db(curr.prev_transaction_block_hash)
+        log.info(f" |- Finalized: Bheight={final_bheight}, Bhash={final_bhash}, Ehash={final_ehash}")
+        
+        forkchoice_state = {
+            "headBlockHash": "0x" + head_ehash.hex(),
+            "safeBlockHash": "0x" + safe_ehash.hex(),
+            "finalizedBlockHash": "0x" + final_ehash.hex(),
+        }
+        payload_attributes = None
+        
+        if synced:
+            coinbase = self.beacon.config["coinbase"]
+            if bytes20.from_hexstr(coinbase) == COINBASE_NULL:
+                log.warning("Coinbase is not set! Payload will not be built and farming is not possible.")
+            else:
+                payload_attributes = self._create_payload_attributes(block, coinbase)
+        
+        result = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
+        
+        self.peak_txb_hash = block.header_hash
+        
+        if result.payloadStatus.validationError is not None:
+            log.error(
+                f"Fork choice not updated: status={result.payloadStatus.status}, "
+                f"validation error: {result.payloadStatus.validationError}"
+            )
+        else:
+            log.info(
+                f"Fork choice updated: status={result.payloadStatus.status}"
+            )
+        
+        if result.payloadId is not None:
+            self.payload_id = result.payloadId
+            log.info(f"Payload building started: payload_id={self.payload_id}")
+        else:
+            log.warning("Payload building not started")
+        
+        return result.payloadStatus.status
     
     
     def _create_payload_attributes(
