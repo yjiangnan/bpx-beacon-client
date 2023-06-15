@@ -69,7 +69,6 @@ class ExecutionClient:
     w3: Web3
     peak_txb_hash: Optional[bytes32]
     payload_id: Optional[str]
-    sync_lock: asyncio.Lock
 
     def __init__(
         self,
@@ -79,7 +78,6 @@ class ExecutionClient:
         self.w3 = None
         self.peak_txb_hash = None
         self.payload_id = None
-        self.sync_lock = asyncio.Lock()
     
     
     async def exchange_transition_configuration_task(self):
@@ -339,49 +337,6 @@ class ExecutionClient:
             log.info(f"New payload status: {result.status}")
         
         return result.status
-    
-    
-    async def _replay_sync(
-        self,
-        to_hash: bytes32,
-    ) -> None:
-        log.info(f"Starting replay sync to hash {to_hash}")
-        
-        latest_hash = bytes32(self.w3.eth.get_block('latest')['hash'])
-        log.info(f"Latest known hash is {latest_hash}")
-        
-        curr = self.beacon.blockchain.get_peak()
-        assert curr is not None
-        while not curr.is_transaction_block:
-            curr = await self.beacon.blockchain.get_block_record_from_db(curr.prev_hash)
-        prev: Optional[BlockRecord] = None
-        while curr.execution_block_hash != latest_hash:
-            prev = curr
-            curr = await self.beacon.blockchain.get_block_record_from_db(curr.prev_transaction_block_hash)
-        assert prev is not None
-        
-        record = prev
-        h = record.height
-        log.info(f"Replay sync from height = {h}, hash = {record.execution_block_hash}") 
-        
-        while True:
-            if record.is_transaction_block:
-                log.info(f"Replaying block: height={record.height}, hash={record.execution_block_hash}")
-                
-                block = await self.beacon.blockchain.get_full_block(record.header_hash)
-                status = await self._new_payload(block.execution_payload)
-                if status != "VALID":
-                    raise RuntimeError(f"Status {status} during replay block {record.height}")
-                
-                if record.execution_block_hash == to_hash:
-                    break
-            
-            h += 1
-            record = await self.beacon.blockchain.get_block_record_from_db(
-                self.beacon.blockchain.height_to_hash(h)
-            )
-        
-        log.info("Replay sync completed")
     
     
     def _create_payload_attributes(
