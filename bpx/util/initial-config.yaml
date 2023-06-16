@@ -348,6 +348,7 @@ beacon:
   use_bpx_loop_policy: True
   
   coinbase: "0x0000000000000000000000000000000000000000"
+  optimistic_import: True
 
 ui:
   # Which port to use to communicate with the beacon client

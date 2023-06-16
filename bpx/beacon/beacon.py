@@ -319,8 +319,11 @@ class Beacon:
 
         if self.config.get("enable_memory_profiler", False):
             asyncio.create_task(mem_profile_task(self.root_path, "node", self.log))
-
+        
         time_taken = time.time() - start_time
+        
+        asyncio.create_task(self.execution_client.exchange_transition_configuration_task())
+        
         peak: Optional[BlockRecord] = self.blockchain.get_peak()
         if peak is None:
             self.log.info(f"Initialized with empty blockchain time taken: {int(time_taken)}s")
@@ -338,6 +341,35 @@ class Beacon:
                 full_peak, state_change_summary, None
             )
             await self.peak_post_processing_2(full_peak, None, state_change_summary, ppp_result)
+    
+            tx_peak: BlockRecord = peak
+            while not tx_peak.is_transaction_block:
+                tx_peak = await self.blockchain.get_block_record_from_db(tx_peak.prev_hash)
+            
+            if tx_peak.height != 0:
+                try:
+                    full_tx_peak = self.blockchain.get_full_block(tx_peak.header_hash)
+                    assert full_tx_peak is not None
+                    assert full_tx_peak.execution_payload is not None
+                    
+                    status = await self.execution_client.new_payload(full_tx_peak.execution_payload)
+                    if status == "INVALID" or status == "INVALID_BLOCK_HASH":
+                        raise RuntimeError(f"Payload status: {status}. Database is corrupted.")
+                    elif status != "VALID" and status != "SYNCING" and status != "ACCEPTED":
+                        raise RuntimeError("Unexpected payload status.")
+                    
+                    status = await execution_client.forkchoice_update(tx_peak)
+                    if status == "INVALID" or status == "INVALID_BLOCK_HASH":
+                        raise RuntimeError(f"Fork choice status: {status}. Database is corrupted.")
+                    elif status == "VALID":
+                        log.info("Execution chain head has been updated.")
+                    elif status == "SYNCING" or status == "ACCEPTED":
+                        log.info("Execution chain synchronization has been started.")
+                    else:
+                        raise RuntimeError("Unexpected fork choice status.")
+                except Exception as e:
+                    self.log.error(f"Exception in peak initialization: {e}")
+            
         if self.config["send_uncompact_interval"] != 0:
             sanitize_weight_proof_only = False
             if "sanitize_weight_proof_only" in self.config:
@@ -350,8 +382,9 @@ class Beacon:
                     sanitize_weight_proof_only,
                 )
             )
-        asyncio.create_task(self.execution_client.exchange_transition_configuration_task())
+        
         self.initialized = True
+        
         if self.beacon_peers is not None:
             asyncio.create_task(self.beacon_peers.start())
         
@@ -1268,18 +1301,8 @@ class Beacon:
             # Occasionally clear data in beacon client store to keep memory usage small
             self.beacon_store.clear_seen_unfinished_blocks()
             self.beacon_store.clear_old_cache_entries()
-
-        synced = self.sync_store.get_sync_mode() is False
         
-        try:
-            await self.execution_client.new_peak(
-                record,
-                synced,
-            )
-        except Exception as e:
-            self.log.error(f"Exception in fork choice update: {e}")
-        
-        if synced:
+        if self.sync_store.get_sync_mode() is False:
             await self.send_peak_to_timelords(block)
 
             # Tell beacon clients about the new peak

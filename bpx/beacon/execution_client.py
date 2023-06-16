@@ -98,39 +98,6 @@ class ExecutionClient:
             await asyncio.sleep(60)
     
     
-    async def new_peak(
-        self,
-        record: BlockRecord,
-        synced: bool,
-    ) -> Optional[str]:
-        curr: BlockRecord = record
-        while not curr.is_transaction_block:
-            curr = await self.beacon.blockchain.get_block_record_from_db(curr.prev_hash)
-        
-        # Peak updated to non-transactional block and latest transactional block is already processed
-        # There is nothing to do
-        if curr.header_hash == self.peak_txb_hash:
-            log.debug(f"Ignoring new peak: Bheight={curr.height}, Bhash={curr.header_hash}")
-            return None
-        log.debug(f"Processing new peak: Bheight={curr.height}, Bhash={curr.header_hash}")
-        
-        # This is the initial new peak loaded from database after starting the client
-        # We need to post a payload to execution client first
-        # This is normally done during block validation
-        if self.peak_txb_hash == None:
-            full_block = await self.beacon.blockchain.get_full_block(curr.header_hash)
-            if full_block.execution_payload is not None:
-                status = await self.new_payload(full_block.execution_payload)
-                if status == "INVALID" or status == "INVALID_BLOCK_HASH":
-                    raise RuntimeError(f"Payload status {status}")
-            else:
-                log.debug("Initial peak block without execution payload")
-                
-        status = await self._forkchoice_update(curr, synced)
-        if status == "INVALID":
-            raise RuntimeError(f"Fork choice status {status}")
-    
-    
     async def new_payload(
         self,
         payload: ExecutionPayloadV2,
@@ -181,6 +148,85 @@ class ExecutionClient:
             )
         
         return result.status
+    
+    
+    async def forkchoice_update(
+        self,
+        block: FullBlock,
+    ) -> None:
+        log.info("Fork choice update")
+        
+        self.payload_id = None
+        
+        self._ensure_web3_init()
+        
+        head_ehash = block.execution_block_hash
+        log.info(f" |- Head: Bheight={block.height}, Bhash={block.header_hash}, Ehash={head_ehash}")
+        
+        safe_ehash = head_ehash
+        log.info(f" |- Safe: Bheight={block.height}, Bhash={block.header_hash}, Ehash={safe_ehash}")
+        
+        final_bheight: Optional[uint64]
+        final_bhash: bytes32
+        final_ehash: bytes32
+        sub_slots = 0
+        curr = block
+        while True:
+            if curr.first_in_sub_slot:
+                sub_slots += 1
+            
+            final_bheight = curr.height
+            final_bhash = curr.header_hash
+            final_ehash = curr.execution_block_hash
+            
+            if sub_slots == 2:
+                break
+            
+            if curr.prev_transaction_block_hash == self.beacon.constants.GENESIS_CHALLENGE:
+                final_bheight = None
+                final_bhash = None
+                final_ehash = BLOCK_HASH_NULL
+                break
+            
+            curr = await self.beacon.blockchain.get_block_record_from_db(curr.prev_transaction_block_hash)
+        log.info(f" |- Finalized: Bheight={final_bheight}, Bhash={final_bhash}, Ehash={final_ehash}")
+        
+        forkchoice_state = {
+            "headBlockHash": "0x" + head_ehash.hex(),
+            "safeBlockHash": "0x" + safe_ehash.hex(),
+            "finalizedBlockHash": "0x" + final_ehash.hex(),
+        }
+        payload_attributes = None
+        
+        synced = self.beacon.sync_store.get_sync_mode() is False
+        if synced:
+            coinbase = self.beacon.config["coinbase"]
+            if bytes20.from_hexstr(coinbase) == COINBASE_NULL:
+                log.warning("Coinbase is not set! Payload will not be built and farming is not possible.")
+            else:
+                payload_attributes = self._create_payload_attributes(block, coinbase)
+        
+        result = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
+        
+        self.peak_txb_hash = block.header_hash
+        
+        if result.payloadStatus.validationError is not None:
+            log.error(
+                f"Fork choice not updated: status={result.payloadStatus.status}, "
+                f"validation error: {result.payloadStatus.validationError}"
+            )
+        else:
+            log.info(
+                f"Fork choice updated: status={result.payloadStatus.status}"
+            )
+        
+        if result.payloadId is not None:
+            self.payload_id = result.payloadId
+            log.info(f"Payload building started: payload_id={self.payload_id}")
+        elif synced:
+            log.warning("Payload building not started")
+        
+        return result.payloadStatus.status
     
     
     def get_payload(
@@ -280,85 +326,6 @@ class ExecutionClient:
         self.w3.attach_modules({
             "engine": EngineModule
         })
-    
-    
-    async def _forkchoice_update(
-        self,
-        block: BlockRecord,
-        synced: bool,
-    ) -> None:
-        log.info("Fork choice update")
-        
-        self.payload_id = None
-        
-        self._ensure_web3_init()
-        
-        head_ehash = block.execution_block_hash
-        log.info(f" |- Head: Bheight={block.height}, Bhash={block.header_hash}, Ehash={head_ehash}")
-        
-        safe_ehash = head_ehash
-        log.info(f" |- Safe: Bheight={block.height}, Bhash={block.header_hash}, Ehash={safe_ehash}")
-        
-        final_bheight: Optional[uint64]
-        final_bhash: bytes32
-        final_ehash: bytes32
-        sub_slots = 0
-        curr = block
-        while True:
-            if curr.first_in_sub_slot:
-                sub_slots += 1
-            
-            final_bheight = curr.height
-            final_bhash = curr.header_hash
-            final_ehash = curr.execution_block_hash
-            
-            if sub_slots == 2:
-                break
-            
-            if curr.prev_transaction_block_hash == self.beacon.constants.GENESIS_CHALLENGE:
-                final_bheight = None
-                final_bhash = None
-                final_ehash = BLOCK_HASH_NULL
-                break
-            
-            curr = await self.beacon.blockchain.get_block_record_from_db(curr.prev_transaction_block_hash)
-        log.info(f" |- Finalized: Bheight={final_bheight}, Bhash={final_bhash}, Ehash={final_ehash}")
-        
-        forkchoice_state = {
-            "headBlockHash": "0x" + head_ehash.hex(),
-            "safeBlockHash": "0x" + safe_ehash.hex(),
-            "finalizedBlockHash": "0x" + final_ehash.hex(),
-        }
-        payload_attributes = None
-        
-        if synced:
-            coinbase = self.beacon.config["coinbase"]
-            if bytes20.from_hexstr(coinbase) == COINBASE_NULL:
-                log.warning("Coinbase is not set! Payload will not be built and farming is not possible.")
-            else:
-                payload_attributes = self._create_payload_attributes(block, coinbase)
-        
-        result = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
-        
-        self.peak_txb_hash = block.header_hash
-        
-        if result.payloadStatus.validationError is not None:
-            log.error(
-                f"Fork choice not updated: status={result.payloadStatus.status}, "
-                f"validation error: {result.payloadStatus.validationError}"
-            )
-        else:
-            log.info(
-                f"Fork choice updated: status={result.payloadStatus.status}"
-            )
-        
-        if result.payloadId is not None:
-            self.payload_id = result.payloadId
-            log.info(f"Payload building started: payload_id={self.payload_id}")
-        else:
-            log.warning("Payload building not started")
-        
-        return result.payloadStatus.status
     
     
     def _create_payload_attributes(
