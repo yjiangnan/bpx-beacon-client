@@ -160,7 +160,7 @@ class ExecutionClient:
         
         self._ensure_web3_init()
         
-        head_ehash = block.execution_block_hash
+        head_ehash = block.foliage_transaction_block.execution_block_hash
         log.info(f" |- Head: Bheight={block.height}, Bhash={block.header_hash}, Ehash={head_ehash}")
         
         safe_ehash = head_ehash
@@ -170,7 +170,9 @@ class ExecutionClient:
         final_bhash: bytes32
         final_ehash: bytes32
         sub_slots = 0
-        curr = block
+        curr = await self.beacon.blockchain.get_block_from_db(
+            block.foliage_transaction_block.prev_transaction_block_hash
+        )
         while True:
             if curr.first_in_sub_slot:
                 sub_slots += 1
