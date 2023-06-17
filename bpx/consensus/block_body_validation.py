@@ -30,6 +30,7 @@ async def validate_block_body(
     block: Union[FullBlock, UnfinishedBlock],
     height: uint32,
     fork_point_with_peak: Optional[uint32],
+    block_record: Optional[BlockRecord],
 ) -> Optional[Err]:
     """
     This assumes the header block has been completely validated.
@@ -53,7 +54,8 @@ async def validate_block_body(
         return Err.UNKNOWN
     
     if isinstance(block, FullBlock):
-        status = await execution_client.forkchoice_update(block)
+        assert block_record is not None
+        status = await execution_client.forkchoice_update(block_record)
         if status == "INVALID" or status == "INVALID_BLOCK_HASH":
             return Err.PAYLOAD_INVALIDATED
         if status != "VALID" and status != "SYNCING" and status != "ACCEPTED":
