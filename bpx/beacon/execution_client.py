@@ -292,21 +292,20 @@ class ExecutionClient:
         if self.w3 is not None:
             return None
         
-        ec_config = self.beacon.config.get("execution_client")
+        execution_endpoint = self.beacon.config.get("execution_endpoint", "http://127.0.0.1:8551")
+        
         selected_network = self.beacon.config.get("selected_network")
         if selected_network == "mainnet":
-            secret_path = path_from_root(
-                self.beacon.root_path,
-                "../execution/geth/jwtsecret"
-            )
+            default_secret_path = "../execution/geth/jwtsecret"
         else:
-            secret_path = path_from_root(
-                self.beacon.root_path,
-                "../execution/" + selected_network + "/geth/jwtsecret"
-            )
+            default_secret_path = "../execution/" + selected_network + "/geth/jwtsecret"
+        secret_path = path_from_root(
+            self.beacon.root_path,
+            self.config["network_overrides"]["config"][network_name].get("jwt_secret", default_secret_path),
+        )
         
         log.info(
-            f"Initializing execution client connection to http://{ec_config['host']}:{ec_config['port']} "
+            f"Initializing execution client connection to {execution_endpoint} "
             f"using JWT secret: {secret_path}"
         )
 
@@ -321,7 +320,7 @@ class ExecutionClient:
         self.w3 = Web3(
             HTTPAuthProvider(
                 hexstr_to_bytes(secret),
-                "http://" + ec_config["host"] + ":" + str(ec_config["port"]),
+                execution_endpoint,
             )
         )
 
