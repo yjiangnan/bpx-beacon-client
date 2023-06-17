@@ -170,7 +170,7 @@ class ExecutionClient:
         final_bhash: bytes32
         final_ehash: bytes32
         sub_slots = 0
-        curr = await self.beacon.blockchain.get_block_from_db(
+        curr = await self.beacon.blockchain.get_block_record_from_db(
             block.foliage_transaction_block.prev_transaction_block_hash
         )
         while True:
