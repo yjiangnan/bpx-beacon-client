@@ -347,7 +347,10 @@ beacon:
     public_key:  "config/ssl/beacon/public_beacon.key"
   use_bpx_loop_policy: True
   
+  # Target address for block rewards and fees
   coinbase: "0x0000000000000000000000000000000000000000"
+  # Optimistic import allows a beacon client to import, process, and consider a beacon block for its forkchoice head,
+  # even though it has not validated its execution payload
   optimistic_import: True
 
 ui:
