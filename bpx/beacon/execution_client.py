@@ -301,7 +301,7 @@ class ExecutionClient:
             default_secret_path = "../execution/" + selected_network + "/geth/jwtsecret"
         secret_path = path_from_root(
             self.beacon.root_path,
-            self.beacon.config["network_overrides"]["config"][network_name].get("jwt_secret", default_secret_path),
+            self.beacon.config["network_overrides"]["config"][selected_network].get("jwt_secret", default_secret_path),
         )
         
         log.info(
