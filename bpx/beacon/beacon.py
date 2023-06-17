@@ -348,7 +348,7 @@ class Beacon:
             
             if tx_peak.height != 0:
                 try:
-                    full_tx_peak = self.blockchain.get_full_block(tx_peak.header_hash)
+                    full_tx_peak = await self.blockchain.get_full_block(tx_peak.header_hash)
                     assert full_tx_peak is not None
                     assert full_tx_peak.execution_payload is not None
                     
