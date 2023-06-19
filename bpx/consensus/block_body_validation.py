@@ -61,7 +61,7 @@ async def validate_block_body(
         elif status == "SYNCING" or status == "ACCEPTED":
             if not optimistic_import:
                 return Err.PAYLOAD_NOT_VALIDATED
-        if status != "VALID":
+        elif status != "VALID":
             return Err.UNKNOWN
     
     return None
