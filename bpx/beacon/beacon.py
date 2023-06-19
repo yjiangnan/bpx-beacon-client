@@ -358,7 +358,7 @@ class Beacon:
                     elif status != "VALID" and status != "SYNCING" and status != "ACCEPTED":
                         raise RuntimeError("Unexpected payload status.")
                     
-                    status = await execution_client.forkchoice_update(tx_peak)
+                    status = await self.execution_client.forkchoice_update(tx_peak)
                     if status == "INVALID" or status == "INVALID_BLOCK_HASH":
                         raise RuntimeError(f"Fork choice status: {status}. Database is corrupted.")
                     elif status == "VALID":
