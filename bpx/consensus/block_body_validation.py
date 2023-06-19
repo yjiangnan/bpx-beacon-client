@@ -42,23 +42,26 @@ async def validate_block_body(
     if block.execution_payload is None:
         return None
     
-    optimistic_import = execution_client.beacon.config.get("optimistic_import", True)
-    
     status = await execution_client.new_payload(block.execution_payload)
     if status == "INVALID" or status == "INVALID_BLOCK_HASH":
         return Err.PAYLOAD_INVALIDATED
     elif status == "SYNCING" or status == "ACCEPTED":
-        if not optimistic_import or isinstance(block, UnfinishedBlock):
+        if isinstance(block, UnfinishedBlock):
             return Err.PAYLOAD_NOT_VALIDATED
     elif status != "VALID":
         return Err.UNKNOWN
     
     if isinstance(block, FullBlock):
         assert block_record is not None
+        optimistic_import = execution_client.beacon.config.get("optimistic_import", True)
+        
         status = await execution_client.forkchoice_update(block_record)
         if status == "INVALID" or status == "INVALID_BLOCK_HASH":
             return Err.PAYLOAD_INVALIDATED
-        if status != "VALID" and status != "SYNCING" and status != "ACCEPTED":
+        elif status == "SYNCING" or status == "ACCEPTED":
+            if not optimistic_import:
+                return Err.PAYLOAD_NOT_VALIDATED
+        if status != "VALID":
             return Err.UNKNOWN
     
     return None
