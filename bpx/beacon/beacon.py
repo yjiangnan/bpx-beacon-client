@@ -362,9 +362,9 @@ class Beacon:
                     if status == "INVALID" or status == "INVALID_BLOCK_HASH":
                         raise RuntimeError(f"Fork choice status: {status}. Database is corrupted.")
                     elif status == "VALID":
-                        log.info("Execution chain head has been updated.")
+                        self.log.info("Execution chain head has been updated.")
                     elif status == "SYNCING" or status == "ACCEPTED":
-                        log.info("Execution chain synchronization has been started.")
+                        self.log.info("Execution chain synchronization has been started.")
                     else:
                         raise RuntimeError("Unexpected fork choice status.")
                 except Exception as e:
