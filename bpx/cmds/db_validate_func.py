@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from bpx.consensus.block_record import BlockRecord
-from bpx.consensus.default_constants import DEFAULT_CONSTANTS
 from bpx.types.blockchain_format.sized_bytes import bytes32
 from bpx.types.full_block import FullBlock
 from bpx.util.config import load_config
@@ -24,12 +23,12 @@ def db_validate_func(
         db_path_replaced: str = db_pattern.replace("CHALLENGE", selected_network)
         in_db_path = path_from_root(root_path, db_path_replaced)
 
-    validate_v2(in_db_path, validate_blocks=validate_blocks)
+    validate_v1(in_db_path, validate_blocks=validate_blocks)
 
     print(f"\n\nDATABASE IS VALID: {in_db_path}\n")
 
 
-def validate_v2(in_path: Path, *, validate_blocks: bool) -> None:
+def validate_v1(in_path: Path, *, validate_blocks: bool) -> None:
     import sqlite3
     from contextlib import closing
 
@@ -47,8 +46,8 @@ def validate_v2(in_path: Path, *, validate_blocks: bool) -> None:
                 row = cursor.fetchone()
                 if row is None or row == []:
                     raise RuntimeError("Database is missing version field")
-                if row[0] != 2:
-                    raise RuntimeError(f"Database has the wrong version ({row[0]} expected 2)")
+                if row[0] != 1:
+                    raise RuntimeError(f"Database has the wrong version ({row[0]} expected 1)")
         except sqlite3.OperationalError:
             raise RuntimeError("Database is missing version table")
 
@@ -171,14 +170,6 @@ def validate_v2(in_path: Path, *, validate_blocks: bool) -> None:
 
         if current_height != 0:
             raise RuntimeError(f"Database is missing blocks below height {current_height}")
-
-        # make sure the prev_hash pointer of block height 0 is the genesis
-        # challenge
-        if next_hash != DEFAULT_CONSTANTS.GENESIS_CHALLENGE:
-            raise RuntimeError(
-                f"Blockchain has invalid genesis challenge {next_hash}, expected "
-                f"{DEFAULT_CONSTANTS.GENESIS_CHALLENGE.hex()}"
-            )
 
         if num_orphans > 0:
             print(f"{num_orphans} orphaned blocks")

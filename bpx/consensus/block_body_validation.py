@@ -30,6 +30,7 @@ async def validate_block_body(
     block: Union[FullBlock, UnfinishedBlock],
     height: uint32,
     fork_point_with_peak: Optional[uint32],
+    block_record: Optional[BlockRecord],
 ) -> Optional[Err]:
     """
     This assumes the header block has been completely validated.
@@ -42,14 +43,25 @@ async def validate_block_body(
         return None
     
     status = await execution_client.new_payload(block.execution_payload)
-
-    if status == "INVALID":
-        return Err.EXECUTION_INVALID_PAYLOAD
-    elif status == "SYNCING":
-        return Err.EXECUTION_SYNCING
-    elif status == "ACCEPTED":
-        return Err.EXECUTION_ACCEPTED
+    if status == "INVALID" or status == "INVALID_BLOCK_HASH":
+        return Err.PAYLOAD_INVALIDATED
+    elif status == "SYNCING" or status == "ACCEPTED":
+        if isinstance(block, UnfinishedBlock):
+            return Err.PAYLOAD_NOT_VALIDATED
     elif status != "VALID":
         return Err.UNKNOWN
+    
+    if isinstance(block, FullBlock):
+        assert block_record is not None
+        optimistic_import = execution_client.beacon.config.get("optimistic_import", True)
+        
+        status = await execution_client.forkchoice_update(block_record)
+        if status == "INVALID" or status == "INVALID_BLOCK_HASH":
+            return Err.PAYLOAD_INVALIDATED
+        elif status == "SYNCING" or status == "ACCEPTED":
+            if not optimistic_import:
+                return Err.PAYLOAD_NOT_VALIDATED
+        elif status != "VALID":
+            return Err.UNKNOWN
     
     return None

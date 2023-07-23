@@ -25,8 +25,10 @@ network_overrides: &network_overrides
   config:
     mainnet:
       default_beacon_port: 6201
+      jwt_secret: ../execution/geth/jwtsecret
     testnet:
       default_beacon_port: 6201
+      jwt_secret: ../execution/testnet/geth/jwtsecret
 
 selected_network: &selected_network "mainnet"
 
@@ -253,7 +255,7 @@ beacon:
   db_readers: 4
 
   # Run multiple nodes with different databases by changing the database_path
-  database_path: db/blockchain_v2_CHALLENGE.sqlite
+  database_path: db/blockchain_v1_CHALLENGE.sqlite
   # peer_db_path is deprecated and has been replaced by peers_file_path
   peer_db_path: db/peer_table_node.sqlite
   peers_file_path: db/peers.dat
@@ -333,9 +335,6 @@ beacon:
   introducer_peer:
       host: introducer.mainnet.bpxchain.cc
       port: 6202
-  execution_client:
-      host: *self_hostname
-      port: 8551
   logging: *logging
   network_overrides: *network_overrides
   selected_network: *selected_network
@@ -347,7 +346,13 @@ beacon:
     public_key:  "config/ssl/beacon/public_beacon.key"
   use_bpx_loop_policy: True
   
+  # Execution client Engine API endpoint
+  execution_endpoint: http://127.0.0.1:8551
+  # Target address for block rewards and fees
   coinbase: "0x0000000000000000000000000000000000000000"
+  # Optimistic import allows a beacon client to import, process, and consider a beacon block for its forkchoice head,
+  # even though it has not validated its execution payload
+  optimistic_import: True
 
 ui:
   # Which port to use to communicate with the beacon client

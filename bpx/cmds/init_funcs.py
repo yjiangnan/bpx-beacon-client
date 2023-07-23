@@ -179,7 +179,7 @@ def bpx_init(
 ) -> int:
     """
     Standard first run initialization or migration steps. Handles config creation,
-    generation of SSL certs, and setting target addresses (via check_keys).
+    generation of SSL certs.
 
     should_check_keys can be set to False to avoid blocking when accessing a passphrase
     protected Keychain. When launching the daemon from the GUI, we want the GUI to
@@ -247,11 +247,27 @@ def bpx_init(
 
     db_path_replaced: str
     config = load_config(root_path, "config.yaml")["beacon"]
+    # TODO: To be removed in the future
+    if config["database_path"] == "db/blockchain_v2_CHALLENGE.sqlite":
+        with lock_and_load_config(root_path, "config.yaml") as config_full:
+            config_full["beacon"]["database_path"] = "db/blockchain_v1_CHALLENGE.sqlite"
+            save_config(root_path, "config.yaml", config_full)
+    #
     db_path_replaced = config["database_path"].replace("CHALLENGE", config["selected_network"])
     db_path = path_from_root(root_path, db_path_replaced)
     db_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    # TODO: To be removed in the future
+    db_path_old_replaced: str = "db/blockchain_v2_CHALLENGE.sqlite".replace("CHALLENGE", config["selected_network"])
+    db_path_old = path_from_root(root_path, db_path_old_replaced)
     try:
-        # create new v2 db file
+        db_path_old.replace(db_path)
+    except FileNotFoundError:
+        pass
+    #
+    
+    try:
+        # create new v1 db file
         with sqlite3.connect(db_path) as connection:
             set_db_version(connection, 1)
     except sqlite3.OperationalError:
