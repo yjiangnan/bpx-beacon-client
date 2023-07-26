@@ -138,6 +138,18 @@ harvester:
     crt: "config/ssl/ca/bpx_ca.crt"
     key: "config/ssl/ca/bpx_ca.key"
 
+  # Compressed harvesting.
+  parallel_decompressers_count: 0
+  # If set to 0, `decompresser_thread_count` will default to half of nproc available on the machine.
+  # A non-zero number overrides this default.
+  decompresser_thread_count: 0
+  disable_cpu_affinity: False
+  # Ignore compressed plots with compression level greater than this.
+  max_compression_level_allowed: 7
+  use_gpu_harvesting: False
+  gpu_index: 0
+  enforce_gpu_index: False
+
 farmer:
   # The farmer server (if run) will run on this port
   port: 6204

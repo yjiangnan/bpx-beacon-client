@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import concurrent.futures
 import logging
+import multiprocessing
 from collections import Counter
 from pathlib import Path
 from time import sleep, time
@@ -52,6 +53,24 @@ def check_plots(
     )
     
     context_count = config["harvester"].get("parallel_decompressers_count", 5)
+    thread_count = config["harvester"].get("decompresser_thread_count", 0)
+    if thread_count == 0:
+        thread_count = multiprocessing.cpu_count() // 2
+    disable_cpu_affinity = config["harvester"].get("disable_cpu_affinity", False)
+    max_compression_level_allowed = config["harvester"].get("max_compression_level_allowed", 7)
+    use_gpu_harvesting = config["harvester"].get("use_gpu_harvesting", False)
+    gpu_index = config["harvester"].get("gpu_index", 0)
+    enforce_gpu_index = config["harvester"].get("enforce_gpu_index", False)
+
+    plot_manager.configure_decompresser(
+        context_count,
+        thread_count,
+        disable_cpu_affinity,
+        max_compression_level_allowed,
+        use_gpu_harvesting,
+        gpu_index,
+        enforce_gpu_index,
+    )
     
     if num is not None:
         if num == 0:
@@ -165,7 +184,13 @@ def check_plots(
                             else:
                                 log.info(f"\tFinding proof took: {proof_spent_time} ms. Filepath: {plot_path}")
                             ver_quality_str = v.validate_proof(pr.get_id(), pr.get_size(), challenge, proof)
-                            assert quality_str == ver_quality_str
+                            if quality_str == ver_quality_str:
+                                total_proofs += 1
+                            else:
+                                log.warning(
+                                    f"\tQuality doesn't match with proof. Filepath: {plot_path} "
+                                    "This can occasionally happen with a compressed plot."
+                                )
                         except AssertionError as e:
                             log.error(
                                 f"{type(e)}: {e} error in proving/verifying for plot {plot_path}. Filepath: {plot_path}"
@@ -178,6 +203,13 @@ def check_plots(
                 except SystemExit:
                     log.warning("System is shutting down.")
                     return
+                except RuntimeError as e:
+                    if str(e) == "GRResult_NoProof received":
+                        log.info(f"Proof dropped due to line point compression. Filepath: {plot_path}")
+                        continue
+                    else:
+                        log.error(f"{type(e)}: {e} error in getting challenge qualities for plot {plot_path}")
+                        caught_exception = True
                 except Exception as e:
                     log.error(f"{type(e)}: {e} error in getting challenge qualities for plot {plot_path}")
                     caught_exception = True
