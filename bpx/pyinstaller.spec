@@ -146,7 +146,14 @@ if THIS_IS_WINDOWS:
             "bladebit"
         ),
     ]
-
+    
+    if os.path.exists(f"{ROOT}\\bladebit\\bladebit_cuda.exe"):
+        binaries.extend([
+            (
+                f"{ROOT}\\bladebit\\bladebit_cuda.exe",
+                "bladebit"
+            )
+        ])
 
 datas = []
 
