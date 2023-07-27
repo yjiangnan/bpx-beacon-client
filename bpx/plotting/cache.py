@@ -21,7 +21,7 @@ from bpx.util.derive_keys import master_sk_to_local_sk
 
 log = logging.getLogger(__name__)
 
-CURRENT_VERSION: int = 1
+CURRENT_VERSION: int = 2
 
 
 @streamable
