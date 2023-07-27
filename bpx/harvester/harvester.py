@@ -211,7 +211,7 @@ class Harvester:
         self.plot_manager.trigger_refresh()
         return True
     
-     async def get_harvester_config(self) -> Dict[str, Any]:
+    async def get_harvester_config(self) -> Dict[str, Any]:
         return get_harvester_config(self.root_path)
 
     async def update_harvester_config(
