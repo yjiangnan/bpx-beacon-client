@@ -110,7 +110,7 @@ def get_bladebit_executable_path(plotters_root_path: Path) -> Path:
     bladebit_exec_venv_path = get_bladebit_exec_venv_path(with_cuda=True)
     if bladebit_exec_venv_path is not None and bladebit_exec_venv_path.exists():
         return bladebit_exec_venv_path
-     bladebit_exec_src_path = get_bladebit_exec_src_path(plotters_root_path, with_cuda=True)
+    bladebit_exec_src_path = get_bladebit_exec_src_path(plotters_root_path, with_cuda=True)
     if bladebit_exec_src_path.exists():
         return bladebit_exec_src_path
     bladebit_exec_package_path = get_bladebit_exec_package_path(with_cuda=True)
