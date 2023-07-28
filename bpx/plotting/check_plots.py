@@ -217,7 +217,7 @@ def check_plots(
                     break
                     
             if total_proofs > 0 and caught_exception is False:
-                 log.info(
+                log.info(
                     f"\tProofs {total_proofs} / {challenges}, {round(total_proofs/float(challenges), 4)}. "
                     f"Filepath: {plot_path}"
                 )
