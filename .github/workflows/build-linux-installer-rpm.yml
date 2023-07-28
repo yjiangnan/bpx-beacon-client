@@ -81,7 +81,7 @@ jobs:
         chmod +x "$GITHUB_WORKSPACE/bladebit/bladebit"
 
     - name: Get latest prerelease bladebit plotter
-      if: env.RELEASE == 'false' || env.PRE_RELEASE == 'true'
+      if: env.RELEASE != 'true' || env.PRE_RELEASE == 'true'
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
