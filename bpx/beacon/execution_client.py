@@ -82,6 +82,14 @@ class ExecutionClient:
         self.payload_id = None
     
     
+    async def is_connected(self):
+        try:
+            self._ensure_web3_init()
+            return self.w3.is_connected()
+        except Exception:
+            return False
+        
+    
     async def exchange_transition_configuration_task(self):
         log.debug("Starting exchange transition configuration loop")
 

@@ -93,6 +93,7 @@ class BeaconRpcApi:
                     "sub_slot_iters": 0,
                     "space": 0,
                     "node_id": node_id,
+                    "ec_conn": False,
                 },
             }
             return res
@@ -140,6 +141,8 @@ class BeaconRpcApi:
         else:
             is_connected = False
         synced = await self.service.synced() and is_connected
+        
+        ec_conn = await self.service.execution_client.is_connected()
 
         assert space is not None
         response = {
@@ -157,6 +160,7 @@ class BeaconRpcApi:
                 "sub_slot_iters": sub_slot_iters,
                 "space": space["space"],
                 "node_id": node_id,
+                "ec_conn": ec_conn,
             },
         }
         self.cached_blockchain_state = dict(response["blockchain_state"])
