@@ -142,7 +142,8 @@ class BeaconRpcApi:
             is_connected = False
         synced = await self.service.synced() and is_connected
         
-        ec_conn = await self.service.execution_client.is_connected()
+        ec_conn = self.service.execution_client.connected
+        ec_synced = not self.service.execution_client.syncing and ec_conn
 
         assert space is not None
         response = {
