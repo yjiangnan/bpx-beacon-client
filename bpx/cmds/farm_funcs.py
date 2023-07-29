@@ -96,6 +96,10 @@ async def summary(
         print("Not synced or not connected to peers")
     elif not farmer_running:
         print("Not running")
+    elif not blockchain_state["ec_conn"]:
+        print("Execution Client offline")
+    elif not blockchain_state["sync"]["ec_synced"]:
+        print("Execution Client syncing")
     else:
         print("Farming")
 
