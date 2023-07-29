@@ -31,6 +31,7 @@ log = logging.getLogger(__name__)
 
 class HTTPAuthProvider(HTTPProvider):
     secret: bytes
+    optimistic: bool
 
     def __init__(
         self,
@@ -38,6 +39,7 @@ class HTTPAuthProvider(HTTPProvider):
         endpoint_uri: Optional[Union[URI, str]] = None,
     ) -> None:
         self.secret = secret
+        self.optimistic = True
         super().__init__(endpoint_uri)
     
     def get_request_headers(self) -> Dict[str, str]:
@@ -225,6 +227,13 @@ class ExecutionClient:
             log.info(f"Payload building started: payload_id={self.payload_id}")
         elif synced:
             log.warning("Payload building not started")
+        
+        if result.payloadStatus == "VALID" and self.optimistic:
+            self.optimistic = False
+            log.info(f"Left optimistic import mode")
+        elif result.payloadStatus != "VALID" and not self.optimistic:
+            self.optimistic = True
+            log.info(f"Reverted to optimistic import mode")
         
         return result.payloadStatus.status
     
