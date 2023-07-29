@@ -242,7 +242,7 @@ class BeaconAPI:
         self, new_unfinished_block: beacon_protocol.NewUnfinishedBlock
     ) -> Optional[Message]:
         # Ignore if syncing
-        if self.beacon.sync_store.get_sync_mode() or self.beacon.execution_client.optimistic:
+        if self.beacon.sync_store.get_sync_mode() or self.beacon.execution_client.syncing:
             return None
         block_hash = new_unfinished_block.unfinished_reward_hash
         if self.beacon.beacon_store.get_unfinished_block(block_hash) is not None:
@@ -303,7 +303,7 @@ class BeaconAPI:
         self, new_sp: beacon_protocol.NewSignagePointOrEndOfSubSlot, peer: WSBpxConnection
     ) -> Optional[Message]:
         # Ignore if syncing
-        if self.beacon.sync_store.get_sync_mode() or self.beacon.execution_client.optimistic:
+        if self.beacon.sync_store.get_sync_mode() or self.beacon.execution_client.syncing:
             return None
         if (
             self.beacon.beacon_store.get_signage_point_by_index(
