@@ -95,7 +95,7 @@ class ExecutionClient:
                         "terminalBlockHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
                         "terminalBlockNumber": "0x0"
                     })
-                except ConnectionError:
+                except:
                     self.connected = False
                     raise
                 self.connected = True
@@ -145,7 +145,7 @@ class ExecutionClient:
 
         try:
             result = self.w3.engine.new_payload_v2(raw_payload)
-        except ConnectionError:
+        except:
             self.connected = False
             raise
         self.connected = True
@@ -221,7 +221,7 @@ class ExecutionClient:
 
         try:
             result = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
-        except ConnectionError:
+        except:
             self.connected = False
             raise
         self.connected = True
@@ -270,7 +270,7 @@ class ExecutionClient:
 
         try:
             raw_payload = self.w3.engine.get_payload_v2(self.payload_id).executionPayload
-        except ConnectionError:
+        except:
             self.connected = False
             raise
         self.connected = True
