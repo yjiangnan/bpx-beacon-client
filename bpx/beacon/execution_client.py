@@ -79,7 +79,7 @@ class ExecutionClient:
         self.w3 = None
         self.peak_txb_hash = None
         self.payload_id = None
-        self.syncing = False
+        self.syncing = True
         self.connected = False
         
     
