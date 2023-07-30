@@ -244,10 +244,10 @@ class ExecutionClient:
         elif synced:
             log.warning("Payload building not started")
         
-        if result.payloadStatus == "VALID" and self.syncing:
+        if result.payloadStatus.status == "VALID" and self.syncing:
             self.syncing = False
             log.info(f"Execution Client is now fully synced")
-        elif result.payloadStatus != "VALID" and not self.syncing:
+        elif result.payloadStatus.status != "VALID" and not self.syncing:
             self.syncing = True
             log.info(f"Execution Client syncing started")
         
