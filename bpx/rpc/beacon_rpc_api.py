@@ -155,7 +155,7 @@ class BeaconRpcApi:
                     "synced": synced,
                     "sync_tip_height": sync_tip_height,
                     "sync_progress_height": sync_progress_height,
-                    "ec_synced": not self.service.execution_client.syncing,
+                    "ec_synced": ec_synced,
                 },
                 "difficulty": difficulty,
                 "sub_slot_iters": sub_slot_iters,
