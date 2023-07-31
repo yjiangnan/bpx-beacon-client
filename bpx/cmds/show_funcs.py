@@ -38,7 +38,6 @@ async def print_blockchain_state(node_client: BeaconRpcClient, config: Dict[str,
 
     if synced:
         print("Beacon Client Status: Synced")
-        print("\nPeak: Hash:", peak.header_hash if peak is not None else "")
     elif peak is not None and sync_mode:
         sync_max_block = blockchain_state["sync"]["sync_tip_height"]
         sync_current_block = blockchain_state["sync"]["sync_progress_height"]
@@ -46,7 +45,6 @@ async def print_blockchain_state(node_client: BeaconRpcClient, config: Dict[str,
             f"Beacon Client Status: Syncing {sync_current_block}/{sync_max_block} "
             f"({sync_max_block - sync_current_block} behind)."
         )
-        print("Peak: Hash:", peak.header_hash if peak is not None else "")
     elif peak is not None:
         print(f"Beacon Client Status: Not Synced. Peak height: {peak.height}")
     else:
@@ -60,6 +58,8 @@ async def print_blockchain_state(node_client: BeaconRpcClient, config: Dict[str,
             print("\nExecution Client Status: Syncing")
         else:
             print("\nExecution Client Status: Synced")
+
+        print("\nPeak: Hash:", peak.header_hash)
         
         if peak.is_transaction_block:
             peak_time = peak.timestamp
