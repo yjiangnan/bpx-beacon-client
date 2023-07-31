@@ -375,7 +375,8 @@ def plot_bladebit(args, bpx_root_path, root_path):
             progress = progress_bladebit_ram
         else:
             progress = progress_bladebit_disk
-        asyncio.run(run_plotter(bpx_root_path, args.plotter, call_args, progress))
+            print(call_args)
+        asyncio.run(run_plotter(bpx_root_path, args.plotter, [], progress))
     except Exception as e:
         print(f"Exception while plotting: {e} {type(e)}")
         print(f"Traceback: {traceback.format_exc()}")
