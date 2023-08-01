@@ -79,7 +79,7 @@ async def print_blockchain_state(node_client: BeaconRpcClient, config: Dict[str,
             f"{time.strftime('%a %b %d %Y %T %Z', peak_time_struct)}",
         )
 
-        print("Estimated network space: ", end="")
+        print("\nEstimated network space: ", end="")
         print(format_bytes(blockchain_state["space"]))
         print(f"Current difficulty: {difficulty}")
         print(f"Current VDF sub_slot_iters: {sub_slot_iters}")
