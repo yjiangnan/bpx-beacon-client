@@ -89,7 +89,7 @@ jobs:
           chmod +x "$GITHUB_WORKSPACE/madmax/chia_plot_k34"
 
       - name: Get latest bladebit plotter
-        if: env.RELEASE == 'true' && '!github.event.release.prerelease'
+        if: env.RELEASE == 'true' && env.PRE_RELEASE != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
