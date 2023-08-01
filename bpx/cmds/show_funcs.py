@@ -37,29 +37,29 @@ async def print_blockchain_state(node_client: BeaconRpcClient, config: Dict[str,
     print(f"Genesis Challenge: {genesis_challenge}")
 
     if synced:
-        print("Beacon Client Status: Synced")
+        print("\nBeacon Client Status: Synced")
     elif peak is not None and sync_mode:
         sync_max_block = blockchain_state["sync"]["sync_tip_height"]
         sync_current_block = blockchain_state["sync"]["sync_progress_height"]
         print(
-            f"Beacon Client Status: Syncing {sync_current_block}/{sync_max_block} "
+            f"\nBeacon Client Status: Syncing {sync_current_block}/{sync_max_block} "
             f"({sync_max_block - sync_current_block} behind)."
         )
     elif peak is not None:
-        print(f"Beacon Client Status: Not Synced. Peak height: {peak.height}")
+        print(f"\nBeacon Client Status: Not Synced. Peak height: {peak.height}")
     else:
         print("\nSearching for an initial chain\n")
         print("You may be able to expedite with 'bpx peer beacon -a host:port' using a known node.\n")
 
     if peak is not None:
         if not ec_conn:
-            print("\nExecution Client Status: Offline")
+            print("Execution Client Status: Offline")
         elif not ec_synced:
-            print("\nExecution Client Status: Syncing")
+            print("Execution Client Status: Syncing")
         else:
-            print("\nExecution Client Status: Synced")
+            print("Execution Client Status: Synced")
 
-        print("\nPeak: Hash:", peak.header_hash)
+        print(f"\nPeak: Height: {peak.height}\n      Hash: {peak.header_hash}")
         
         if peak.is_transaction_block:
             peak_time = peak.timestamp
@@ -77,7 +77,6 @@ async def print_blockchain_state(node_client: BeaconRpcClient, config: Dict[str,
         print(
             "      Time:",
             f"{time.strftime('%a %b %d %Y %T %Z', peak_time_struct)}",
-            f"                 Height: {peak.height:>10}\n",
         )
 
         print("Estimated network space: ", end="")
