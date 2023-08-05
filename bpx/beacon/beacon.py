@@ -1225,7 +1225,7 @@ class Beacon:
 
         if not self.sync_store.get_sync_mode():
             self.blockchain.clean_block_records()
-            if self.sync_mode == "light":
+            if self.sync_mode == "light" and record.height % 100 == 0:
                 await self.blockchain.clean_ancient_blocks()
 
         fork_block: Optional[BlockRecord] = None
