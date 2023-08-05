@@ -909,7 +909,7 @@ class Beacon:
                     raise RuntimeError(f"current peak is heavier than Weight proof peek: {weight_proof_peer.peer_host}")
 
             try:
-                validated, fork_point, summaries = await self.weight_proof_handler.validate_weight_proof(response.wp)
+                validated, fork_point, summaries, block_records = await self.weight_proof_handler.validate_weight_proof(response.wp)
             except Exception as e:
                 await weight_proof_peer.close(600)
                 raise ValueError(f"Weight proof validation threw an error {e}")
@@ -924,7 +924,7 @@ class Beacon:
             # Ensures that the fork point does not change
             async with self._blockchain_lock_high_priority:
                 await self.blockchain.warmup(fork_point)
-                await self.sync_from_fork_point(fork_point, target_peak.height, target_peak.header_hash, summaries)
+                await self.sync_from_fork_point(fork_point, target_peak.height, target_peak.header_hash, summaries, block_records)
         except asyncio.CancelledError:
             self.log.warning("Syncing failed, CancelledError")
         except Exception as e:
@@ -941,6 +941,7 @@ class Beacon:
         target_peak_sb_height: uint32,
         peak_hash: bytes32,
         summaries: List[SubEpochSummary],
+        block_records: List[BlockRecords],
     ) -> None:
         buffer_size = 4
         self.log.info(f"Start syncing from fork point at {fork_point_height} up to {target_peak_sb_height}")

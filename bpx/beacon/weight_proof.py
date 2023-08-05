@@ -557,35 +557,6 @@ class WeightProofHandler:
             curr.total_iters,
         )
 
-    def validate_weight_proof_single_proc(self, weight_proof: WeightProof) -> Tuple[bool, uint32]:
-        assert self.blockchain is not None
-        assert len(weight_proof.sub_epochs) > 0
-        if len(weight_proof.sub_epochs) == 0:
-            return False, uint32(0)
-
-        peak_height = weight_proof.recent_chain_data[-1].reward_chain_block.height
-        log.info(f"validate weight proof peak height {peak_height}")
-        summaries, sub_epoch_weight_list = _validate_sub_epoch_summaries(self.constants, weight_proof)
-        if summaries is None:
-            log.warning("weight proof failed sub epoch data validation")
-            return False, uint32(0)
-        summary_bytes, wp_segment_bytes, wp_recent_chain_bytes = vars_to_bytes(summaries, weight_proof)
-        log.info("validate sub epoch challenge segments")
-        seed = summaries[-2].get_hash()
-        rng = random.Random(seed)
-        if not validate_sub_epoch_sampling(rng, sub_epoch_weight_list, weight_proof):
-            log.error("failed weight proof sub epoch sample validation")
-            return False, uint32(0)
-
-        if not _validate_sub_epoch_segments(self.constants, rng, wp_segment_bytes, summary_bytes):
-            return False, uint32(0)
-        log.info("validate weight proof recent blocks")
-        success, _ = validate_recent_blocks(self.constants, wp_recent_chain_bytes, summary_bytes)
-        if not success:
-            return False, uint32(0)
-        fork_point, _ = self.get_fork_point(summaries)
-        return True, fork_point
-
     def get_fork_point_no_validations(self, weight_proof: WeightProof) -> Tuple[bool, uint32]:
         log.debug("get fork point skip validations")
         assert self.blockchain is not None
@@ -599,10 +570,13 @@ class WeightProofHandler:
         fork_height, _ = self.get_fork_point(summaries)
         return True, fork_height
 
-    async def validate_weight_proof(self, weight_proof: WeightProof) -> Tuple[bool, uint32, List[SubEpochSummary]]:
+    async def validate_weight_proof(
+        self,
+        weight_proof: WeightProof
+    ) -> Tuple[bool, uint32, List[SubEpochSummary], List[BlockRecord]]:
         assert self.blockchain is not None
         if len(weight_proof.sub_epochs) == 0:
-            return False, uint32(0), []
+            return False, uint32(0), [], []
 
         # timing reference: start
         summaries, sub_epoch_weight_list = _validate_sub_epoch_summaries(self.constants, weight_proof)
@@ -610,7 +584,7 @@ class WeightProofHandler:
         # timing reference: 1 second
         if summaries is None or sub_epoch_weight_list is None:
             log.error("weight proof failed sub epoch data validation")
-            return False, uint32(0), []
+            return False, uint32(0), [], []
 
         fork_point, ses_fork_idx = self.get_fork_point(summaries)
         # timing reference: 1 second
@@ -637,8 +611,8 @@ class WeightProofHandler:
                         ses_fork_idx,
                     )
                 )
-                valid, _ = await task
-        return valid, fork_point, summaries
+                valid, block_records = await task
+        return valid, fork_point, summaries, block_records
 
     def get_fork_point(self, received_summaries: List[SubEpochSummary]) -> Tuple[uint32, int]:
         # returns the fork height and ses index
