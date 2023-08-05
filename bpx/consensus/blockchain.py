@@ -618,9 +618,10 @@ class Blockchain(BlockchainInterface):
         prune_height = self._peak_height - self.constants.BLOCKS_CACHE_SIZE
         if prune_height < 0:
             return None
-            
-        await self.block_store.clean_ancient_blocks(prune_height)
-        log.info(f"Pruned ancient blocks < {prune_height}")
+        
+        async with self.block_store.db_wrapper.writer():
+            await self.block_store.clean_ancient_blocks(prune_height)
+            log.info(f"Pruned ancient blocks < {prune_height}")
 
     async def get_block_records_in_range(self, start: int, stop: int) -> Dict[bytes32, BlockRecord]:
         return await self.block_store.get_block_records_in_range(start, stop)
