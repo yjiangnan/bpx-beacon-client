@@ -365,6 +365,15 @@ beacon:
   # Optimistic import allows a beacon client to import, process, and consider a beacon block for its forkchoice head,
   # even though it has not validated its execution payload
   optimistic_import: True
+  # Sync mode:
+  # - fast (default) - starts fetching blocks from the relative recent one, after catching the head
+  #   of the chain head immediately behaves like a fully synced node, in the meantime downloading
+  #   the older blocks, keeps a full copy of the blockchain
+  # - full - fetches all blocks one by one, from the genesis to the head of the chain,
+  #   keeps a full copy of the blockchain
+  # - light - starts fetching blocks from the relative recent one to the head of the chain,
+  #   keeps only some recent blocks, periodically removing older ones
+  sync_mode: "fast"
 
 ui:
   # Which port to use to communicate with the beacon client
