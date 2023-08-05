@@ -467,3 +467,9 @@ class BlockStore:
 
         [count] = row
         return int(count)
+    
+    async def clean_ancient_blocks(self, height: int) -> None:
+        async with self.db_wrapper.writer_maybe_transaction() as conn:
+            await conn.execute(
+                "DELETE FROM full_blocks WHERE height<?", (height,)
+            )

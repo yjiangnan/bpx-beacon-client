@@ -103,6 +103,7 @@ class Beacon:
     _maybe_blockchain_lock_high_priority: Optional[LockClient]
     _maybe_blockchain_lock_low_priority: Optional[LockClient]
     execution_client: ExecutionClient
+    sync_mode: str
 
     @property
     def server(self) -> BpxServer:
@@ -290,6 +291,7 @@ class Beacon:
             synchronous=db_sync,
         )
 
+        self.sync_mode = self.config.get("sync_mode", "fast")
         self._block_store = await BlockStore.create(self.db_wrapper)
         self.log.info("Initializing blockchain from disk")
         start_time = time.time()
@@ -1223,6 +1225,8 @@ class Beacon:
 
         if not self.sync_store.get_sync_mode():
             self.blockchain.clean_block_records()
+            if self.sync_mode == "light":
+                await self.blockchain.clean_ancient_blocks()
 
         fork_block: Optional[BlockRecord] = None
         if state_change_summary.fork_height != block.height - 1 and block.height != 0:
