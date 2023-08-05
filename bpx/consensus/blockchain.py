@@ -300,17 +300,18 @@ class Blockchain(BlockchainInterface):
         """
 
         peak = self.get_peak()
+        
+        if peak is None:
+            block: Optional[FullBlock] = await self.block_store.get_full_block(block_record.header_hash)
+            assert block is not None
+
+            await self.block_store.set_in_chain([(block_record.header_hash,)])
+            await self.block_store.set_peak(block_record.header_hash)
+            return [block_record], StateChangeSummary(
+                block_record, uint32(0)
+            )
 
         if genesis:
-            if peak is None:
-                block: Optional[FullBlock] = await self.block_store.get_full_block(block_record.header_hash)
-                assert block is not None
-
-                await self.block_store.set_in_chain([(block_record.header_hash,)])
-                await self.block_store.set_peak(block_record.header_hash)
-                return [block_record], StateChangeSummary(
-                    block_record, uint32(0)
-                )
             return [], None
 
         assert peak is not None
