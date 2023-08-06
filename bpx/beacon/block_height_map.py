@@ -170,9 +170,7 @@ class BlockHeightMap:
 
             while height > window_end:
                 if prev_hash not in ordered:
-                    raise ValueError(
-                        f"block with header hash is missing from your blockchain database: {prev_hash.hex()}"
-                    )
+                    return
                 entry = ordered[prev_hash]
                 assert height == entry[0] + 1
                 height = entry[0]
