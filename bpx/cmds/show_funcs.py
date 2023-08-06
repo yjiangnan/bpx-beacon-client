@@ -80,7 +80,10 @@ async def print_blockchain_state(node_client: BeaconRpcClient, config: Dict[str,
         )
 
         print("\nEstimated network space: ", end="")
-        print(format_bytes(blockchain_state["space"]))
+        if blockchain_state["space"] is not None:
+            print(format_bytes(blockchain_state["space"]))
+        else:
+            print("Unknown")
         print(f"Current difficulty: {difficulty}")
         print(f"Current VDF sub_slot_iters: {sub_slot_iters}")
         print("\n  Height: |   Hash:")

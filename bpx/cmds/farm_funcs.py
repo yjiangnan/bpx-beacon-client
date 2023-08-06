@@ -146,7 +146,7 @@ async def summary(
         print("Plot count: Unknown")
         print("Total size of plots: Unknown")
 
-    if blockchain_state is not None:
+    if blockchain_state is not None and blockchain_state["space"] is not None:
         print("Estimated network space: ", end="")
         print(format_bytes(blockchain_state["space"]))
     else:
