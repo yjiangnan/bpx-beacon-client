@@ -130,9 +130,12 @@ class BeaconRpcApi:
             header_hash = self.service.blockchain.height_to_hash(uint32(max(1, peak.height - 4608)))
             assert header_hash is not None
             older_block_hex = header_hash.hex()
-            space = await self.get_network_space(
-                {"newer_block_header_hash": newer_block_hex, "older_block_header_hash": older_block_hex}
-            )
+            try:
+                space = await self.get_network_space(
+                    {"newer_block_header_hash": newer_block_hex, "older_block_header_hash": older_block_hex}
+                )
+            except ValueError:
+                space = {"space": None}
         else:
             space = {"space": uint128(0)}
 

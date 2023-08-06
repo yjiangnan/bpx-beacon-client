@@ -35,7 +35,12 @@ async def netstorge_async(rpc_port: Optional[int], delta_block_height: str, star
                 newer_block_header = await client.get_block_record_by_height(newer_block_height)
                 older_block_height = max(0, newer_block_height - int(delta_block_height))
                 older_block_header = await client.get_block_record_by_height(older_block_height)
-                assert newer_block_header is not None and older_block_header is not None
+                
+                assert newer_block_header is not None
+                if older_block_header is None:
+                    print("Netspace estimation unavailable: insufficient blocks in the local database")
+                    return None
+                
                 network_space_bytes_estimate = await client.get_network_space(
                     newer_block_header.header_hash, older_block_header.header_hash
                 )
