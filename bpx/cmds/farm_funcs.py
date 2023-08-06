@@ -153,7 +153,7 @@ async def summary(
         print("Estimated network space: Unknown")
 
     minutes = -1
-    if blockchain_state is not None and harvesters_summary is not None:
+    if blockchain_state is not None and blockchain_state["space"] is not None harvesters_summary is not None:
         proportion = PlotStats.total_plot_size / blockchain_state["space"] if blockchain_state["space"] else -1
         minutes = int((await get_average_block_time(rpc_port) / 60) / proportion) if proportion else -1
 
