@@ -95,14 +95,7 @@ class BlockHeightMap:
         prev_hash = row[1]
         height = row[2]
 
-        # allocate memory for height to hash map
-        # this may also truncate it, if thie file on disk had an invalid size
-        new_size = (height + 1) * 32
-        size = len(self.__height_to_hash)
-        if size > new_size:
-            del self.__height_to_hash[new_size:]
-        else:
-            self.__height_to_hash += bytearray([0] * (new_size - size))
+        self._resize_buffer(height)
 
         # if the peak hash is already in the height-to-hash map, we don't need
         # to load anything more from the DB
@@ -122,6 +115,7 @@ class BlockHeightMap:
     def update_height(self, height: uint32, header_hash: bytes32, ses: Optional[SubEpochSummary]) -> None:
         # we're only updating the last hash. If we've reorged, we already rolled
         # back, making this the new peak
+        self._resize_buffer(height)
         assert height * 32 <= len(self.__height_to_hash)
         self.__set_hash(height, header_hash)
         if ses is not None:
@@ -140,6 +134,18 @@ class BlockHeightMap:
 
         await write_file_async(self.__height_to_hash_filename, map_buf)
         await write_file_async(self.__ses_filename, ses_buf)
+    
+    # allocate memory for height to hash map
+    # this may also truncate it, if thie file on disk had an invalid size
+    def _resize_buffer(self, height: uint32) -> None:
+        # allocate memory for height to hash map
+        # this may also truncate it, if thie file on disk had an invalid size
+        new_size = (height + 1) * 32
+        size = len(self.__height_to_hash)
+        if size > new_size:
+            del self.__height_to_hash[new_size:]
+        else:
+            self.__height_to_hash += bytearray([0] * (new_size - size))
 
     # load height-to-hash map entries from the DB starting at height back in
     # time until we hit a match in the existing map, at which point we can

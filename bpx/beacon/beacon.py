@@ -927,7 +927,8 @@ class Beacon:
                 if self.sync_mode == "full":
                     await self._long_sync_full(fork_point, target_peak.height, target_peak.header_hash, summaries)
                 else:
-                    await self._long_sync_light(target_peak.height, target_peak.header_hash, block_records)
+                    await self._long_sync_light(target_peak.height, target_peak.header_hash, summaries, block_records)
+                    
         except asyncio.CancelledError:
             self.log.warning("Syncing failed, CancelledError")
         except Exception as e:
@@ -938,7 +939,7 @@ class Beacon:
                 return None
             await self._finish_sync()
 
-    async def _long_sync_full(
+    async def sync_from_fork_point(
         self,
         fork_point_height: uint32,
         target_peak_sb_height: uint32,
@@ -946,7 +947,7 @@ class Beacon:
         summaries: List[SubEpochSummary],
     ) -> None:
         buffer_size = 4
-        self.log.info(f"Start full syncing from fork point at {fork_point_height} up to {target_peak_sb_height}")
+        self.log.info(f"Start syncing from fork point at {fork_point_height} up to {target_peak_sb_height}")
         peers_with_peak: List[WSBpxConnection] = self.get_peers_with_peak(peak_hash)
         fork_point_height = await check_fork_next_block(
             self.blockchain, fork_point_height, peers_with_peak, node_next_block_check
@@ -1027,49 +1028,35 @@ class Beacon:
             fetch_task.cancel()  # no need to cancel validate_task, if we end up here validate_task is already done
             self.log.error(f"sync from fork point failed err: {e}")
     
+    async def _long_sync_full(
+        self,
+        fork_point_height: uint32,
+        target_peak_sb_height: uint32,
+        peak_hash: bytes32,
+        summaries: List[SubEpochSummary],
+    ) -> None:
+        self.log.info(f"Start full syncing up to {target_peak_sb_height}")
+        await self.sync_from_fork_point(fork_point_height, target_peak_sb_height, peak_hash, summaries)
+    
     async def _long_sync_light(
         self,
         target_peak_sb_height: uint32,
         peak_hash: bytes32,
+        summaries: List[SubEpochSummary],
         block_records: List[BlockRecord],
     ) -> None:
-        self.log.info(f"Start light syncing up to {target_peak_sb_height}")
+        self.log.info(f"Start {self.sync_mode} syncing up to {target_peak_sb_height}")
         
-        block_records.pop()
+        block_records = block_records[: len(block_records) - self.constants.MAX_SUB_SLOT_BLOCKS]
         for record in block_records:
             self.blockchain.add_block_record(record)
         
-        peers_with_peak: List[WSBpxConnection] = self.get_peers_with_peak(peak_hash)
-        request = RequestBlock(target_peak_sb_height)
-        fetched: bool = False
-        response: Optional[RespondBlocks] = None
-        response_peer: Optional[WSBpxConnection] = None
-        try:
-            for peer in random.sample(peers_with_peak, len(peers_with_peak)):
-                if peer.closed:
-                    peers_with_peak.remove(peer)
-                    continue
-                response = await peer.call_api(BeaconAPI.request_block, request)
-                if response is None:
-                    await peer.close()
-                    peers_with_peak.remove(peer)
-                elif isinstance(response, RespondBlock):
-                    fetched = True
-                    response_peer = peer
-                    break
-        
-        except Exception as e:
-            self.log.error(f"Exception fetching {target_peak_sb_height} from peer {e}")
-            return
-        if fetched is False:
-            self.log.error(f"failed fetching block {target_peak_sb_height} from peers")
-            return
-        
-        success, _ = await self.add_block_batch([response.block], response_peer, None, None)
-        if success is False:
-            await response_peer.close(600)
-            self.log.error(f"Failed to validate block {target_peak_sb_height}")
-        self.log.info(f"Added block {target_peak_sb_height}")
+        await self.sync_from_fork_point(
+            target_peak_sb_height - self.constants.MAX_SUB_SLOT_BLOCKS,
+            target_peak_sb_height,
+            peak_hash,
+            summaries
+        )
 
     def get_peers_with_peak(self, peak_hash: bytes32) -> List[WSBpxConnection]:
         peer_ids: Set[bytes32] = self.sync_store.get_peers_that_have_peak([peak_hash])
