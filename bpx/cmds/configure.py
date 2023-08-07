@@ -59,10 +59,8 @@ def configure(
                 print("Farmer address must be in format [IP:Port]")
         if set_beacon_port:
             config["beacon"]["port"] = int(set_beacon_port)
-            config["beacon"]["introducer_peer"]["port"] = int(set_beacon_port)
             config["farmer"]["beacon_peer"]["port"] = int(set_beacon_port)
             config["timelord"]["beacon_peer"]["port"] = int(set_beacon_port)
-            config["introducer"]["port"] = int(set_beacon_port)
             print("Default beacon client port updated")
             change_made = True
         if set_harvester_port:
@@ -115,17 +113,23 @@ def configure(
             if net is not None:
                 net_port = "6201"
                 net_introducer_port = "6202"
-            
+                
+                # Set beacon port
                 config["beacon"]["port"] = int(net_port)
-                if config["beacon"]["introducer_peer"] is None:
-                    config["beacon"]["introducer_peer"] = {}
-                assert config["beacon"]["introducer_peer"] is not None  # mypy
-                config["beacon"]["introducer_peer"]["port"] = int(net_introducer_port)
                 config["farmer"]["beacon_peer"]["port"] = int(net_port)
                 config["timelord"]["beacon_peer"]["port"] = int(net_port)
+                
+                # Set introducer port
+                config["beacon"]["introducer_peer"]["port"] = int(net_introducer_port)
                 config["introducer"]["port"] = int(net_introducer_port)
+                
+                # Set introducer host
                 config["beacon"]["introducer_peer"]["host"] = net_introducer
+                
+                # Set dns server
                 config["beacon"]["dns_servers"] = [net_dns_introducer]
+                
+                # Set network
                 config["selected_network"] = net
                 config["harvester"]["selected_network"] = net
                 config["farmer"]["selected_network"] = net
