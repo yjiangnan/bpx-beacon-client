@@ -10,7 +10,7 @@ dependencies = [
     "anyio==3.6.2",
     "blspy==2.0.2", # Signature library
     "chiavdf==1.0.10",  # timelord and vdf verification
-    "chiapos==2.0.0rc1",  # proof of space
+    "chiapos==2.0.0",  # proof of space
     "aiohttp==3.8.4",  # HTTP server for beacon client rpc
     "aiosqlite==0.17.0",  # asyncio wrapper for sqlite, to store blocks
     "bitstring==4.0.1",  # Binary data management library

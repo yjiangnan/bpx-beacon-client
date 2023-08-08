@@ -14,6 +14,7 @@ from chiapos import Verifier
 
 from bpx.plotting.manager import PlotManager
 from bpx.plotting.util import (
+    DEFAULT_PARALLEL_DECOMPRESSOR_COUNT,
     PlotInfo,
     PlotRefreshEvents,
     PlotRefreshResult,
@@ -53,7 +54,7 @@ def check_plots(
         refresh_callback=plot_refresh_callback,
     )
 
-    context_count = config["harvester"].get("parallel_decompressor_count", 5)
+    context_count = config["harvester"].get("parallel_decompressor_count", DEFAULT_PARALLEL_DECOMPRESSOR_COUNT)
     thread_count = config["harvester"].get("decompressor_thread_count", 0)
     if thread_count == 0:
         thread_count = multiprocessing.cpu_count() // 2
