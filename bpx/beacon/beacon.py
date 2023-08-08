@@ -909,7 +909,7 @@ class Beacon:
                     raise RuntimeError(f"current peak is heavier than Weight proof peek: {weight_proof_peer.peer_host}")
 
             try:
-                validated, fork_point, summaries, block_records = await self.weight_proof_handler.validate_weight_proof(response.wp)
+                validated, fork_point, summaries, _ = await self.weight_proof_handler.validate_weight_proof(response.wp)
             except Exception as e:
                 await weight_proof_peer.close(600)
                 raise ValueError(f"Weight proof validation threw an error {e}")
@@ -927,7 +927,7 @@ class Beacon:
                 if self.sync_mode == "full":
                     await self._long_sync_full(fork_point, target_peak.height, target_peak.header_hash, summaries)
                 else:
-                    await self._long_sync_light(target_peak.height, target_peak.header_hash, summaries, block_records)
+                    await self._long_sync_light(target_peak.height, target_peak.header_hash, summaries)
                     
         except asyncio.CancelledError:
             self.log.warning("Syncing failed, CancelledError")
@@ -1040,22 +1040,61 @@ class Beacon:
     
     async def _long_sync_light(
         self,
-        target_peak_sb_height: uint32,
+        peak_height: uint32,
         peak_hash: bytes32,
         summaries: List[SubEpochSummary],
-        block_records: List[BlockRecord],
     ) -> None:
-        self.log.info(f"Start {self.sync_mode} syncing up to {target_peak_sb_height}")
+        self.log.info(f"Start {self.sync_mode} syncing up to {peak_height}")
         
-        block_records = block_records[: len(block_records) - self.constants.MAX_SUB_SLOT_BLOCKS]
+        wp2_height: uint32 = peak_height - self.constants.BLOCKS_CACHE_SIZE + 128
+        
+        peers_with_peak: List[WSBpxConnection] = self.get_peers_with_peak(peak_hash)
+        peer: WSBpxConnection = random.choice(peers_with_peak)
+        
+        self.log.info(f"Requesting block {wp2_height} from peer {peer.peer_host}")
+        response = await peer.call_api(
+            BeaconAPI.request_block, beacon_protocol.RequestBlock(wp2_height)
+        )
+        if response is None or not isinstance(response, beacon_protocol.RespondBlock):
+            await peer.close(600)
+            raise ValueError(f"Could not fetch block at height {wp2_height}")
+        wp2_hash: bytes32 = response.block.header_hash
+        
+        self.log.info(f"Requesting weight proof from peer {peer.peer_host} up to height {wp2_height}")
+        wp_timeout = 360
+        if "weight_proof_timeout" in self.config:
+            wp_timeout = self.config["weight_proof_timeout"]
+        self.log.debug(f"weight proof timeout is {wp_timeout} sec")
+        request = beacon_protocol.RequestProofOfWeight(wp2_height, wp2_hash)
+        response = await peer.call_api(
+            BeaconAPI.request_proof_of_weight, request, timeout=wp_timeout
+        )
+
+        if response is None or not isinstance(response, beacon_protocol.RespondProofOfWeight):
+            await peer.close(600)
+            raise RuntimeError(f"Weight proof did not arrive in time from peer: {peer.peer_host}")
+        if response.wp.recent_chain_data[-1].reward_chain_block.height != wp2_height:
+            await peer.close(600)
+            raise RuntimeError(f"Weight proof had the wrong height: {peer.peer_host}")
+
+        try:
+            validated, _, _, block_records = await self.weight_proof_handler.validate_weight_proof(response.wp)
+        except Exception as e:
+            await peer.close(600)
+            raise ValueError(f"Weight proof validation threw an error {e}")
+        if not validated:
+            await peer.close(600)
+            raise ValueError("Weight proof validation failed")
+        
+        self.log.info(f"Adding {len(block_records)} to cache")
         for record in block_records:
             self.blockchain.add_block_record(record)
         
         await self.sync_from_fork_point(
-            target_peak_sb_height - self.constants.MAX_SUB_SLOT_BLOCKS,
-            target_peak_sb_height,
+            wp2_height + 1,
+            peak_height,
             peak_hash,
-            summaries
+            summaries,
         )
 
     def get_peers_with_peak(self, peak_hash: bytes32) -> List[WSBpxConnection]:
@@ -1166,7 +1205,7 @@ class Beacon:
                 await self.peak_post_processing_2(peak_fb, None, state_change_summary, ppp_result)
 
         if peak is not None and self.weight_proof_handler is not None:
-            await self.weight_proof_handler.get_proof_of_weight(peak.header_hash)
+            #await self.weight_proof_handler.get_proof_of_weight(peak.header_hash)
             self._state_changed("block")
 
     async def signage_point_post_processing(
