@@ -1046,7 +1046,7 @@ class Beacon:
     ) -> None:
         self.log.info(f"Start {self.sync_mode} syncing up to {peak_height}")
         
-        wp2_height: uint32 = peak_height - self.constants.BLOCKS_CACHE_SIZE + 128
+        wp2_height: uint32 = peak_height - self.constants.MAX_SUB_SLOT_BLOCKS
         
         peers_with_peak: List[WSBpxConnection] = self.get_peers_with_peak(peak_hash)
         peer: WSBpxConnection = random.choice(peers_with_peak)
@@ -1087,8 +1087,7 @@ class Beacon:
             raise ValueError("Weight proof validation failed")
         
         self.log.info(f"Adding {len(block_records)} to cache")
-        for record in block_records:
-            self.blockchain.add_block_record(record)
+        self.blockchain.new_valid_light_sync_weight_proof(response.wp, block_records)
         
         await self.sync_from_fork_point(
             wp2_height + 1,
@@ -1654,6 +1653,7 @@ class Beacon:
             len(block.finished_sub_slots) > 0,
             prev_b,
             self.blockchain,
+            block,
         )
 
         if block.reward_chain_block.signage_point_index == 0:
@@ -1749,6 +1749,7 @@ class Beacon:
             len(finished_sub_slots) > 0,
             prev_b,
             self.blockchain,
+            unfinished_block,
         )
 
         if unfinished_block.reward_chain_block.pos_ss_cc_challenge_hash == self.constants.GENESIS_CHALLENGE:

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 from bpx.consensus.block_record import BlockRecord
 from bpx.consensus.blockchain_interface import BlockchainInterface
@@ -8,6 +8,8 @@ from bpx.consensus.constants import ConsensusConstants
 from bpx.types.blockchain_format.sized_bytes import bytes32
 from bpx.util.ints import uint8, uint32, uint64, uint128
 from bpx.util.significant_bits import count_significant_bits, truncate_to_significant_bits
+from bpx.types.full_block import FullBlock
+from bpx.types.unfinished_block import UnfinishedBlock
 
 
 def _get_blocks_at_height(
@@ -354,6 +356,7 @@ def get_next_sub_slot_iters_and_difficulty(
     is_first_in_sub_slot: bool,
     prev_b: Optional[BlockRecord],
     blocks: BlockchainInterface,
+    block: Optional[Union[FullBlock, UnfinishedBlock]] = None,
 ) -> Tuple[uint64, uint64]:
     """
     Retrieves the current sub_slot iters and difficulty of the next block after prev_b.
@@ -379,29 +382,44 @@ def get_next_sub_slot_iters_and_difficulty(
     if prev_b.sub_epoch_summary_included is not None:
         return prev_b.sub_slot_iters, prev_difficulty
 
-    sp_total_iters = prev_b.sp_total_iters(constants)
-    difficulty: uint64 = _get_next_difficulty(
-        constants,
-        blocks,
-        prev_b.prev_hash,
-        prev_b.height,
-        prev_difficulty,
-        prev_b.deficit,
-        False,  # Already checked above
-        is_first_in_sub_slot,
-        sp_total_iters,
-    )
-
-    sub_slot_iters: uint64 = _get_next_sub_slot_iters(
-        constants,
-        blocks,
-        prev_b.prev_hash,
-        prev_b.height,
-        prev_b.sub_slot_iters,
-        prev_b.deficit,
-        False,  # Already checked above
-        is_first_in_sub_slot,
-        sp_total_iters,
-    )
-
+    try:
+        sp_total_iters = prev_b.sp_total_iters(constants)
+        difficulty: uint64 = _get_next_difficulty(
+            constants,
+            blocks,
+            prev_b.prev_hash,
+            prev_b.height,
+            prev_difficulty,
+            prev_b.deficit,
+            False,  # Already checked above
+            is_first_in_sub_slot,
+            sp_total_iters,
+        )
+    
+        sub_slot_iters: uint64 = _get_next_sub_slot_iters(
+            constants,
+            blocks,
+            prev_b.prev_hash,
+            prev_b.height,
+            prev_b.sub_slot_iters,
+            prev_b.deficit,
+            False,  # Already checked above
+            is_first_in_sub_slot,
+            sp_total_iters,
+        )
+    
+    except KeyError:
+        if block is not None:
+            if (
+                len(block.finished_sub_slots) > 0
+                and block.finished_sub_slots[0].challenge_chain.new_sub_slot_iters is not None
+            ):
+                assert block.finished_sub_slots[0].challenge_chain.new_difficulty is not None  # They both change together
+                sub_slot_iters: uint64 = block.finished_sub_slots[0].challenge_chain.new_sub_slot_iters
+                difficulty: uint64 = block.finished_sub_slots[0].challenge_chain.new_difficulty
+            else:
+                return blocks.get_light_sync_sub_slot_iters_and_difficulty()
+        else:
+            raise
+    
     return sub_slot_iters, difficulty

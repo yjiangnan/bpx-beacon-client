@@ -162,7 +162,7 @@ async def pre_validate_blocks_multiprocessing(
                 prev_b = block_records.block_record(block.prev_header_hash)
 
         sub_slot_iters, difficulty = get_next_sub_slot_iters_and_difficulty(
-            constants, len(block.finished_sub_slots) > 0, prev_b, block_records
+            constants, len(block.finished_sub_slots) > 0, prev_b, block_records, block
         )
 
         overflow = is_overflow_block(constants, block.reward_chain_block.signage_point_index)
