@@ -199,6 +199,7 @@ def _get_next_sub_slot_iters(
     new_slot: bool,
     signage_point_total_iters: uint128,
     skip_epoch_check: bool = False,
+    block: Optional[Union[FullBlock, UnfinishedBlock]] = None,
 ) -> uint64:
     """
     Returns the slot iterations required for the next block after the one at height, where new_slot is true
@@ -234,7 +235,20 @@ def _get_next_sub_slot_iters(
         if not new_slot or not can_finish_epoch:
             return curr_sub_slot_iters
 
-    last_block_prev: BlockRecord = _get_second_to_last_transaction_block_in_previous_epoch(constants, blocks, prev_b)
+    try:
+        last_block_prev: BlockRecord = _get_second_to_last_transaction_block_in_previous_epoch(constants, blocks, prev_b)
+    except KeyError:
+        if block is not None:
+            if (
+                len(block.finished_sub_slots) > 0
+                and block.finished_sub_slots[0].challenge_chain.new_sub_slot_iters is not None
+            ):
+                assert block.finished_sub_slots[0].challenge_chain.new_difficulty is not None  # They both change together
+                return block.finished_sub_slots[0].challenge_chain.new_difficulty
+            else:
+                return blocks.get_light_sync_sub_slot_iters_and_difficulty()[0]
+        else:
+            raise
 
     # This gets the last transaction block before this block's signage point. Assuming the block at height height
     # is the last block infused in the epoch: If this block ends up being a
@@ -278,6 +292,7 @@ def _get_next_difficulty(
     new_slot: bool,
     signage_point_total_iters: uint128,
     skip_epoch_check: bool = False,
+    block: Optional[Union[FullBlock, UnfinishedBlock]] = None,
 ) -> uint64:
     """
     Returns the difficulty of the next block that extends onto block.
@@ -314,7 +329,20 @@ def _get_next_difficulty(
         if not new_slot or not can_finish_epoch:
             return current_difficulty
 
-    last_block_prev: BlockRecord = _get_second_to_last_transaction_block_in_previous_epoch(constants, blocks, prev_b)
+    try:
+        last_block_prev: BlockRecord = _get_second_to_last_transaction_block_in_previous_epoch(constants, blocks, prev_b)
+    except KeyError:
+        if block is not None:
+            if (
+                len(block.finished_sub_slots) > 0
+                and block.finished_sub_slots[0].challenge_chain.new_sub_slot_iters is not None
+            ):
+                assert block.finished_sub_slots[0].challenge_chain.new_difficulty is not None  # They both change together
+                return block.finished_sub_slots[0].challenge_chain.new_difficulty
+            else:
+                return blocks.get_light_sync_sub_slot_iters_and_difficulty()[1]
+        else:
+            raise
 
     # This gets the last transaction block before this block's signage point. Assuming the block at height height
     # is the last block infused in the epoch: If this block ends up being a
@@ -382,44 +410,31 @@ def get_next_sub_slot_iters_and_difficulty(
     if prev_b.sub_epoch_summary_included is not None:
         return prev_b.sub_slot_iters, prev_difficulty
 
-    try:
-        sp_total_iters = prev_b.sp_total_iters(constants)
-        difficulty: uint64 = _get_next_difficulty(
-            constants,
-            blocks,
-            prev_b.prev_hash,
-            prev_b.height,
-            prev_difficulty,
-            prev_b.deficit,
-            False,  # Already checked above
-            is_first_in_sub_slot,
-            sp_total_iters,
-        )
-    
-        sub_slot_iters: uint64 = _get_next_sub_slot_iters(
-            constants,
-            blocks,
-            prev_b.prev_hash,
-            prev_b.height,
-            prev_b.sub_slot_iters,
-            prev_b.deficit,
-            False,  # Already checked above
-            is_first_in_sub_slot,
-            sp_total_iters,
-        )
-    
-    except KeyError:
-        if block is not None:
-            if (
-                len(block.finished_sub_slots) > 0
-                and block.finished_sub_slots[0].challenge_chain.new_sub_slot_iters is not None
-            ):
-                assert block.finished_sub_slots[0].challenge_chain.new_difficulty is not None  # They both change together
-                sub_slot_iters: uint64 = block.finished_sub_slots[0].challenge_chain.new_sub_slot_iters
-                difficulty: uint64 = block.finished_sub_slots[0].challenge_chain.new_difficulty
-            else:
-                return blocks.get_light_sync_sub_slot_iters_and_difficulty()
-        else:
-            raise
+    sp_total_iters = prev_b.sp_total_iters(constants)
+    difficulty: uint64 = _get_next_difficulty(
+        constants,
+        blocks,
+        prev_b.prev_hash,
+        prev_b.height,
+        prev_difficulty,
+        prev_b.deficit,
+        False,  # Already checked above
+        is_first_in_sub_slot,
+        sp_total_iters,
+        block,
+    )
+
+    sub_slot_iters: uint64 = _get_next_sub_slot_iters(
+        constants,
+        blocks,
+        prev_b.prev_hash,
+        prev_b.height,
+        prev_b.sub_slot_iters,
+        prev_b.deficit,
+        False,  # Already checked above
+        is_first_in_sub_slot,
+        sp_total_iters,
+        block,
+    )
     
     return sub_slot_iters, difficulty
