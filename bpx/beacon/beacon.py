@@ -1087,7 +1087,8 @@ class Beacon:
             raise ValueError("Weight proof validation failed")
         
         self.log.info(f"Adding {len(block_records)} block records to the cache")
-        self.blockchain.new_valid_light_sync_weight_proof(response.wp, block_records)
+        for record in block_records:
+            self.blockchain.add_block_record(record)
         
         await self.sync_from_fork_point(
             wp2_height + 1,
