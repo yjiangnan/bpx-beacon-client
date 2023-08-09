@@ -1046,7 +1046,7 @@ class Beacon:
     ) -> None:
         self.log.info(f"Start {self.sync_mode} syncing up to {peak_height}")
         
-        wp2_height: uint32 = peak_height - self.constants.MAX_SUB_SLOT_BLOCKS
+        wp2_height: uint32 = peak_height - self.constants.SUB_EPOCH_BLOCKS
         
         peers_with_peak: List[WSBpxConnection] = self.get_peers_with_peak(peak_hash)
         peer: WSBpxConnection = random.choice(peers_with_peak)
