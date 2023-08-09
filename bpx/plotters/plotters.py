@@ -50,7 +50,8 @@ class Options(Enum):
     BLADEBIT_NO_T2_DIRECT = 35
     COMPRESSION = 36
     BLADEBIT_DEVICE_INDEX = 37
-    BLADEBIT_NO_DIRECT_DOWNLOADS = 38 
+    BLADEBIT_NO_DIRECT_DOWNLOADS = 38
+    CUDA_TMP_DIR = 39
 
 
 chia_plotter_options = [
@@ -97,6 +98,7 @@ bladebit_cuda_plotter_options = [
     Options.PLOT_COUNT,
     Options.FARMERKEY,
     Options.POOLKEY,
+    Options.CUDA_TMP_DIR,
     Options.ID,
     Options.BLADEBIT_WARMSTART,
     Options.BLADEBIT_NONUMA,
@@ -202,6 +204,15 @@ def build_parser(subparsers, root_path, option_list, name, plotter_desc):
                 dest="tmpdir2",
                 help="Temporary directory 2.",
                 default="",
+            )
+        if option is Options.CUDA_TMP_DIR:
+            parser.add_argument(
+                "-t",
+                "--tmp_dir",
+                type=str,
+                dest="tmpdir",
+                help="Temporary directory 1.",
+                required=False,  # Unlike `Options.TMP_DIR`, this is not required
             )
         if option is Options.FINAL_DIR:
             parser.add_argument(
