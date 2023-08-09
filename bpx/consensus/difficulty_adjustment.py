@@ -198,8 +198,8 @@ def _get_next_sub_slot_iters(
     block_at_height_included_ses: bool,
     new_slot: bool,
     signage_point_total_iters: uint128,
+    block: Union[FullBlock, UnfinishedBlock],
     skip_epoch_check: bool = False,
-    block: Optional[Union[FullBlock, UnfinishedBlock]] = None,
 ) -> uint64:
     """
     Returns the slot iterations required for the next block after the one at height, where new_slot is true
@@ -238,17 +238,13 @@ def _get_next_sub_slot_iters(
     try:
         last_block_prev: BlockRecord = _get_second_to_last_transaction_block_in_previous_epoch(constants, blocks, prev_b)
     except KeyError:
-        if block is not None:
-            if (
-                len(block.finished_sub_slots) > 0
-                and block.finished_sub_slots[0].challenge_chain.new_sub_slot_iters is not None
-            ):
-                assert block.finished_sub_slots[0].challenge_chain.new_difficulty is not None  # They both change together
-                return block.finished_sub_slots[0].challenge_chain.new_difficulty
-            else:
-                return blocks.get_light_sync_sub_slot_iters_and_difficulty()[0]
-        else:
-            raise
+        if (
+            len(block.finished_sub_slots) > 0
+            and block.finished_sub_slots[0].challenge_chain.new_sub_slot_iters is not None
+        ):
+            assert block.finished_sub_slots[0].challenge_chain.new_difficulty is not None  # They both change together
+            return block.finished_sub_slots[0].challenge_chain.new_difficulty
+        raise
 
     # This gets the last transaction block before this block's signage point. Assuming the block at height height
     # is the last block infused in the epoch: If this block ends up being a
@@ -291,8 +287,8 @@ def _get_next_difficulty(
     block_at_height_included_ses: bool,
     new_slot: bool,
     signage_point_total_iters: uint128,
+    block: Union[FullBlock, UnfinishedBlock],
     skip_epoch_check: bool = False,
-    block: Optional[Union[FullBlock, UnfinishedBlock]] = None,
 ) -> uint64:
     """
     Returns the difficulty of the next block that extends onto block.
@@ -332,17 +328,13 @@ def _get_next_difficulty(
     try:
         last_block_prev: BlockRecord = _get_second_to_last_transaction_block_in_previous_epoch(constants, blocks, prev_b)
     except KeyError:
-        if block is not None:
-            if (
-                len(block.finished_sub_slots) > 0
-                and block.finished_sub_slots[0].challenge_chain.new_sub_slot_iters is not None
-            ):
-                assert block.finished_sub_slots[0].challenge_chain.new_difficulty is not None  # They both change together
-                return block.finished_sub_slots[0].challenge_chain.new_difficulty
-            else:
-                return blocks.get_light_sync_sub_slot_iters_and_difficulty()[1]
-        else:
-            raise
+        if (
+            len(block.finished_sub_slots) > 0
+            and block.finished_sub_slots[0].challenge_chain.new_sub_slot_iters is not None
+        ):
+            assert block.finished_sub_slots[0].challenge_chain.new_difficulty is not None  # They both change together
+            return block.finished_sub_slots[0].challenge_chain.new_difficulty
+        raise
 
     # This gets the last transaction block before this block's signage point. Assuming the block at height height
     # is the last block infused in the epoch: If this block ends up being a
@@ -384,7 +376,7 @@ def get_next_sub_slot_iters_and_difficulty(
     is_first_in_sub_slot: bool,
     prev_b: Optional[BlockRecord],
     blocks: BlockchainInterface,
-    block: Optional[Union[FullBlock, UnfinishedBlock]] = None,
+    block: Union[FullBlock, UnfinishedBlock],
 ) -> Tuple[uint64, uint64]:
     """
     Retrieves the current sub_slot iters and difficulty of the next block after prev_b.
@@ -421,8 +413,8 @@ def get_next_sub_slot_iters_and_difficulty(
         False,  # Already checked above
         is_first_in_sub_slot,
         sp_total_iters,
-        False,
         block,
+        False,
     )
 
     sub_slot_iters: uint64 = _get_next_sub_slot_iters(
@@ -435,8 +427,8 @@ def get_next_sub_slot_iters_and_difficulty(
         False,  # Already checked above
         is_first_in_sub_slot,
         sp_total_iters,
-        False,
         block,
+        False,
     )
     
     return sub_slot_iters, difficulty

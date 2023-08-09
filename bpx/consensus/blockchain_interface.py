@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 from bpx.consensus.block_record import BlockRecord
 from bpx.types.blockchain_format.sized_bytes import bytes32
@@ -93,9 +93,5 @@ class BlockchainInterface:
         pass
 
     def seen_compact_proofs(self, vdf_info: VDFInfo, height: uint32) -> bool:
-        # ignoring hinting error until we handle our interfaces more formally
-        return  # type: ignore[return-value]
-    
-    def get_light_sync_sub_slot_iters_and_difficulty(self) -> Tuple[uint64, uint64]:
         # ignoring hinting error until we handle our interfaces more formally
         return  # type: ignore[return-value]

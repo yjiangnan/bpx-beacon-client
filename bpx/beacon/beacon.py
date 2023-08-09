@@ -669,7 +669,7 @@ class Beacon:
             peak_block = await self.blockchain.get_full_peak()
         if peak_block is not None:
             peak = self.blockchain.block_record(peak_block.header_hash)
-            difficulty = self.blockchain.get_next_difficulty(peak.header_hash, False)
+            difficulty = self.blockchain.get_next_difficulty(peak.header_hash, False, peak_block)
             ses: Optional[SubEpochSummary] = next_sub_epoch_summary(
                 self.constants,
                 self.blockchain,
@@ -1238,14 +1238,15 @@ class Beacon:
         await self.server.send_to_all([msg], NodeType.BEACON, peer.peer_node_id)
 
         peak = self.blockchain.get_peak()
+        full_peak = await self.blockchain.get_full_peak()
         if peak is not None and peak.height > self.constants.MAX_SUB_SLOT_BLOCKS:
             sub_slot_iters = peak.sub_slot_iters
             difficulty = uint64(peak.weight - self.blockchain.block_record(peak.prev_hash).weight)
             # Makes sure to potentially update the difficulty if we are past the peak (into a new sub-slot)
             assert ip_sub_slot is not None
             if request.challenge_chain_vdf.challenge != ip_sub_slot.challenge_chain.get_hash():
-                next_difficulty = self.blockchain.get_next_difficulty(peak.header_hash, True)
-                next_sub_slot_iters = self.blockchain.get_next_slot_iters(peak.header_hash, True)
+                next_difficulty = self.blockchain.get_next_difficulty(peak.header_hash, True, full_peak)
+                next_sub_slot_iters = self.blockchain.get_next_slot_iters(peak.header_hash, True, full_peak)
                 difficulty = next_difficulty
                 sub_slot_iters = next_sub_slot_iters
         else:
@@ -1278,8 +1279,8 @@ class Beacon:
         """
 
         record = state_change_summary.peak
-        difficulty = self.blockchain.get_next_difficulty(record.header_hash, False)
-        sub_slot_iters = self.blockchain.get_next_slot_iters(record.header_hash, False)
+        difficulty = self.blockchain.get_next_difficulty(record.header_hash, False, block)
+        sub_slot_iters = self.blockchain.get_next_slot_iters(record.header_hash, False, block)
 
         self.log.info(
             f"🌱 Updated peak to height {record.height}, weight {record.weight}, "
@@ -1824,9 +1825,10 @@ class Beacon:
                 )
 
             peak = self.blockchain.get_peak()
+            full_peak = await self.blockchain.get_full_peak()
             if peak is not None and peak.height > 2:
-                next_sub_slot_iters = self.blockchain.get_next_slot_iters(peak.header_hash, True)
-                next_difficulty = self.blockchain.get_next_difficulty(peak.header_hash, True)
+                next_sub_slot_iters = self.blockchain.get_next_slot_iters(peak.header_hash, True, full_peak)
+                next_difficulty = self.blockchain.get_next_difficulty(peak.header_hash, True, full_peak)
             else:
                 next_sub_slot_iters = self.constants.SUB_SLOT_ITERS_STARTING
                 next_difficulty = self.constants.DIFFICULTY_STARTING
@@ -1836,7 +1838,7 @@ class Beacon:
                 end_of_slot_bundle,
                 self.blockchain,
                 peak,
-                await self.blockchain.get_full_peak(),
+                full_peak,
             )
             # It may be an empty list, even if it's not None. Not None means added successfully
             if new_infusions is not None:

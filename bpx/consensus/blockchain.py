@@ -10,7 +10,7 @@ from concurrent.futures.process import ProcessPoolExecutor
 from enum import Enum
 from multiprocessing.context import BaseContext
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple, Union
 
 from bpx.consensus.block_body_validation import validate_block_body
 from bpx.consensus.block_header_validation import validate_unfinished_header_block
@@ -93,11 +93,6 @@ class Blockchain(BlockchainInterface):
     # Lock to prevent simultaneous reads and writes
     lock: asyncio.Lock
     compact_proof_lock: asyncio.Lock
-    
-    # Sub slot iters and difficulty used when light syncing and there is insufficient blocks
-    # to calculate it normal way
-    _light_sub_slot_iters: uint64
-    _light_difficulty: uint64
 
     @staticmethod
     async def create(
@@ -139,8 +134,6 @@ class Blockchain(BlockchainInterface):
         self._shut_down = False
         await self._load_chain_from_store(blockchain_dir)
         self._seen_compact_proofs = set()
-        self._light_sub_slot_iters = consensus_constants.SUB_SLOT_ITERS_STARTING
-        self._light_difficulty = consensus_constants.DIFFICULTY_STARTING
         return self
 
     def shut_down(self) -> None:
@@ -284,8 +277,6 @@ class Blockchain(BlockchainInterface):
         # make sure to update _peak_height after the transaction is committed,
         # otherwise other tasks may go look for this block before it's available
         if state_change_summary is not None:
-            self._light_sub_slot_iters = block_record.sub_slot_iters
-            self._light_difficulty = uint64(block_record.weight - self.block_record(block_record.prev_hash).weight)
             self._peak_height = block_record.height
 
         # This is done outside the try-except in case it fails, since we do not want to revert anything if it does
@@ -370,20 +361,30 @@ class Blockchain(BlockchainInterface):
             block_record, uint32(max(fork_height, 0))
         )
 
-    def get_next_difficulty(self, header_hash: bytes32, new_slot: bool) -> uint64:
+    def get_next_difficulty(
+        self,
+        header_hash: bytes32,
+        new_slot: bool,
+        block: Union[FullBlock, UnfinishedBlock],
+    ) -> uint64:
         assert self.contains_block(header_hash)
         curr = self.block_record(header_hash)
         if curr.height <= 2:
             return self.constants.DIFFICULTY_STARTING
 
-        return get_next_sub_slot_iters_and_difficulty(self.constants, new_slot, curr, self)[1]
+        return get_next_sub_slot_iters_and_difficulty(self.constants, new_slot, curr, self, block)[1]
 
-    def get_next_slot_iters(self, header_hash: bytes32, new_slot: bool) -> uint64:
+    def get_next_slot_iters(
+        self,
+        header_hash: bytes32,
+        new_slot: bool,
+        block: Union[FullBlock, UnfinishedBlock]
+    ) -> uint64:
         assert self.contains_block(header_hash)
         curr = self.block_record(header_hash)
         if curr.height <= 2:
             return self.constants.SUB_SLOT_ITERS_STARTING
-        return get_next_sub_slot_iters_and_difficulty(self.constants, new_slot, curr, self)[0]
+        return get_next_sub_slot_iters_and_difficulty(self.constants, new_slot, curr, self, block)[0]
 
     async def get_sp_and_ip_sub_slots(
         self, header_hash: bytes32
@@ -742,12 +743,3 @@ class Blockchain(BlockchainInterface):
             self._seen_compact_proofs.clear()
         self._seen_compact_proofs.add(pot_tuple)
         return False
-    
-    def new_valid_light_sync_weight_proof(self, weight_proof: WeightProof, records: List[BlockRecord]) -> None:
-        for record in records:
-            self.add_block_record(record)
-        self._light_sub_slot_iters = records[-1].sub_slot_iters
-        self._light_difficulty = uint64(records[-1].weight - records[-2].weight)
-    
-    def get_light_sync_sub_slot_iters_and_difficulty(self) -> Tuple[uint64, uint64]:
-        return self._light_sub_slot_iters, self._light_difficulty
