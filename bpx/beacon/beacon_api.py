@@ -113,6 +113,8 @@ class BeaconAPI:
 
     @api_request(reply_types=[ProtocolMessageTypes.respond_proof_of_weight])
     async def request_proof_of_weight(self, request: beacon_protocol.RequestProofOfWeight) -> Optional[Message]:
+        if self.beacon.sync_mode == "light":
+            return None
         if self.beacon.weight_proof_handler is None:
             return None
         if not self.beacon.blockchain.contains_block(request.tip):
