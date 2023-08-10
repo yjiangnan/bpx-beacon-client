@@ -1205,7 +1205,8 @@ class Beacon:
                 await self.peak_post_processing_2(peak_fb, None, state_change_summary, ppp_result)
 
         if peak is not None and self.weight_proof_handler is not None:
-            await self.weight_proof_handler.get_proof_of_weight(peak.header_hash)
+            if self.sync_mode != "light":
+                await self.weight_proof_handler.get_proof_of_weight(peak.header_hash)
             self._state_changed("block")
 
     async def signage_point_post_processing(

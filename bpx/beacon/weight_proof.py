@@ -107,63 +107,67 @@ class WeightProofHandler:
         """
         Creates a weight proof object
         """
-        assert self.blockchain is not None
-        sub_epoch_segments: List[SubEpochChallengeSegment] = []
-        tip_rec = self.blockchain.try_block_record(tip)
-        if tip_rec is None:
-            log.error("failed not tip in cache")
-            return None
-        log.info(f"create weight proof peak {tip} {tip_rec.height}")
-        recent_chain = await self._get_recent_chain(tip_rec.height)
-        if recent_chain is None:
-            return None
-
-        summary_heights = self.blockchain.get_ses_heights()
-        zero_hash = self.blockchain.height_to_hash(uint32(0))
-        assert zero_hash is not None
-        prev_ses_block = await self.blockchain.get_block_record_from_db(zero_hash)
-        if prev_ses_block is None:
-            return None
-        sub_epoch_data = self.get_sub_epoch_data(tip_rec.height, summary_heights)
-        # use second to last ses as seed
-        seed = self.get_seed_for_proof(summary_heights, tip_rec.height)
-        rng = random.Random(seed)
-        weight_to_check = _get_weights_for_sampling(rng, tip_rec.weight, recent_chain)
-        sample_n = 0
-        ses_blocks = await self.blockchain.get_block_records_at(summary_heights)
-        if ses_blocks is None:
-            return None
-
-        for sub_epoch_n, ses_height in enumerate(summary_heights):
-            if ses_height > tip_rec.height:
-                break
-
-            # if we have enough sub_epoch samples, dont sample
-            if sample_n >= self.MAX_SAMPLES:
-                log.debug("reached sampled sub epoch cap")
-                break
-            # sample sub epoch
-            # next sub block
-            ses_block = ses_blocks[sub_epoch_n]
-            if ses_block is None or ses_block.sub_epoch_summary_included is None:
-                log.error("error while building proof")
+        try:
+            assert self.blockchain is not None
+            sub_epoch_segments: List[SubEpochChallengeSegment] = []
+            tip_rec = self.blockchain.try_block_record(tip)
+            if tip_rec is None:
+                log.error("failed not tip in cache")
                 return None
-
-            if _sample_sub_epoch(prev_ses_block.weight, ses_block.weight, weight_to_check):  # type: ignore
-                sample_n += 1
-                segments = await self.blockchain.get_sub_epoch_challenge_segments(ses_block.header_hash)
-                if segments is None:
-                    segments = await self.__create_sub_epoch_segments(ses_block, prev_ses_block, uint32(sub_epoch_n))
+            log.info(f"create weight proof peak {tip} {tip_rec.height}")
+            recent_chain = await self._get_recent_chain(tip_rec.height)
+            if recent_chain is None:
+                return None
+    
+            summary_heights = self.blockchain.get_ses_heights()
+            zero_hash = self.blockchain.height_to_hash(uint32(0))
+            assert zero_hash is not None
+            prev_ses_block = await self.blockchain.get_block_record_from_db(zero_hash)
+            if prev_ses_block is None:
+                return None
+            sub_epoch_data = self.get_sub_epoch_data(tip_rec.height, summary_heights)
+            # use second to last ses as seed
+            seed = self.get_seed_for_proof(summary_heights, tip_rec.height)
+            rng = random.Random(seed)
+            weight_to_check = _get_weights_for_sampling(rng, tip_rec.weight, recent_chain)
+            sample_n = 0
+            ses_blocks = await self.blockchain.get_block_records_at(summary_heights)
+            if ses_blocks is None:
+                return None
+    
+            for sub_epoch_n, ses_height in enumerate(summary_heights):
+                if ses_height > tip_rec.height:
+                    break
+    
+                # if we have enough sub_epoch samples, dont sample
+                if sample_n >= self.MAX_SAMPLES:
+                    log.debug("reached sampled sub epoch cap")
+                    break
+                # sample sub epoch
+                # next sub block
+                ses_block = ses_blocks[sub_epoch_n]
+                if ses_block is None or ses_block.sub_epoch_summary_included is None:
+                    log.error("error while building proof")
+                    return None
+    
+                if _sample_sub_epoch(prev_ses_block.weight, ses_block.weight, weight_to_check):  # type: ignore
+                    sample_n += 1
+                    segments = await self.blockchain.get_sub_epoch_challenge_segments(ses_block.header_hash)
                     if segments is None:
-                        log.error(
-                            f"failed while building segments for sub epoch {sub_epoch_n}, ses height {ses_height} "
-                        )
-                        return None
-                    await self.blockchain.persist_sub_epoch_challenge_segments(ses_block.header_hash, segments)
-                sub_epoch_segments.extend(segments)
-            prev_ses_block = ses_block
-        log.debug(f"sub_epochs: {len(sub_epoch_data)}")
-        return WeightProof(sub_epoch_data, sub_epoch_segments, recent_chain)
+                        segments = await self.__create_sub_epoch_segments(ses_block, prev_ses_block, uint32(sub_epoch_n))
+                        if segments is None:
+                            log.error(
+                                f"failed while building segments for sub epoch {sub_epoch_n}, ses height {ses_height} "
+                            )
+                            return None
+                        await self.blockchain.persist_sub_epoch_challenge_segments(ses_block.header_hash, segments)
+                    sub_epoch_segments.extend(segments)
+                prev_ses_block = ses_block
+            log.debug(f"sub_epochs: {len(sub_epoch_data)}")
+            return WeightProof(sub_epoch_data, sub_epoch_segments, recent_chain)
+        except:
+            log.error("insufficient ancient chain data to build weight proof")
+            return None
 
     def get_seed_for_proof(self, summary_heights: List[uint32], tip_height) -> bytes32:
         count = 0
