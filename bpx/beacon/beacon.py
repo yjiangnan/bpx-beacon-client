@@ -1060,6 +1060,9 @@ class Beacon:
     
         if height_epoch_surpass > 0:
             tmp_start_height: uint32 = height_epoch_surpass - self.constants.MAX_SUB_SLOT_BLOCKS - 1
+            if peak_height - tmp_start_height < self.constants.SUB_EPOCH_BLOCKS:
+                tmp_start_height = tmp_start_height - self.constants.SUB_EPOCH_BLOCKS
+                self.log.info("Increased sync blocks count by 1 sub epoch")
             wp2_height: uint32 = tmp_start_height - 1
             
             self.log.info(f"Considered start height: {tmp_start_height}")
