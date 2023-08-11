@@ -1054,14 +1054,12 @@ class Beacon:
             peak_height + 2 * self.constants.MAX_SUB_SLOT_BLOCKS + self.constants.MIN_BLOCKS_PER_CHALLENGE_BLOCK + 5
         )
         height_epoch_surpass: uint32 = uint32(height_in_next_epoch - (height_in_next_epoch % self.constants.EPOCH_BLOCKS))
-        height_prev_epoch_surpass: uint32 = uint32(height_epoch_surpass - self.constants.EPOCH_BLOCKS)
         
         self.log.info(f"Height in next epoch: {height_in_next_epoch}")
         self.log.info(f"Height epoch surpass: {height_epoch_surpass}")
-        self.log.info(f"Height prev epoch surpass: {height_prev_epoch_surpass}")
     
-        if height_prev_epoch_surpass > 0:
-            tmp_start_height: uint32 = height_prev_epoch_surpass - self.constants.MAX_SUB_SLOT_BLOCKS - 1
+        if height_epoch_surpass > 0:
+            tmp_start_height: uint32 = height_epoch_surpass - self.constants.MAX_SUB_SLOT_BLOCKS - 1
             wp2_height: uint32 = tmp_start_height - 1
             
             self.log.info(f"Considered start height: {tmp_start_height}")
