@@ -421,7 +421,6 @@ def get_next_sub_slot_iters_and_difficulty(
         False,  # Already checked above
         is_first_in_sub_slot,
         sp_total_iters,
-        False,
         block,
     )
 
@@ -435,7 +434,6 @@ def get_next_sub_slot_iters_and_difficulty(
         False,  # Already checked above
         is_first_in_sub_slot,
         sp_total_iters,
-        False,
         block,
     )
     
