@@ -1655,7 +1655,6 @@ class Beacon:
             len(block.finished_sub_slots) > 0,
             prev_b,
             self.blockchain,
-            block,
         )
 
         if block.reward_chain_block.signage_point_index == 0:
@@ -1751,7 +1750,6 @@ class Beacon:
             len(finished_sub_slots) > 0,
             prev_b,
             self.blockchain,
-            unfinished_block,
         )
 
         if unfinished_block.reward_chain_block.pos_ss_cc_challenge_hash == self.constants.GENESIS_CHALLENGE:
