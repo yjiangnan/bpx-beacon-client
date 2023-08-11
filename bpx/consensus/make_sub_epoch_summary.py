@@ -180,8 +180,8 @@ def next_sub_epoch_summary(
             False,  # Already checked above
             True,
             uint128(block.total_iters - ip_iters + sp_iters - (sub_slot_iters if overflow else 0)),
-            block,
             True,
+            block,
         )
         next_sub_slot_iters = _get_next_sub_slot_iters(
             constants,
@@ -193,8 +193,8 @@ def next_sub_epoch_summary(
             False,  # Already checked above
             True,
             uint128(block.total_iters - ip_iters + sp_iters - (sub_slot_iters if overflow else 0)),
-            block,
             True,
+            block,
         )
 
     return make_sub_epoch_summary(

@@ -447,9 +447,8 @@ class BeaconAPI:
             if existing_sp is not None and existing_sp.rc_vdf == request.reward_chain_vdf:
                 return None
             peak = self.beacon.blockchain.get_peak()
-            full_peak = await self.blockchain.get_full_peak()
             if peak is not None and peak.height > self.beacon.constants.MAX_SUB_SLOT_BLOCKS:
-                next_sub_slot_iters = self.beacon.blockchain.get_next_slot_iters(peak.header_hash, True, full_peak)
+                next_sub_slot_iters = self.beacon.blockchain.get_next_slot_iters(peak.header_hash, True)
                 sub_slots_for_peak = await self.beacon.blockchain.get_sp_and_ip_sub_slots(peak.header_hash)
                 assert sub_slots_for_peak is not None
                 ip_sub_slot: Optional[EndOfSubSlotBundle] = sub_slots_for_peak[1]
