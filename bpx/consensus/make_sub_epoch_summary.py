@@ -107,7 +107,7 @@ def next_sub_epoch_summary(
     # This is the ssi of the current block
 
     sub_slot_iters = get_next_sub_slot_iters_and_difficulty(
-        constants, len(block.finished_sub_slots) > 0, prev_b, blocks, block
+        constants, len(block.finished_sub_slots) > 0, prev_b, blocks
     )[0]
     overflow = is_overflow_block(constants, signage_point_index)
 
