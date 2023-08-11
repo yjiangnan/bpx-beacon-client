@@ -186,6 +186,7 @@ class Blockchain(BlockchainInterface):
         block: FullBlock,
         pre_validation_result: PreValidationResult,
         fork_point_with_peak: Optional[uint32] = None,
+        skip_diff_ssi: bool = False,
     ) -> Tuple[ReceiveBlockResult, Optional[Err], Optional[StateChangeSummary]]:
         """
         This method must be called under the blockchain lock
@@ -222,12 +223,22 @@ class Blockchain(BlockchainInterface):
             return ReceiveBlockResult.INVALID_BLOCK, Err(pre_validation_result.error), None
         assert required_iters is not None
         
+        sub_slot_iters: Optional[uint64] = None
+        if (
+            skip_diff_ssi
+            and len(block.finished_sub_slots) > 0
+            and block.finished_sub_slots[0].challenge_chain.new_sub_slot_iters is not None
+        ):
+            assert block.finished_sub_slots[0].challenge_chain.new_difficulty is not None  # They both change
+            sub_slot_iters = block.finished_sub_slots[0].challenge_chain.new_sub_slot_iters
+        
         block_record = block_to_block_record(
             self.constants,
             self,
             required_iters,
             block,
             None,
+            sub_slot_iters,
         )
 
         error_code = await validate_block_body(
@@ -519,6 +530,7 @@ class Blockchain(BlockchainInterface):
         blocks: List[FullBlock],
         batch_size: int = 4,
         wp_summaries: Optional[List[SubEpochSummary]] = None,
+        skip_diff_ssi: bool = False,
     ) -> List[PreValidationResult]:
         return await pre_validate_blocks_multiprocessing(
             self.constants,
@@ -527,6 +539,7 @@ class Blockchain(BlockchainInterface):
             self.pool,
             batch_size,
             wp_summaries,
+            skip_diff_ssi,
         )
 
     def contains_block(self, header_hash: bytes32) -> bool:
