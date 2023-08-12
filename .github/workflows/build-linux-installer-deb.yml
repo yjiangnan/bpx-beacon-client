@@ -52,6 +52,18 @@ jobs:
       uses: ./.github/actions/setjobenv
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Check tag type
+      id: check_tag_type
+      shell: bash
+      run: |
+        REG_B="^[0-9]+\.[0-9]+\.[0-9]+-b[0-9]+$"
+        REG_RC="^[0-9]+\.[0-9]+\.[0-9]+-rc[0-9]+$"
+        if [[ "${{ github.event.release.tag_name }}" =~ $REG_B ]] || [[ "${{ inputs.release_type }}" =~ $REG_B ]]; then
+          echo "TAG_TYPE=beta" >> "$GITHUB_OUTPUT"
+        elif [[ "${{ github.event.release.tag_name }}" =~ $REG_RC ]] || [[ "${{ inputs.release_type }}" =~ $REG_RC ]]; then
+          echo "TAG_TYPE=rc" >> "$GITHUB_OUTPUT"
+        fi
 
     # Create our own venv outside of the git directory JUST for getting the ACTUAL version so that install can't break it
     - name: Get version number
@@ -74,28 +86,38 @@ jobs:
         chmod +x "$GITHUB_WORKSPACE/madmax/chia_plot"
         chmod +x "$GITHUB_WORKSPACE/madmax/chia_plot_k34"
 
-    - name: Get latest bladebit plotter
-      if: env.RELEASE == 'true' && env.PRE_RELEASE != 'true'
+    - name: Fetch bladebit versions
+      shell: bash
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        LATEST_BLADEBIT=$(gh api repos/Chia-Network/bladebit/releases/latest --jq 'select(.prerelease == false) | .tag_name')
-        mkdir "$GITHUB_WORKSPACE/bladebit"
-        cd "$GITHUB_WORKSPACE/bladebit"
-        gh release download -R Chia-Network/bladebit $LATEST_BLADEBIT -p 'bladebit*-ubuntu-x86-64.tar.gz'
-        ls *.tar.gz | xargs -I{} bash -c 'tar -xzf {} && rm {}'
-        ls bladebit* | xargs -I{} chmod +x {}
-        cd "$OLDPWD"
+        # Fetch the latest version of each type
+        LATEST_RELEASE=$(gh api repos/Chia-Network/bladebit/releases/latest --jq 'select(.prerelease == false) | .tag_name')
+        LATEST_BETA=$(gh api repos/Chia-Network/bladebit/releases --jq 'map(select(.prerelease) | select(.tag_name | test("^v[0-9]+\\.[0-9]+\\.[0-9]+-beta[0-9]+$"))) | first | .tag_name')
+        LATEST_RC=$(gh api repos/Chia-Network/bladebit/releases --jq 'map(select(.prerelease) | select(.tag_name | test("^v[0-9]+\\.[0-9]+\\.[0-9]+-rc[0-9]+$"))) | first | .tag_name')
 
-    - name: Get latest prerelease bladebit plotter
-      if: env.RELEASE != 'true' || env.PRE_RELEASE == 'true'
+        # Compare the versions and choose the newest that matches the requirements
+        if [[ "$TAG_TYPE" == "beta" || -z "${{ github.event.release.tag_name }}" ]]; then
+          # For beta or dev builds (indicated by the absence of a tag), use the latest version available
+          LATEST_VERSION=$(printf "%s\n%s\n%s\n" "$LATEST_RELEASE" "$LATEST_BETA" "$LATEST_RC" | sed '/-/!s/$/_/' | sort -V | sed 's/_$//' | tail -n 1)
+        elif [[ "$TAG_TYPE" == "rc" ]]; then
+          # For RC builds, use the latest RC or full release if it's newer
+          LATEST_VERSION=$(printf "%s\n%s\n" "$LATEST_RELEASE" "$LATEST_RC" | sed '/-/!s/$/_/' | sort -V | sed 's/_$//' | tail -n 1)
+        else
+          # For full releases, use the latest full release
+          LATEST_VERSION="$LATEST_RELEASE"
+        fi
+        echo "LATEST_VERSION=$LATEST_VERSION" >> "$GITHUB_ENV"
+
+    - name: Get latest bladebit plotter
+      shell: bash
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        LATEST_PRERELEASE=$(gh api repos/Chia-Network/bladebit/releases --jq 'map(select(.prerelease)) | first | .tag_name')
-        mkdir "$GITHUB_WORKSPACE/bladebit"
-        cd "$GITHUB_WORKSPACE/bladebit"
-        gh release download -R Chia-Network/bladebit $LATEST_PRERELEASE -p 'bladebit*ubuntu-x86-64.tar.gz'
+        # Download and extract the chosen version
+        mkdir "$GITHUB_WORKSPACE"/bladebit
+        cd "$GITHUB_WORKSPACE"/bladebit
+        gh release download -R Chia-Network/bladebit "$LATEST_VERSION" -p 'bladebit*-ubuntu-x86-64.tar.gz'
         ls *.tar.gz | xargs -I{} bash -c 'tar -xzf {} && rm {}'
         ls bladebit* | xargs -I{} chmod +x {}
         cd "$OLDPWD"
