@@ -104,6 +104,8 @@ class Beacon:
     _maybe_blockchain_lock_low_priority: Optional[LockClient]
     execution_client: ExecutionClient
     sync_mode: str
+    _gapfiller_task: Optional[asyncio.Task[None]]
+    _gapfiller_queue: asyncio.Queue[Tuple[uint32, uint32]]
 
     @property
     def server(self) -> BpxServer:
@@ -177,6 +179,8 @@ class Beacon:
         self._blockchain_lock_queue = None
         self._maybe_blockchain_lock_high_priority = None
         self._maybe_blockchain_lock_low_priority = None
+        self._gapfiller_task = None
+        self._gapfiller_queue = asyncio.Queue()
 
     @property
     def block_store(self) -> BlockStore:
@@ -389,6 +393,9 @@ class Beacon:
         
         if self.beacon_peers is not None:
             asyncio.create_task(self.beacon_peers.start())
+        
+        if self.sync_mode != "light":
+            asyncio.create_task(self._gapfiller())
         
 
     async def initialize_weight_proof(self) -> None:
@@ -1124,7 +1131,24 @@ class Beacon:
             summaries,
             True,
         )
-
+    
+    async def _gapfiller(self) -> None:
+        self.log.info("Gapfiller task started")
+        
+        try:
+            while True:
+                range: Tuple[uint32, uint32] = await self._gapfiller_queue.get()
+                try:
+                    #
+                except asyncio.CancelledError:
+                    self.log.warning("Gapfilling failed, CancelledError")
+                except Exception as e:
+                    tb = traceback.format_exc()
+                    self.log.error(f"Error with gapfilling: {type(e)}{tb}")
+                
+        except asyncio.CancelledError:
+            self.log.info("Gapfiller task stopped")
+        
     def get_peers_with_peak(self, peak_hash: bytes32) -> List[WSBpxConnection]:
         peer_ids: Set[bytes32] = self.sync_store.get_peers_that_have_peak([peak_hash])
         if len(peer_ids) == 0:
