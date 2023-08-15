@@ -943,7 +943,7 @@ class Beacon:
                 if self.sync_mode == "full":
                     await self._long_sync_full(fork_point, target_peak.height, target_peak.header_hash, summaries)
                 else:
-                    await self._long_sync_light(fork_point, target_peak.height, target_peak.header_hash, summaries)
+                    await self._long_sync_light(target_peak.height, target_peak.header_hash, summaries)
                     
         except asyncio.CancelledError:
             self.log.warning("Syncing failed, CancelledError")
@@ -1057,14 +1057,16 @@ class Beacon:
     
     async def _long_sync_light(
         self,
-        fork_point_height: uint32,
         peak_height: uint32,
         peak_hash: bytes32,
         summaries: List[SubEpochSummary],
     ) -> None:
         self.log.info(f"Start {self.sync_mode} syncing up to {peak_height}")
         
-        start_height: uint32 = fork_point_height
+        start_height: uint32 = 0
+        peak = self.blockchain.get_peak()
+        if peak is not None:
+            start_height = peak.height + 1
         
         height_in_next_epoch = (
             peak_height + 2 * self.constants.MAX_SUB_SLOT_BLOCKS + self.constants.MIN_BLOCKS_PER_CHALLENGE_BLOCK + 5
@@ -1076,22 +1078,25 @@ class Beacon:
     
         if height_epoch_surpass > 0:
             tmp_start_height: uint32 = height_epoch_surpass - self.constants.MAX_SUB_SLOT_BLOCKS - 1
-            self.log.info(f"Initial start height: {tmp_start_height}")
+            self.log.info(f"Considered start height: {tmp_start_height}")
             
             if peak_height - tmp_start_height < self.constants.SUB_EPOCH_BLOCKS:
                 tmp_start_height = peak_height - self.constants.SUB_EPOCH_BLOCKS
-                self.log.info(f"Increased sync blocks count by 1 sub epoch: {tmp_start_height}")
+                self.log.info(f"Increased blocks count by 1 sub epoch: {tmp_start_height}")
             
-            if fork_point_height > tmp_start_height:
-                tmp_start_height = fork_point_height
-                self.log.info(f"Decreased sync height to current fork point: {tmp_start_height}")
+            if start_height > tmp_start_height:
+                self.log.info(f"Updated sync height to current peak + 1: {tmp_start_height}")
+            
             else:
                 wp2_height: uint32 = tmp_start_height - 1
-                
-                self.log.info(f"Considered start height: {tmp_start_height}")
                 self.log.info(f"Second weight proof height: {wp2_height}")
                 
-                if wp2_height >= self.constants.WEIGHT_PROOF_RECENT_BLOCKS:
+                if wp2_height < self.constants.WEIGHT_PROOF_RECENT_BLOCKS:
+                    self.log.info("Chain too short for weight proof, using fallback start height: {start_height}")
+                    
+                else:
+                    start_height = tmp_start_height
+                    
                     peers_with_peak: List[WSBpxConnection] = self.get_peers_with_peak(peak_hash)
                     peer: WSBpxConnection = random.choice(peers_with_peak)
                     
@@ -1133,10 +1138,6 @@ class Beacon:
                     self.log.info(f"Adding {len(block_records)} block records to the cache")
                     for record in block_records:
                         self.blockchain.add_block_record(record)
-                    
-                    start_height = tmp_start_height
-                else:
-                    self.log.info("Chain too short for weight proof")
             
         self.log.info(f"Start height: {start_height}")
         
