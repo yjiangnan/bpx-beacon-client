@@ -1166,14 +1166,58 @@ class Beacon:
         
         try:
             while True:
-                range: Tuple[uint32, uint32] = await self._gapfiller_queue.get()
-                try:
-                    self.log.info(f"Filling the gap {range[0]} - {range[1]}")
-                except asyncio.CancelledError:
-                    self.log.warning("Gapfilling failed, CancelledError")
-                except Exception as e:
-                    tb = traceback.format_exc()
-                    self.log.error(f"Error with gapfilling: {type(e)}{tb}")
+                gap: Tuple[uint32, uint32] = await self._gapfiller_queue.get()
+
+                while True:
+                    try:
+                        self.log.info(f"Filling the gap {gap[0]} - {gap[1]}")
+                        
+                        peak = self.blockchain.get_peak()
+                        peers_with_peak: List[WSBpxConnection] = self.get_peers_with_peak(peak.header_hash)
+                        
+                        if len(peers_with_peak) == 0:
+                            self.log.warning(f"Gapfilling failed, no peers with header_hash {peak.header_hash} ")
+                            await asyncio.sleep(30)
+                            continue
+                        
+                        for start_height in range(gap[0], gap[1], self.constants.MAX_BLOCK_COUNT_PER_REQUESTS):
+                            end_height = min(gap[1], start_height + self.constants.MAX_BLOCK_COUNT_PER_REQUESTS)
+                            request = RequestBlocks(uint32(start_height), uint32(end_height))
+                            success = False
+                            
+                            for peer in random.sample(peers_with_peak, len(peers_with_peak)):
+                                if peer.closed:
+                                    peers_with_peak.remove(peer)
+                                    continue
+                                response = await peer.call_api(BeaconAPI.request_blocks, request, timeout=30)
+                                if response is None:
+                                    await peer.close()
+                                    peers_with_peak.remove(peer)
+                                elif isinstance(response, RespondBlocks):
+                                    success, _ = await self.add_block_batch(
+                                        response.blocks,
+                                        peer,
+                                        None,
+                                    )
+                                    if success is False:
+                                        self.log.error(f"Failed to validate gapfiller block batch {start_height} to {end_height}")
+                                        peers_with_peak.remove(peer)
+                                        await peer.close(600)
+                                        continue
+                                    self.log.info(f"Added gapfiller blocks {start_height} to {end_height}")
+                                    
+                            if success is False:
+                                raise ValueError(f"failed fetching {start_height} to {end_height} from peers")
+                        
+                        break
+                    
+                    except asyncio.CancelledError:
+                        self.log.warning("Gapfilling failed, CancelledError")
+                        return
+                    except Exception as e:
+                        tb = traceback.format_exc()
+                        self.log.error(f"Error with gapfilling: {type(e)}{tb}")
+                        await asyncio.sleep(30)
                 
         except asyncio.CancelledError:
             self.log.info("Gapfiller task stopped")
