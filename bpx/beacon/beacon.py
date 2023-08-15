@@ -1180,11 +1180,15 @@ class Beacon:
                     try:
                         self.log.info(f"Filling the gap {gap[0]} - {gap[1]}")
                         
-                        peak = self.blockchain.get_peak()
-                        peers_with_peak: List[WSBpxConnection] = self.get_peers_with_peak(peak.header_hash)
+                        target_peak = self.sync_store.get_heaviest_peak()
+                        if target_peak is None:
+                            self.log.warning("Gapfiller: waiting for peak")
+                            await asyncio.sleep(30)
+                            continue
                         
+                        peers_with_peak: List[WSBpxConnection] = self.get_peers_with_peak(target_peak.header_hash)
                         if len(peers_with_peak) == 0:
-                            self.log.warning(f"Gapfilling failed, no peers with header_hash {peak.header_hash} ")
+                            self.log.warning("Gapfiller: waiting for peers with peak")
                             await asyncio.sleep(30)
                             continue
                         
