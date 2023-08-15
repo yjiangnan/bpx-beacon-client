@@ -1141,13 +1141,21 @@ class Beacon:
             
         self.log.info(f"Start height: {start_height}")
         
-        await self.sync_from_fork_point(
-            start_height,
-            peak_height,
-            peak_hash,
-            summaries,
-            True,
-        )
+        try:
+            await self.sync_from_fork_point(
+                start_height,
+                peak_height,
+                peak_hash,
+                summaries,
+                True,
+            )
+        except:
+            raise
+        finally:
+            if self.sync_mode != "light":
+                new_peak = self.blockchain.get_peak()
+                if new_peak is not None:
+                    await self.gapfiller_find_gaps(new_peak.height)
     
     async def gapfiller_find_gaps(self, end_height: uint32) -> None:
       start_height: uint32 = 0
