@@ -668,7 +668,7 @@ class Beacon:
             # point being in the past), or we are very far behind. Performs a long sync.
             self._sync_task = asyncio.create_task(self._sync())
         
-        if self.sync_mode != "light" and self_gapfiller_task is None:
+        if self.sync_mode != "light" and self._gapfiller_task is None:
             self._gapfiller_task = asyncio.create_task(self._gapfiller())
 
     async def send_peak_to_timelords(
@@ -1076,60 +1076,67 @@ class Beacon:
     
         if height_epoch_surpass > 0:
             tmp_start_height: uint32 = height_epoch_surpass - self.constants.MAX_SUB_SLOT_BLOCKS - 1
+            self.log.info(f"Initial start height: {tmp_start_height}")
+            
             if peak_height - tmp_start_height < self.constants.SUB_EPOCH_BLOCKS:
                 tmp_start_height = peak_height - self.constants.SUB_EPOCH_BLOCKS
-                self.log.info("Increased sync blocks count by 1 sub epoch")
-            wp2_height: uint32 = tmp_start_height - 1
+                self.log.info(f"Increased sync blocks count by 1 sub epoch: {tmp_start_height}")
             
-            self.log.info(f"Considered start height: {tmp_start_height}")
-            self.log.info(f"Second weight proof height: {wp2_height}")
-            
-            if wp2_height >= self.constants.WEIGHT_PROOF_RECENT_BLOCKS:
-                peers_with_peak: List[WSBpxConnection] = self.get_peers_with_peak(peak_hash)
-                peer: WSBpxConnection = random.choice(peers_with_peak)
-                
-                self.log.info(f"Requesting block {wp2_height} from peer {peer.peer_host}")
-                response = await peer.call_api(
-                    BeaconAPI.request_block, beacon_protocol.RequestBlock(wp2_height)
-                )
-                if response is None or not isinstance(response, beacon_protocol.RespondBlock):
-                    await peer.close(600)
-                    raise ValueError(f"Could not fetch block at height {wp2_height}")
-                wp2_hash: bytes32 = response.block.header_hash
-                
-                self.log.info(f"Requesting weight proof from peer {peer.peer_host} up to height {wp2_height}")
-                wp_timeout = 360
-                if "weight_proof_timeout" in self.config:
-                    wp_timeout = self.config["weight_proof_timeout"]
-                self.log.debug(f"weight proof timeout is {wp_timeout} sec")
-                request = beacon_protocol.RequestProofOfWeight(wp2_height, wp2_hash)
-                response = await peer.call_api(
-                    BeaconAPI.request_proof_of_weight, request, timeout=wp_timeout
-                )
-        
-                if response is None or not isinstance(response, beacon_protocol.RespondProofOfWeight):
-                    await peer.close(600)
-                    raise RuntimeError(f"Weight proof did not arrive in time from peer: {peer.peer_host}")
-                if response.wp.recent_chain_data[-1].reward_chain_block.height != wp2_height:
-                    await peer.close(600)
-                    raise RuntimeError(f"Weight proof had the wrong height: {peer.peer_host}")
-        
-                try:
-                    validated, _, _, block_records = await self.weight_proof_handler.validate_weight_proof(response.wp)
-                except Exception as e:
-                    await peer.close(600)
-                    raise ValueError(f"Weight proof validation threw an error {e}")
-                if not validated:
-                    await peer.close(600)
-                    raise ValueError("Weight proof validation failed")
-                
-                self.log.info(f"Adding {len(block_records)} block records to the cache")
-                for record in block_records:
-                    self.blockchain.add_block_record(record)
-                
-                start_height = tmp_start_height
+            if fork_point_height > tmp_start_height:
+                tmp_start_height = fork_point_height
+                self.log.info(f"Decreased sync height to current fork point: {tmp_start_height}")
             else:
-                self.log.info("Chain too short for weight proof")
+                wp2_height: uint32 = tmp_start_height - 1
+                
+                self.log.info(f"Considered start height: {tmp_start_height}")
+                self.log.info(f"Second weight proof height: {wp2_height}")
+                
+                if wp2_height >= self.constants.WEIGHT_PROOF_RECENT_BLOCKS:
+                    peers_with_peak: List[WSBpxConnection] = self.get_peers_with_peak(peak_hash)
+                    peer: WSBpxConnection = random.choice(peers_with_peak)
+                    
+                    self.log.info(f"Requesting block {wp2_height} from peer {peer.peer_host}")
+                    response = await peer.call_api(
+                        BeaconAPI.request_block, beacon_protocol.RequestBlock(wp2_height)
+                    )
+                    if response is None or not isinstance(response, beacon_protocol.RespondBlock):
+                        await peer.close(600)
+                        raise ValueError(f"Could not fetch block at height {wp2_height}")
+                    wp2_hash: bytes32 = response.block.header_hash
+                    
+                    self.log.info(f"Requesting weight proof from peer {peer.peer_host} up to height {wp2_height}")
+                    wp_timeout = 360
+                    if "weight_proof_timeout" in self.config:
+                        wp_timeout = self.config["weight_proof_timeout"]
+                    self.log.debug(f"weight proof timeout is {wp_timeout} sec")
+                    request = beacon_protocol.RequestProofOfWeight(wp2_height, wp2_hash)
+                    response = await peer.call_api(
+                        BeaconAPI.request_proof_of_weight, request, timeout=wp_timeout
+                    )
+            
+                    if response is None or not isinstance(response, beacon_protocol.RespondProofOfWeight):
+                        await peer.close(600)
+                        raise RuntimeError(f"Weight proof did not arrive in time from peer: {peer.peer_host}")
+                    if response.wp.recent_chain_data[-1].reward_chain_block.height != wp2_height:
+                        await peer.close(600)
+                        raise RuntimeError(f"Weight proof had the wrong height: {peer.peer_host}")
+            
+                    try:
+                        validated, _, _, block_records = await self.weight_proof_handler.validate_weight_proof(response.wp)
+                    except Exception as e:
+                        await peer.close(600)
+                        raise ValueError(f"Weight proof validation threw an error {e}")
+                    if not validated:
+                        await peer.close(600)
+                        raise ValueError("Weight proof validation failed")
+                    
+                    self.log.info(f"Adding {len(block_records)} block records to the cache")
+                    for record in block_records:
+                        self.blockchain.add_block_record(record)
+                    
+                    start_height = tmp_start_height
+                else:
+                    self.log.info("Chain too short for weight proof")
             
         self.log.info(f"Start height: {start_height}")
         
