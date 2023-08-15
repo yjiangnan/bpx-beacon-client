@@ -106,6 +106,7 @@ class Beacon:
     sync_mode: str
     _gapfiller_task: Optional[asyncio.Task[None]]
     _gapfiller_queue: asyncio.Queue[Tuple[uint32, uint32]]
+    _gapfiller_curr: Optional[uint32]
 
     @property
     def server(self) -> BpxServer:
@@ -181,6 +182,7 @@ class Beacon:
         self._maybe_blockchain_lock_low_priority = None
         self._gapfiller_task = None
         self._gapfiller_queue = asyncio.Queue()
+        self._gapfiller_curr = None
 
     @property
     def block_store(self) -> BlockStore:
@@ -375,6 +377,9 @@ class Beacon:
                         raise RuntimeError("Unexpected fork choice status.")
                 except Exception as e:
                     self.log.error(f"Exception in peak initialization: {e}")
+                
+            if self.sync_mode != "light":
+                await self.gapfiller_find_gaps(peak.height)
             
         if self.config["send_uncompact_interval"] != 0:
             sanitize_weight_proof_only = False
@@ -395,7 +400,7 @@ class Beacon:
             asyncio.create_task(self.beacon_peers.start())
         
         if self.sync_mode != "light":
-            asyncio.create_task(self._gapfiller())
+            self._gapfiller_task = asyncio.create_task(self._gapfiller())
         
 
     async def initialize_weight_proof(self) -> None:
@@ -794,6 +799,7 @@ class Beacon:
         if self._blockchain_lock_queue is not None:
             self._blockchain_lock_queue.close()
         cancel_task_safe(task=self._sync_task, log=self.log)
+        cancel_task_safe(task=self._gapfiller_task, log=self.log)
 
     async def _await_closed(self) -> None:
         await self.db_wrapper.close()
@@ -804,6 +810,9 @@ class Beacon:
         if self._sync_task is not None:
             with contextlib.suppress(asyncio.CancelledError):
                 await self._sync_task
+        if self._gapfiller_task is not None:
+            with contextlib.suppress(asyncio.CancelledError):
+                await self._gapfiller_task
 
     async def _sync(self) -> None:
         """
@@ -1132,6 +1141,26 @@ class Beacon:
             True,
         )
     
+    async def gapfiller_find_gaps(self, end_height: uint32) -> None:
+      start_height: uint32 = 0
+      if self._gapfiller_curr is not None:
+        start_height = self._gapfiller_curr + 1
+        
+      self.log.info(f"Finding the blockchain gaps from block {start_height} up to {end_height}")
+      
+      range_start: Optional[uint32] = None
+      for i in range(start_height, end_height):
+          hash = self.blockchain.height_to_hash(i)
+          if hash == bytes32([0] * 32) and range_start is None:
+              range_start = i
+          elif hash != bytes32([0] * 32) and range_start is not None:
+              await self._gapfiller_queue.put([range_start, i - 1])
+              self._gapfiller_curr = i
+              self.log.warning(f"Blockchain gap found: {range_start} - {i-1}")
+              range_start = None
+      
+      self._gapfiller_curr = end_height
+    
     async def _gapfiller(self) -> None:
         self.log.info("Gapfiller task started")
         
@@ -1139,7 +1168,7 @@ class Beacon:
             while True:
                 range: Tuple[uint32, uint32] = await self._gapfiller_queue.get()
                 try:
-                    #
+                    self.log.info(f"Filling the gap {range[0]} - {range[1]}")
                 except asyncio.CancelledError:
                     self.log.warning("Gapfilling failed, CancelledError")
                 except Exception as e:
