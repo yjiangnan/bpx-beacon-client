@@ -268,6 +268,12 @@ class Blockchain(BlockchainInterface):
                 # Then update the memory cache. It is important that this is not cancelled and does not throw
                 # This is done after all async/DB operations, so there is a decreased chance of failure.
                 self.add_block_record(block_record)
+                self.__height_map.update_height(
+                    block_record.height,
+                    block_record.header_hash,
+                    block_record.sub_epoch_summary_included,
+                )
+                    
                 if state_change_summary is not None:
                     self.__height_map.rollback(state_change_summary.fork_height)
                 for fetched_block_record in records:

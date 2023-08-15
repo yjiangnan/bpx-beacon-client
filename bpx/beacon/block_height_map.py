@@ -142,9 +142,7 @@ class BlockHeightMap:
         # this may also truncate it, if thie file on disk had an invalid size
         new_size = (height + 1) * 32
         size = len(self.__height_to_hash)
-        if size > new_size:
-            del self.__height_to_hash[new_size:]
-        else:
+        if size < new_size:
             self.__height_to_hash += bytearray([0] * (new_size - size))
 
     # load height-to-hash map entries from the DB starting at height back in
