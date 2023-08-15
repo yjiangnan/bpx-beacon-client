@@ -399,9 +399,6 @@ class Beacon:
         if self.beacon_peers is not None:
             asyncio.create_task(self.beacon_peers.start())
         
-        if self.sync_mode != "light":
-            self._gapfiller_task = asyncio.create_task(self._gapfiller())
-        
 
     async def initialize_weight_proof(self) -> None:
         self.weight_proof_handler = WeightProofHandler(
@@ -670,6 +667,9 @@ class Beacon:
             # This is the either the case where we were not able to sync successfully (for example, due to the fork
             # point being in the past), or we are very far behind. Performs a long sync.
             self._sync_task = asyncio.create_task(self._sync())
+        
+        if self.sync_mode != "light" and self_gapfiller_task is None:
+            self._gapfiller_task = asyncio.create_task(self._gapfiller())
 
     async def send_peak_to_timelords(
         self, peak_block: Optional[FullBlock] = None, peer: Optional[WSBpxConnection] = None
