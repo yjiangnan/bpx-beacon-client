@@ -149,8 +149,8 @@ class Blockchain(BlockchainInterface):
         Initializes the state of the Blockchain class from the database.
         """
         self.__height_map = await BlockHeightMap.create(blockchain_dir, self.block_store.db_wrapper)
+        self.__block_records = {}
         self.__heights_in_cache = {}
-        self.__block_records_low = {}
         block_records, peak = await self.block_store.get_block_records_close_to_peak(self.constants.BLOCKS_CACHE_SIZE)
         for block in block_records.values():
             self.add_block_record(block)
