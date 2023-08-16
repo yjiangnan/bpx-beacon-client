@@ -1223,6 +1223,7 @@ class Beacon:
                                         response.blocks,
                                         peer,
                                         None,
+                                        None,
                                         False,
                                         True,
                                     )
