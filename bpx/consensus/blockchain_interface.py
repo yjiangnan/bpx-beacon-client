@@ -44,14 +44,14 @@ class BlockchainInterface:
     def remove_block_record(self, header_hash: bytes32) -> None:
         pass
 
-    def add_block_record(self, block_record: BlockRecord) -> None:
+    def add_block_record(self, block_record: BlockRecord, low_buffer: bool = False) -> None:
         pass
 
     def contains_height(self, height: uint32) -> bool:
         # ignoring hinting error until we handle our interfaces more formally
         return  # type: ignore[return-value]
 
-    async def warmup(self, fork_point: uint32) -> None:
+    async def warmup(self, fork_point: uint32, low_buffer: bool = False) -> None:
         pass
 
     async def get_block_record_from_db(self, header_hash: bytes32) -> Optional[BlockRecord]:

@@ -1183,6 +1183,7 @@ class Beacon:
         try:
             while True:
                 gap: Tuple[uint32, uint32] = await self._gapfiller_queue.get()
+                warmup_done: bool = False
 
                 while True:
                     try:
@@ -1199,6 +1200,10 @@ class Beacon:
                             self.log.warning("Gapfiller: waiting for peers with peak")
                             await asyncio.sleep(30)
                             continue
+                        
+                        if not warmup_done and gap[0] != 0:
+                            await self.blockchain.warmup(gap[0] - 1, True)
+                            warmup_done = True
                         
                         for start_height in range(gap[0], gap[1], self.constants.MAX_BLOCK_COUNT_PER_REQUESTS):
                             end_height = min(gap[1], start_height + self.constants.MAX_BLOCK_COUNT_PER_REQUESTS)
@@ -1229,6 +1234,7 @@ class Beacon:
                             if success is False:
                                 raise ValueError(f"failed fetching {start_height} to {end_height} from peers")
                         
+                        self.blockchain.clean_block_records_low()
                         break
                     
                     except asyncio.CancelledError:
