@@ -136,7 +136,7 @@ class Blockchain(BlockchainInterface):
         self._shut_down = False
         await self._load_chain_from_store(blockchain_dir)
         self._seen_compact_proofs = set()
-        self.__heights_in_cache = {}
+        self.__block_records_low = {}
         self.__heights_in_cache_low = {}
         return self
 
@@ -149,7 +149,7 @@ class Blockchain(BlockchainInterface):
         Initializes the state of the Blockchain class from the database.
         """
         self.__height_map = await BlockHeightMap.create(blockchain_dir, self.block_store.db_wrapper)
-        self.__block_records = {}
+        self.__heights_in_cache = {}
         self.__block_records_low = {}
         block_records, peak = await self.block_store.get_block_records_close_to_peak(self.constants.BLOCKS_CACHE_SIZE)
         for block in block_records.values():
