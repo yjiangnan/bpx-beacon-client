@@ -624,6 +624,9 @@ class Beacon:
         curr_peak_height = uint32(0) if peak is None else peak.height
         if peak is not None and peak.weight > request.weight:
             return None
+        
+        if self.sync_mode != "light" and self._gapfiller_task is None:
+            self._gapfiller_task = asyncio.create_task(self._gapfiller())
 
         if self.sync_store.get_sync_mode():
             # If peer connects while we are syncing, check if they have the block we are syncing towards
@@ -667,9 +670,6 @@ class Beacon:
             # This is the either the case where we were not able to sync successfully (for example, due to the fork
             # point being in the past), or we are very far behind. Performs a long sync.
             self._sync_task = asyncio.create_task(self._sync())
-        
-        if self.sync_mode != "light" and self._gapfiller_task is None:
-            self._gapfiller_task = asyncio.create_task(self._gapfiller())
 
     async def send_peak_to_timelords(
         self, peak_block: Optional[FullBlock] = None, peer: Optional[WSBpxConnection] = None
