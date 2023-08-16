@@ -1230,6 +1230,8 @@ class Beacon:
                                         await peer.close(600)
                                         continue
                                     self.log.info(f"Added gapfiller blocks {start_height} to {end_height}")
+                                    gap[0] = end_height + 1
+                                    break 
                                     
                             if success is False:
                                 raise ValueError(f"failed fetching {start_height} to {end_height} from peers")
