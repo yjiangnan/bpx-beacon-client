@@ -1223,6 +1223,8 @@ class Beacon:
                                         response.blocks,
                                         peer,
                                         None,
+                                        False,
+                                        True,
                                     )
                                     if success is False:
                                         self.log.error(f"Failed to validate gapfiller block batch {start_height} to {end_height}")
@@ -1231,12 +1233,13 @@ class Beacon:
                                         continue
                                     self.log.info(f"Added gapfiller blocks {start_height} to {end_height}")
                                     gap[0] = end_height + 1
+                                    self.blockchain.clean_block_records_low(end_height - self.constants.BLOCKS_CACHE_SIZE)
                                     break 
                                     
                             if success is False:
                                 raise ValueError(f"failed fetching {start_height} to {end_height} from peers")
                         
-                        self.blockchain.clean_block_records_low()
+                        self.blockchain.deinit_block_records_low()
                         break
                     
                     except asyncio.CancelledError:
@@ -1264,6 +1267,7 @@ class Beacon:
         fork_point: Optional[uint32],
         wp_summaries: Optional[List[SubEpochSummary]] = None,
         skip_diff_ssi: bool = False,
+        low_buffer: bool = False,
     ) -> Tuple[bool, Optional[StateChangeSummary]]:
         # Precondition: All blocks must be contiguous blocks, index i+1 must be the parent of index i
         # Returns a bool for success, as well as a StateChangeSummary if the peak was advanced
@@ -1302,7 +1306,11 @@ class Beacon:
             state_change_summary: Optional[StateChangeSummary]
             advanced_peak = agg_state_change_summary is not None
             result, error, state_change_summary = await self.blockchain.receive_block(
-                block, pre_validation_results[i], None if advanced_peak else fork_point, skip_diff_ssi
+                block,
+                pre_validation_results[i],
+                None if advanced_peak else fork_point,
+                skip_diff_ssi,
+                low_buffer,
             )
 
             if result == ReceiveBlockResult.NEW_PEAK:

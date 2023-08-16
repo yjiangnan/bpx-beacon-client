@@ -78,6 +78,7 @@ class Blockchain(BlockchainInterface):
     __block_records_low: Dict[bytes32, BlockRecord]
     # all hashes of blocks in block_record by height, used for garbage collection
     __heights_in_cache: Dict[uint32, Set[bytes32]]
+    __heights_in_cache_low: Dict[uint32, Set[bytes32]]
     # maps block height (of the current heaviest chain) to block hash and sub
     # epoch summaries
     __height_map: BlockHeightMap
@@ -135,6 +136,8 @@ class Blockchain(BlockchainInterface):
         self._shut_down = False
         await self._load_chain_from_store(blockchain_dir)
         self._seen_compact_proofs = set()
+        self.__heights_in_cache = {}
+        self.__heights_in_cache_low = {}
         return self
 
     def shut_down(self) -> None:
@@ -148,7 +151,6 @@ class Blockchain(BlockchainInterface):
         self.__height_map = await BlockHeightMap.create(blockchain_dir, self.block_store.db_wrapper)
         self.__block_records = {}
         self.__block_records_low = {}
-        self.__heights_in_cache = {}
         block_records, peak = await self.block_store.get_block_records_close_to_peak(self.constants.BLOCKS_CACHE_SIZE)
         for block in block_records.values():
             self.add_block_record(block)
@@ -190,6 +192,7 @@ class Blockchain(BlockchainInterface):
         pre_validation_result: PreValidationResult,
         fork_point_with_peak: Optional[uint32] = None,
         skip_diff_ssi: bool = False,
+        low_buffer: bool = False,
     ) -> Tuple[ReceiveBlockResult, Optional[Err], Optional[StateChangeSummary]]:
         """
         This method must be called under the blockchain lock
@@ -270,7 +273,7 @@ class Blockchain(BlockchainInterface):
 
                 # Then update the memory cache. It is important that this is not cancelled and does not throw
                 # This is done after all async/DB operations, so there is a decreased chance of failure.
-                self.add_block_record(block_record)
+                self.add_block_record(block_record, low_buffer)
                 self.__height_map.update_height(
                     block_record.height,
                     block_record.header_hash,
@@ -638,7 +641,22 @@ class Blockchain(BlockchainInterface):
             return None
         self.clean_block_record(self._peak_height - self.constants.BLOCKS_CACHE_SIZE)
     
-    def clean_block_records_low(self) -> None:
+    def clean_block_records_low(self, height: int) -> None:
+        if height < 0:
+            return None
+        blocks_to_remove = self.__heights_in_cache_low.get(uint32(height), None)
+        while blocks_to_remove is not None and height >= 0:
+            for header_hash in blocks_to_remove:
+                del self.__block_records_low[header_hash]  # remove from blocks
+            del self.__heights_in_cache_low[uint32(height)]  # remove height from heights in cache
+
+            if height == 0:
+                break
+            height = height - 1
+            blocks_to_remove = self.__heights_in_cache_low.get(uint32(height), None)
+    
+    def deinit_block_records_low(self) -> None:
+        self.__heights_in_cache_low = {}
         self.__block_records_low = {}
     
     async def clean_ancient_blocks(self) -> None:
@@ -737,6 +755,9 @@ class Blockchain(BlockchainInterface):
             self.__heights_in_cache[block_record.height].add(block_record.header_hash)
         else:
             self.__block_records_low[block_record.header_hash] = block_record
+            if block_record.height not in self.__heights_in_cache_low.keys():
+                self.__heights_in_cache_low[block_record.height] = set()
+            self.__heights_in_cache_low[block_record.height].add(block_record.header_hash)
 
     async def persist_sub_epoch_challenge_segments(
         self, ses_block_hash: bytes32, segments: List[SubEpochChallengeSegment]
