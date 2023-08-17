@@ -15,6 +15,7 @@ from chiapos import Verifier
 from bpx.plotting.manager import PlotManager
 from bpx.plotting.util import (
     DEFAULT_PARALLEL_DECOMPRESSOR_COUNT,
+    DEFAULT_DECOMPRESSOR_TIMEOUT,
     PlotInfo,
     PlotRefreshEvents,
     PlotRefreshResult,
@@ -63,6 +64,7 @@ def check_plots(
     use_gpu_harvesting = config["harvester"].get("use_gpu_harvesting", False)
     gpu_index = config["harvester"].get("gpu_index", 0)
     enforce_gpu_index = config["harvester"].get("enforce_gpu_index", False)
+    decompressor_timeout = config["harvester"].get("decompressor_timeout", DEFAULT_DECOMPRESSOR_TIMEOUT)
 
     plot_manager.configure_decompressor(
         context_count,
@@ -72,6 +74,7 @@ def check_plots(
         use_gpu_harvesting,
         gpu_index,
         enforce_gpu_index,
+        decompressor_timeout,
     )
 
     if num is not None:
