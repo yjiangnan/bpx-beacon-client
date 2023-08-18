@@ -30,7 +30,6 @@ from bpx.util.errors import KeychainProxyConnectionFailure
 from bpx.util.hash import std_hash
 from bpx.util.ints import uint8, uint16, uint64
 from bpx.util.keychain import Keychain
-from bpx.util.logging import TimedDuplicateFilter
 from bpx.util.derive_keys import (
     master_sk_to_farmer_sk,
     master_sk_to_pool_sk,
