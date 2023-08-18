@@ -14,7 +14,6 @@ from bpx.types.unfinished_header_block import UnfinishedHeaderBlock
 from bpx.util.byte_types import hexstr_to_bytes
 from bpx.util.ints import uint32, uint64, uint128
 from bpx.util.log_exceptions import log_exceptions
-from bpx.util.math import make_monotonically_decreasing
 from bpx.util.ws_message import WsRpcMessage, create_payload_dict
 
 
