@@ -49,7 +49,6 @@ from bpx.types.end_of_slot_bundle import EndOfSubSlotBundle
 from bpx.types.full_block import FullBlock
 from bpx.types.header_block import HeaderBlock
 from bpx.types.unfinished_block import UnfinishedBlock
-from bpx.util import cached_bls
 from bpx.util.check_fork_next_block import check_fork_next_block
 from bpx.util.config import process_config_start_method, lock_and_load_config, save_config
 from bpx.util.db_synchronous import db_synchronous_on

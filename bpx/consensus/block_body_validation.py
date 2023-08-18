@@ -13,7 +13,6 @@ from bpx.types.block_protocol import BlockInfo
 from bpx.types.blockchain_format.sized_bytes import bytes32, bytes48
 from bpx.types.full_block import FullBlock
 from bpx.types.unfinished_block import UnfinishedBlock
-from bpx.util import cached_bls
 from bpx.util.errors import Err
 from bpx.util.hash import std_hash
 from bpx.util.ints import uint32, uint64
