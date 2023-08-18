@@ -91,13 +91,6 @@ class RecentChainData(Streamable):
 
 @streamable
 @dataclass(frozen=True)
-class ProofBlockHeader(Streamable):
-    finished_sub_slots: List[EndOfSubSlotBundle]
-    reward_chain_block: RewardChainBlock
-
-
-@streamable
-@dataclass(frozen=True)
 class WeightProof(Streamable):
     sub_epochs: List[SubEpochData]
     sub_epoch_segments: List[SubEpochChallengeSegment]  # sampled sub epoch
