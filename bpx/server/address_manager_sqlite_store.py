@@ -11,25 +11,6 @@ Node = Tuple[int, ExtendedPeerInfo]
 Table = Tuple[int, int]
 
 
-async def create_address_manager_from_db(db_path: Path) -> Optional[AddressManager]:
-    """
-    Creates an AddressManager using data from the SQLite peer db
-    """
-    async with aiosqlite.connect(db_path) as connection:
-        await connection.execute("pragma journal_mode=wal")
-        await connection.execute("pragma synchronous=OFF")
-
-        metadata: Dict[str, str] = await get_metadata(connection)
-        address_manager: Optional[AddressManager] = None
-
-        if not await is_empty(metadata):
-            nodes: List[Node] = await get_nodes(connection)
-            new_table_entries: List[Table] = await get_new_table(connection)
-            address_manager = create_address_manager(metadata, nodes, new_table_entries)
-
-        return address_manager
-
-
 async def get_metadata(connection: aiosqlite.Connection) -> Dict[str, str]:
     cursor = await connection.execute("SELECT key, value from peer_metadata")
     metadata = await cursor.fetchall()

@@ -95,10 +95,6 @@ class BlockStore:
         ret: FullBlock = FullBlock.from_bytes(zstd.decompress(block_bytes))
         return ret
 
-    def maybe_decompress_blob(self, block_bytes: bytes) -> bytes:
-        ret: bytes = zstd.decompress(block_bytes)
-        return ret
-
     async def rollback(self, height: int) -> None:
         async with self.db_wrapper.writer_maybe_transaction() as conn:
             await conn.execute(

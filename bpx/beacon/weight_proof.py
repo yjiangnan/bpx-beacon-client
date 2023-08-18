@@ -796,16 +796,6 @@ def handle_end_of_slot(
     )
 
 
-def compress_segment(segment: SubEpochChallengeSegment) -> SubEpochChallengeSegment:
-    # find challenge slot
-    comp_seg = SubEpochChallengeSegment(segment.sub_epoch_n, [], segment.rc_slot_end_info)
-    for slot in segment.sub_slots:
-        comp_seg.sub_slots.append(slot)
-        if slot.is_challenge():
-            break
-    return segment
-
-
 # wp validation methods
 def _validate_sub_epoch_summaries(
     constants: ConsensusConstants,
@@ -1558,36 +1548,6 @@ def map_segments_by_sub_epoch(sub_epoch_segments) -> Dict[int, List[SubEpochChal
             segments[curr_sub_epoch_n] = []
         segments[curr_sub_epoch_n].append(segment)
     return segments
-
-
-def validate_total_iters(
-    segment: SubEpochChallengeSegment,
-    sub_slot_data_idx,
-    expected_sub_slot_iters: uint64,
-    finished_sub_slots_since_prev: int,
-    prev_b: SubSlotData,
-    prev_sub_slot_data_iters,
-    genesis,
-) -> bool:
-    sub_slot_data = segment.sub_slots[sub_slot_data_idx]
-    if genesis:
-        total_iters: uint128 = uint128(expected_sub_slot_iters * finished_sub_slots_since_prev)
-    elif segment.sub_slots[sub_slot_data_idx - 1].is_end_of_slot():
-        assert prev_b.total_iters
-        assert prev_b.cc_ip_vdf_info
-        total_iters = prev_b.total_iters
-        # Add the rest of the slot of prev_b
-        total_iters = uint128(total_iters + prev_sub_slot_data_iters - prev_b.cc_ip_vdf_info.number_of_iterations)
-        # Add other empty slots
-        total_iters = uint128(total_iters + (expected_sub_slot_iters * (finished_sub_slots_since_prev - 1)))
-    else:
-        # Slot iters is guaranteed to be the same for header_block and prev_b
-        # This takes the beginning of the slot, and adds ip_iters
-        assert prev_b.cc_ip_vdf_info
-        assert prev_b.total_iters
-        total_iters = uint128(prev_b.total_iters - prev_b.cc_ip_vdf_info.number_of_iterations)
-    total_iters = uint128(total_iters + sub_slot_data.cc_ip_vdf_info.number_of_iterations)
-    return total_iters == sub_slot_data.total_iters
 
 
 def _validate_vdf_batch(
