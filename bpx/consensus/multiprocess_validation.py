@@ -17,7 +17,6 @@ from bpx.consensus.difficulty_adjustment import get_next_sub_slot_iters_and_diff
 from bpx.consensus.full_block_to_block_record import block_to_block_record
 from bpx.consensus.get_block_challenge import get_block_challenge
 from bpx.consensus.pot_iterations import calculate_iterations_quality, is_overflow_block
-from bpx.types.block_protocol import BlockInfo
 from bpx.types.blockchain_format.proof_of_space import verify_and_get_quality_string
 from bpx.types.blockchain_format.sized_bytes import bytes32
 from bpx.types.blockchain_format.sub_epoch_summary import SubEpochSummary

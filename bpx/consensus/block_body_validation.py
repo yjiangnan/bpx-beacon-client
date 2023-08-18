@@ -9,7 +9,6 @@ from bpx.consensus.blockchain_interface import BlockchainInterface
 from bpx.consensus.constants import ConsensusConstants
 from bpx.consensus.find_fork_point import find_fork_point_in_chain
 from bpx.beacon.block_store import BlockStore
-from bpx.types.block_protocol import BlockInfo
 from bpx.types.blockchain_format.sized_bytes import bytes32, bytes48
 from bpx.types.full_block import FullBlock
 from bpx.types.unfinished_block import UnfinishedBlock

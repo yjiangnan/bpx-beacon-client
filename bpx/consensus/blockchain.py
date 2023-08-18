@@ -26,7 +26,6 @@ from bpx.consensus.multiprocess_validation import (
 )
 from bpx.beacon.block_height_map import BlockHeightMap
 from bpx.beacon.block_store import BlockStore
-from bpx.types.block_protocol import BlockInfo
 from bpx.types.blockchain_format.sized_bytes import bytes32
 from bpx.types.blockchain_format.sub_epoch_summary import SubEpochSummary
 from bpx.types.blockchain_format.vdf import VDFInfo
