@@ -7,7 +7,7 @@ import logging
 import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
+from datetime import datetime
 from secrets import token_bytes
 from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 
@@ -23,7 +23,6 @@ from bpx.protocols.protocol_message_types import ProtocolMessageTypes
 from bpx.server.outbound_message import Message, make_msg
 from bpx.server.server import BpxServer
 from bpx.server.ws_connection import WSBpxConnection
-from bpx.types.block_protocol import BlockInfo
 from bpx.types.blockchain_format.proof_of_space import verify_and_get_quality_string
 from bpx.types.blockchain_format.sized_bytes import bytes20, bytes32
 from bpx.types.blockchain_format.sub_epoch_summary import SubEpochSummary

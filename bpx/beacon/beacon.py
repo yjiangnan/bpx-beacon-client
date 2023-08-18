@@ -52,7 +52,7 @@ from bpx.types.unfinished_block import UnfinishedBlock
 from bpx.util.check_fork_next_block import check_fork_next_block
 from bpx.util.config import process_config_start_method, lock_and_load_config, save_config
 from bpx.util.db_synchronous import db_synchronous_on
-from bpx.util.db_version import lookup_db_version, set_db_version_async
+from bpx.util.db_version import lookup_db_version
 from bpx.util.db_wrapper import DbWrapper, manage_connection
 from bpx.util.errors import ConsensusError, Err, ValidationError
 from bpx.util.ints import uint8, uint32, uint64, uint128
