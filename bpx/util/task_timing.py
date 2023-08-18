@@ -121,18 +121,6 @@ g_cwd = os.getcwd() + "/"
 # documented here: https://docs.python.org/3/library/inspect.html
 
 
-def get_stack(frame: FrameType) -> str:
-    ret = ""
-    code = frame.f_code
-    while code.co_flags & inspect.CO_COROUTINE:  # pylint: disable=no-member
-        ret = f"/{code.co_name}{ret}"
-        if frame.f_back is None:
-            break
-        frame = frame.f_back
-        code = frame.f_code
-    return ret
-
-
 def strip_filename(name: str) -> str:
     if "/site-packages/" in name:
         return name.split("/site-packages/", 1)[1]
