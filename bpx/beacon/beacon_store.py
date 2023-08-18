@@ -157,12 +157,6 @@ class BeaconStore:
             return None
         return result[1]
 
-    def get_unfinished_block_result(self, unfinished_reward_hash: bytes32) -> Optional[PreValidationResult]:
-        result = self.unfinished_blocks.get(unfinished_reward_hash, None)
-        if result is None:
-            return None
-        return result[2]
-
     def get_unfinished_blocks(self) -> Dict[bytes32, Tuple[uint32, UnfinishedBlock, PreValidationResult]]:
         return self.unfinished_blocks
 
@@ -173,10 +167,6 @@ class BeaconStore:
                 del_keys.append(partial_reward_hash)
         for del_key in del_keys:
             del self.unfinished_blocks[del_key]
-
-    def remove_unfinished_block(self, partial_reward_hash: bytes32) -> None:
-        if partial_reward_hash in self.unfinished_blocks:
-            del self.unfinished_blocks[partial_reward_hash]
 
     def add_to_future_ip(self, infusion_point: timelord_protocol.NewInfusionPointVDF) -> None:
         ch: bytes32 = infusion_point.reward_chain_ip_vdf.challenge
@@ -212,9 +202,6 @@ class BeaconStore:
         self.future_cache_key_times[signage_point.rc_vdf.challenge] = int(time.time())
         self.future_sp_cache[signage_point.rc_vdf.challenge].append((index, signage_point))
         log.info(f"Don't have rc hash {signage_point.rc_vdf.challenge}. caching signage point {index}.")
-
-    def get_future_ip(self, rc_challenge_hash: bytes32) -> List[timelord_protocol.NewInfusionPointVDF]:
-        return self.future_ip_cache.get(rc_challenge_hash, [])
 
     def clear_old_cache_entries(self) -> None:
         current_time: int = int(time.time())
