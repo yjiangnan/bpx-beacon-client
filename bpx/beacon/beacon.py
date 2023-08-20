@@ -1202,6 +1202,34 @@ class Beacon:
                         self.log.warning("Gapfiller: waiting for peers with peak")
                         await asyncio.sleep(30)
                         continue
+                    self.log.info(f"Total of {len(peers_with_peak)} peers with peak {target_peak.height}")
+                    
+                    peer: WSBpxConnection = random.choice(peers_with_peak)
+                    self.log.info(f"Requesting weight proof from peer {peer.peer_host} up to height {wp2_height}")
+                    wp_timeout = 360
+                    if "weight_proof_timeout" in self.config:
+                        wp_timeout = self.config["weight_proof_timeout"]
+                    self.log.debug(f"weight proof timeout is {wp_timeout} sec")
+                    request = beacon_protocol.RequestProofOfWeight(target_peak.height, target_peak.header_hash)
+                    response = await peer.call_api(
+                        BeaconAPI.request_proof_of_weight, request, timeout=wp_timeout
+                    )
+            
+                    if response is None or not isinstance(response, beacon_protocol.RespondProofOfWeight):
+                        await peer.close(600)
+                        raise RuntimeError(f"Weight proof did not arrive in time from peer: {peer.peer_host}")
+                    if response.wp.recent_chain_data[-1].reward_chain_block.height != target_peak.height:
+                        await peer.close(600)
+                        raise RuntimeError(f"Weight proof had the wrong height: {peer.peer_host}")
+            
+                    try:
+                        validated, fork_point, summaries, _ = await self.weight_proof_handler.validate_weight_proof(response.wp)
+                    except Exception as e:
+                        await peer.close(600)
+                        raise ValueError(f"Weight proof validation threw an error {e}")
+                    if not validated:
+                        await peer.close(600)
+                        raise ValueError("Weight proof validation failed")
                     
                     if not warmup_done and gap[0] != 0:
                         await self.blockchain.warmup(gap[0] - 1, True)
@@ -1227,8 +1255,8 @@ class Beacon:
                             success, _ = await self.add_block_batch(
                                 response.blocks,
                                 peer,
-                                None,
-                                None,
+                                None, # fork_point
+                                wp_summaries,
                                 False,
                                 True,
                             )
