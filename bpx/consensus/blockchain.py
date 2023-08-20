@@ -71,6 +71,7 @@ class Blockchain(BlockchainInterface):
 
     # peak of the blockchain
     _peak_height: Optional[uint32]
+    _peak_height_low: Optional[uint32]
     # All blocks in peak path are guaranteed to be included, can include orphan blocks
     __block_records: Dict[bytes32, BlockRecord]
     # Gapfiller low buffer
@@ -137,6 +138,7 @@ class Blockchain(BlockchainInterface):
         self._seen_compact_proofs = set()
         self.__block_records_low = {}
         self.__heights_in_cache_low = {}
+        seld._peak_height_low = None
         return self
 
     def shut_down(self) -> None:
@@ -164,13 +166,21 @@ class Blockchain(BlockchainInterface):
         assert self.__height_map.contains_height(self._peak_height)
         assert not self.__height_map.contains_height(uint32(self._peak_height + 1))
 
-    def get_peak(self) -> Optional[BlockRecord]:
+    def get_peak(
+        self,
+        low_buffer: bool = False,
+    ) -> Optional[BlockRecord]:
         """
         Return the peak of the blockchain
         """
-        if self._peak_height is None:
-            return None
-        return self.height_to_block_record(self._peak_height)
+        if not low_buffer:
+            if self._peak_height is None:
+                return None
+            return self.height_to_block_record(self._peak_height)
+        else:
+            if self._peak_height_low is None:
+                return None
+            return self.height_to_block_record(self._peak_height_low)
 
     async def get_full_peak(self) -> Optional[FullBlock]:
         if self._peak_height is None:
@@ -267,20 +277,15 @@ class Blockchain(BlockchainInterface):
                 # Perform the DB operations to update the state, and rollback if something goes wrong
                 await self.block_store.add_full_block(header_hash, block, block_record)
                 records, state_change_summary = await self._reconsider_peak(
-                    block_record, genesis, fork_point_with_peak
+                    block_record, genesis, fork_point_with_peak, low_buffer
                 )
 
                 # Then update the memory cache. It is important that this is not cancelled and does not throw
                 # This is done after all async/DB operations, so there is a decreased chance of failure.
                 self.add_block_record(block_record, low_buffer)
-                self.__height_map.update_height(
-                    block_record.height,
-                    block_record.header_hash,
-                    block_record.sub_epoch_summary_included,
-                )
                     
                 if state_change_summary is not None:
-                    self.__height_map.rollback(state_change_summary.fork_height)
+                    self.__height_map.rollback(state_change_summary.fork_height) # TODO
                 for fetched_block_record in records:
                     self.__height_map.update_height(
                         fetched_block_record.height,
@@ -298,7 +303,10 @@ class Blockchain(BlockchainInterface):
         # make sure to update _peak_height after the transaction is committed,
         # otherwise other tasks may go look for this block before it's available
         if state_change_summary is not None:
-            self._peak_height = block_record.height
+            if not low_buffer:
+                self._peak_height = block_record.height
+            else:
+                self._peak_height_low = block_record.height
 
         # This is done outside the try-except in case it fails, since we do not want to revert anything if it does
         await self.__height_map.maybe_flush()
@@ -313,6 +321,7 @@ class Blockchain(BlockchainInterface):
         block_record: BlockRecord,
         genesis: bool,
         fork_point_with_peak: Optional[uint32],
+        low_buffer: bool = False,
     ) -> Tuple[List[BlockRecord], Optional[StateChangeSummary]]:
         """
         When a new block is added, this is called, to check if the new block is the new peak of the chain.
