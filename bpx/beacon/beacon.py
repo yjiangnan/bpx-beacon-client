@@ -1231,11 +1231,11 @@ class Beacon:
                         await peer.close(600)
                         raise ValueError("Weight proof validation failed")
                     
-                    if not warmup_done and gap[0] != 0:
-                        await self.blockchain.warmup(gap[0] - 1, True)
+                    if not warmup_done and fork_point != 0:
+                        await self.blockchain.warmup(fork_point - 1, True)
                         warmup_done = True
                     
-                    for start_height in range(gap[0], gap[1], self.constants.MAX_BLOCK_COUNT_PER_REQUESTS):
+                    for start_height in range(fork_point, gap[1], self.constants.MAX_BLOCK_COUNT_PER_REQUESTS):
                         end_height = min(gap[1], start_height + self.constants.MAX_BLOCK_COUNT_PER_REQUESTS)
                         request = RequestBlocks(uint32(start_height), uint32(end_height))
                         success = False
@@ -1255,7 +1255,7 @@ class Beacon:
                             success, _ = await self.add_block_batch(
                                 response.blocks,
                                 peer,
-                                None, # fork_point
+                                fork_point,
                                 wp_summaries,
                                 False,
                                 True,
@@ -1266,7 +1266,6 @@ class Beacon:
                                 await peer.close(600)
                                 continue
                             self.log.info(f"Added gapfiller blocks {start_height} to {end_height}")
-                            gap[0] = end_height + 1
                             self.blockchain.clean_block_records_low(end_height - self.constants.BLOCKS_CACHE_SIZE)
                             break
                                 
@@ -1274,9 +1273,6 @@ class Beacon:
                             raise ValueError(f"failed fetching {start_height} to {end_height} from peers")
                     
                     self.blockchain.deinit_block_records_low()
-                    
-                    # Mergepoint check
-                    
                     break
                 
                 except asyncio.CancelledError:
