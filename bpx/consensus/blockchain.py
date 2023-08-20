@@ -607,13 +607,15 @@ class Blockchain(BlockchainInterface):
             fork_point: the last block height to load in the cache
 
         """
-        if self._peak_height is None:
+        if not low_buffer and self._peak_height is None:
             return None
         block_records = await self.block_store.get_block_records_in_range(
             max(fork_point - self.constants.BLOCKS_CACHE_SIZE, uint32(0)), fork_point
         )
         for block_record in block_records.values():
             self.add_block_record(block_record, low_buffer)
+        if low_buffer:
+            self._peak_height_low = fork_point
 
     def clean_block_record(self, height: int) -> None:
         """

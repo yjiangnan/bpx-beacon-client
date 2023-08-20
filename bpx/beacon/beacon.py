@@ -1229,8 +1229,8 @@ class Beacon:
                         await peer.close(600)
                         raise ValueError("Weight proof validation failed")
                     
-                    if not warmup_done and fork_point != 0:
-                        await self.blockchain.warmup(fork_point - 1, True)
+                    if not warmup_done:
+                        await self.blockchain.warmup(fork_point, True)
                         warmup_done = True
                     
                     for start_height in range(fork_point, gap[1], self.constants.MAX_BLOCK_COUNT_PER_REQUESTS):
