@@ -330,14 +330,15 @@ class Blockchain(BlockchainInterface):
         and the new chain, or returns None if there was no update to the heaviest chain.
         """
 
-        peak = self.get_peak()
+        peak = self.get_peak(low_buffer)
         
         if peak is None:
             block: Optional[FullBlock] = await self.block_store.get_full_block(block_record.header_hash)
             assert block is not None
 
             await self.block_store.set_in_chain([(block_record.header_hash,)])
-            await self.block_store.set_peak(block_record.header_hash)
+            if not low_buffer:
+                await self.block_store.set_peak(block_record.header_hash)
             return [block_record], StateChangeSummary(
                 block_record, uint32(0)
             )
@@ -381,11 +382,12 @@ class Blockchain(BlockchainInterface):
 
         # we made it to the end successfully
         # Rollback sub_epoch_summaries
-        await self.block_store.rollback(fork_height)
+        await self.block_store.rollback(fork_height) # TODO
         await self.block_store.set_in_chain([(br.header_hash,) for br in records_to_add])
 
         # Changes the peak to be the new peak
-        await self.block_store.set_peak(block_record.header_hash)
+        if not low_buffer:
+            await self.block_store.set_peak(block_record.header_hash)
 
         return records_to_add, StateChangeSummary(
             block_record, uint32(max(fork_height, 0))
