@@ -961,6 +961,7 @@ class Beacon:
         peak_hash: bytes32,
         summaries: List[SubEpochSummary],
         skip_diff_ssi: bool = False,
+        low_buffer: bool = False,
     ) -> None:
         buffer_size = 4
         self.log.info(f"Start syncing from fork point at {fork_point_height} up to {target_peak_sb_height}")
@@ -1018,7 +1019,12 @@ class Beacon:
                 start_height = blocks[0].height
                 end_height = blocks[-1].height
                 success, state_change_summary = await self.add_block_batch(
-                    blocks, peer, None if advanced_peak else uint32(fork_point_height), summaries, skip_diff_ssi
+                    blocks,
+                    peer,
+                    None if advanced_peak else uint32(fork_point_height),
+                    summaries,
+                    skip_diff_ssi,
+                    low_buffer,
                 )
                 if success is False:
                     if peer in peers_with_peak:
@@ -1026,11 +1032,11 @@ class Beacon:
                     await peer.close(600)
                     raise ValueError(f"Failed to validate block batch {start_height} to {end_height}")
                 self.log.info(f"Added blocks {start_height} to {end_height}")
-                peak: Optional[BlockRecord] = self.blockchain.get_peak()
+                peak: Optional[BlockRecord] = self.blockchain.get_peak(low_buffer)
                 if state_change_summary is not None:
                     advanced_peak = True
                     assert peak is not None
-                self.blockchain.clean_block_record(end_height - self.constants.BLOCKS_CACHE_SIZE)
+                self.blockchain.clean_block_record(end_height - self.constants.BLOCKS_CACHE_SIZE, low_buffer)
 
         batch_queue_input: asyncio.Queue[Optional[Tuple[WSBpxConnection, List[FullBlock]]]] = asyncio.Queue(
             maxsize=buffer_size

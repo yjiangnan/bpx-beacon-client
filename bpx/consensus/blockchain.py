@@ -617,7 +617,11 @@ class Blockchain(BlockchainInterface):
         if low_buffer:
             self._peak_height_low = fork_point
 
-    def clean_block_record(self, height: int) -> None:
+    def clean_block_record(
+        self,
+        height: int,
+        low_buffer: bool = False
+    ) -> None:
         """
         Clears all block records in the cache which have block_record < height.
         Args:
@@ -625,16 +629,32 @@ class Blockchain(BlockchainInterface):
         """
         if height < 0:
             return None
-        blocks_to_remove = self.__heights_in_cache.get(uint32(height), None)
-        while blocks_to_remove is not None and height >= 0:
+            
+        if not low_buffer:
+            blocks_to_remove = self.__heights_in_cache.get(uint32(height), None)
+            
+            while blocks_to_remove is not None and height >= 0:
+                for header_hash in blocks_to_remove:
+                    del self.__block_records[header_hash]  # remove from blocks
+                del self.__heights_in_cache[uint32(height)]  # remove height from heights in cache
+    
+                if height == 0:
+                    break
+                height = height - 1
+                blocks_to_remove = self.__heights_in_cache.get(uint32(height), None)
+            
+        else:
+            blocks_to_remove = self.__heights_in_cache_low.get(uint32(height), None)
+            
+            while blocks_to_remove is not None and height >= 0:
             for header_hash in blocks_to_remove:
-                del self.__block_records[header_hash]  # remove from blocks
-            del self.__heights_in_cache[uint32(height)]  # remove height from heights in cache
+                del self.__block_records_low[header_hash]  # remove from blocks
+            del self.__heights_in_cache_low[uint32(height)]  # remove height from heights in cache
 
             if height == 0:
                 break
             height = height - 1
-            blocks_to_remove = self.__heights_in_cache.get(uint32(height), None)
+            blocks_to_remove = self.__heights_in_cache_low.get(uint32(height), None)
 
     def clean_block_records(self) -> None:
         """
@@ -650,20 +670,6 @@ class Blockchain(BlockchainInterface):
         if self._peak_height - self.constants.BLOCKS_CACHE_SIZE < 0:
             return None
         self.clean_block_record(self._peak_height - self.constants.BLOCKS_CACHE_SIZE)
-    
-    def clean_block_records_low(self, height: int) -> None:
-        if height < 0:
-            return None
-        blocks_to_remove = self.__heights_in_cache_low.get(uint32(height), None)
-        while blocks_to_remove is not None and height >= 0:
-            for header_hash in blocks_to_remove:
-                del self.__block_records_low[header_hash]  # remove from blocks
-            del self.__heights_in_cache_low[uint32(height)]  # remove height from heights in cache
-
-            if height == 0:
-                break
-            height = height - 1
-            blocks_to_remove = self.__heights_in_cache_low.get(uint32(height), None)
     
     def deinit_block_records_low(self) -> None:
         self.__heights_in_cache_low = {}
