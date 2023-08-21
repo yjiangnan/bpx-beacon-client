@@ -962,7 +962,7 @@ class Beacon:
         summaries: List[SubEpochSummary],
         skip_diff_ssi: bool = False,
         low_buffer: bool = False,
-    ) -> None:
+    ) -> bool:
         buffer_size = 4
         self.log.info(f"Start syncing from fork point at {fork_point_height} up to {target_peak_sb_height}")
         peers_with_peak: List[WSBpxConnection] = self.get_peers_with_peak(peak_hash)
@@ -970,6 +970,7 @@ class Beacon:
             self.blockchain, fork_point_height, peers_with_peak, node_next_block_check
         )
         batch_size = self.constants.MAX_BLOCK_COUNT_PER_REQUESTS
+        ret: bool = True
 
         async def fetch_block_batches(
             batch_queue: asyncio.Queue[Optional[Tuple[WSBpxConnection, List[FullBlock]]]]
@@ -995,6 +996,7 @@ class Beacon:
                             break
                     if fetched is False:
                         self.log.error(f"failed fetching {start_height} to {end_height} from peers")
+                        ret = False
                         await batch_queue.put(None)
                         return
                     if self.sync_store.peers_changed.is_set():
@@ -1004,6 +1006,7 @@ class Beacon:
                 self.log.error(f"Exception fetching {start_height} to {end_height} from peer {e}")
             finally:
                 # finished signal with None
+                ret = False
                 await batch_queue.put(None)
 
         async def validate_block_batches(
@@ -1046,9 +1049,12 @@ class Beacon:
         try:
             await asyncio.gather(fetch_task, validate_task)
         except Exception as e:
+            ret = False
             assert validate_task.done()
             fetch_task.cancel()  # no need to cancel validate_task, if we end up here validate_task is already done
             self.log.error(f"sync from fork point failed err: {e} {traceback.format_exc()}")
+        
+        return ret
     
     async def _long_sync_full(
         self,
@@ -1189,7 +1195,6 @@ class Beacon:
             except asyncio.CancelledError:
                 self.log.info("Gapfiller task stopped")
                 return
-            warmup_done: bool = False
 
             while True:
                 try:
@@ -1235,48 +1240,19 @@ class Beacon:
                         await peer.close(600)
                         raise ValueError("Weight proof validation failed")
                     
-                    if not warmup_done:
-                        await self.blockchain.warmup(fork_point, True)
-                        warmup_done = True
-                    
-                    for start_height in range(fork_point, gap[1], self.constants.MAX_BLOCK_COUNT_PER_REQUESTS):
-                        end_height = min(gap[1], start_height + self.constants.MAX_BLOCK_COUNT_PER_REQUESTS)
-                        request = RequestBlocks(uint32(start_height), uint32(end_height))
-                        success = False
-                        
-                        for peer in random.sample(peers_with_peak, len(peers_with_peak)):
-                            if peer.closed:
-                                peers_with_peak.remove(peer)
-                                continue
-                            response = await peer.call_api(BeaconAPI.request_blocks, request, timeout=30)
-                            if response is None:
-                                await peer.close()
-                                peers_with_peak.remove(peer)
-                            elif not isinstance(response, RespondBlocks):
-                                peers_with_peak.remove(peer)
-                                continue
-                            
-                            success, _ = await self.add_block_batch(
-                                response.blocks,
-                                peer,
-                                fork_point,
-                                wp_summaries,
-                                False,
-                                True,
-                            )
-                            if success is False:
-                                self.log.error(f"Failed to validate gapfiller block batch {start_height} to {end_height}")
-                                peers_with_peak.remove(peer)
-                                await peer.close(600)
-                                continue
-                            self.log.info(f"Added gapfiller blocks {start_height} to {end_height}")
-                            self.blockchain.clean_block_records_low(end_height - self.constants.BLOCKS_CACHE_SIZE)
-                            break
-                                
-                        if success is False:
-                            raise ValueError(f"failed fetching {start_height} to {end_height} from peers")
-                    
+                    await self.blockchain.warmup(fork_point, True)
+                    success = await self.sync_from_fork_point(
+                        fork_point,
+                        gap[1],
+                        target_peak.header_hash,
+                        summaries,
+                        False,
+                        True,
+                    )
+                    if not success:
+                        raise RuntimeError("Exception from fetch and validate task")
                     self.blockchain.deinit_block_records_low()
+                    
                     break
                 
                 except asyncio.CancelledError:
