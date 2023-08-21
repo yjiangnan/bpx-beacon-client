@@ -95,11 +95,20 @@ class BlockStore:
         ret: FullBlock = FullBlock.from_bytes(zstd.decompress(block_bytes))
         return ret
 
-    async def rollback(self, height: int) -> None:
+    async def rollback(
+        self,
+        height: int,
+        limit_height: Optional[int] = None,
+    ) -> None:
         async with self.db_wrapper.writer_maybe_transaction() as conn:
-            await conn.execute(
-                "UPDATE full_blocks SET in_main_chain=0 WHERE height>? AND in_main_chain=1", (height,)
-            )
+            if limit_height is None:
+                await conn.execute(
+                    "UPDATE full_blocks SET in_main_chain=0 WHERE height>? AND in_main_chain=1", (height,)
+                )
+            else:
+                await conn.execute(
+                    "UPDATE full_blocks SET in_main_chain=0 WHERE height>? AND height<=? AND in_main_chain=1", (height,limit_height,)
+                )
 
     async def set_in_chain(self, header_hashes: List[Tuple[bytes32]]) -> None:
         async with self.db_wrapper.writer_maybe_transaction() as conn:

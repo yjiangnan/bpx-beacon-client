@@ -382,7 +382,10 @@ class Blockchain(BlockchainInterface):
 
         # we made it to the end successfully
         # Rollback sub_epoch_summaries
-        await self.block_store.rollback(fork_height) # TODO
+        if not low_buffer:
+            await self.block_store.rollback(fork_height)
+        else:
+            await self.block_store.rollback(fork_height, peak.height)
         await self.block_store.set_in_chain([(br.header_hash,) for br in records_to_add])
 
         # Changes the peak to be the new peak
