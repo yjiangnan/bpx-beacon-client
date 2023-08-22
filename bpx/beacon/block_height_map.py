@@ -200,16 +200,28 @@ class BlockHeightMap:
     def contains_height(self, height: uint32) -> bool:
         return height * 32 < len(self.__height_to_hash)
 
-    def rollback(self, fork_height: int) -> None:
+    def rollback(
+        self,
+        fork_height: int,
+        limit_height: Optional[int] = None,
+    ) -> None:
         # fork height may be -1, in which case all blocks are different and we
         # should clear all sub epoch summaries
         heights_to_delete = []
         for ses_included_height in self.__sub_epoch_summaries.keys():
+            if limit_height is not None and ses_included_height > limit_height:
+                continue
             if ses_included_height > fork_height:
                 heights_to_delete.append(ses_included_height)
+        
         for height in heights_to_delete:
             del self.__sub_epoch_summaries[height]
-        del self.__height_to_hash[(fork_height + 1) * 32 :]
+        
+        if limit_height is None:
+            del self.__height_to_hash[(fork_height + 1) * 32 :]
+        else:
+            for height in range(fork_height, limit_height):
+                self.__set_hash(height, bytes32([0] * 32))
 
     def get_ses(self, height: uint32) -> SubEpochSummary:
         return SubEpochSummary.from_bytes(self.__sub_epoch_summaries[height])
