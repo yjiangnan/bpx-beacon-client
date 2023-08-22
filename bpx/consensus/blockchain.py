@@ -623,7 +623,10 @@ class Blockchain(BlockchainInterface):
         for block_record in block_records.values():
             self.add_block_record(block_record, low_buffer)
         if low_buffer:
-            self._peak_height_low = fork_point
+            if fork_point > 0:
+                self._peak_height_low = fork_point
+            else:
+                self._peak_height_low = None
 
     def clean_block_record(
         self,
