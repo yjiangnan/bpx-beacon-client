@@ -1214,7 +1214,7 @@ class Beacon:
                     self.log.info(f"Total of {len(peers_with_peak)} peers with peak {target_peak.height}")
                     
                     peer: WSBpxConnection = random.choice(peers_with_peak)
-                    self.log.info(f"Requesting weight proof from peer {peer.peer_host} up to height {wp2_height}")
+                    self.log.info(f"Requesting weight proof from peer {peer.peer_host} up to height {target_peak.height}")
                     wp_timeout = 360
                     if "weight_proof_timeout" in self.config:
                         wp_timeout = self.config["weight_proof_timeout"]
