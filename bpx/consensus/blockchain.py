@@ -655,14 +655,14 @@ class Blockchain(BlockchainInterface):
             blocks_to_remove = self.__heights_in_cache_low.get(uint32(height), None)
             
             while blocks_to_remove is not None and height >= 0:
-            for header_hash in blocks_to_remove:
-                del self.__block_records_low[header_hash]  # remove from blocks
-            del self.__heights_in_cache_low[uint32(height)]  # remove height from heights in cache
+                for header_hash in blocks_to_remove:
+                    del self.__block_records_low[header_hash]  # remove from blocks
+                del self.__heights_in_cache_low[uint32(height)]  # remove height from heights in cache
 
-            if height == 0:
-                break
-            height = height - 1
-            blocks_to_remove = self.__heights_in_cache_low.get(uint32(height), None)
+                if height == 0:
+                    break
+                height = height - 1
+                blocks_to_remove = self.__heights_in_cache_low.get(uint32(height), None)
 
     def clean_block_records(self) -> None:
         """
