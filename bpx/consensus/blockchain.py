@@ -138,7 +138,7 @@ class Blockchain(BlockchainInterface):
         self._seen_compact_proofs = set()
         self.__block_records_low = {}
         self.__heights_in_cache_low = {}
-        seld._peak_height_low = None
+        self._peak_height_low = None
         return self
 
     def shut_down(self) -> None:
