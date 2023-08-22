@@ -257,14 +257,9 @@ class Blockchain(BlockchainInterface):
         )
 
         error_code = await validate_block_body(
-            self.constants,
             self.execution_client,
-            self,
-            self.block_store,
-            self.get_peak(),
             block,
             block.height,
-            fork_point_with_peak,
             block_record,
         )
         if error_code is not None:
@@ -537,14 +532,9 @@ class Blockchain(BlockchainInterface):
         )
 
         error_code = await validate_block_body(
-            self.constants,
             self.execution_client,
-            self,
-            self.block_store,
-            self.get_peak(),
             block,
             uint32(prev_height + 1),
-            None,
             None,
         )
 

@@ -20,14 +20,9 @@ log = logging.getLogger(__name__)
 
 
 async def validate_block_body(
-    constants: ConsensusConstants,
     execution_client: ExecutionClient,
-    blocks: BlockchainInterface,
-    block_store: BlockStore,
-    peak: Optional[BlockRecord],
     block: Union[FullBlock, UnfinishedBlock],
     height: uint32,
-    fork_point_with_peak: Optional[uint32],
     block_record: Optional[BlockRecord],
 ) -> Optional[Err]:
     """
