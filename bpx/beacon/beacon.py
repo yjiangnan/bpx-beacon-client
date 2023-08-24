@@ -1240,7 +1240,11 @@ class Beacon:
                         await peer.close(600)
                         raise ValueError("Weight proof validation failed")
                     
-                    await self.blockchain.warmup(fork_point, True)
+                    await self.blockchain.warmup(
+                        fork_point,
+                        True,
+                        None if gap[0] == 0 else gap[0] - 1,
+                    )
                     success = await self.sync_from_fork_point(
                         fork_point,
                         gap[1],

@@ -596,7 +596,12 @@ class Blockchain(BlockchainInterface):
     def get_peak_height(self) -> Optional[uint32]:
         return self._peak_height
 
-    async def warmup(self, fork_point: uint32, low_buffer: bool = False) -> None:
+    async def warmup(
+        self,
+        fork_point: uint32,
+        low_buffer: bool = False,
+        new_peak_low: Optional[uint32] = None,
+    ) -> None:
         """
         Loads blocks into the cache. The blocks loaded include all blocks from
         fork point - BLOCKS_CACHE_SIZE up to and including the fork_point.
@@ -612,11 +617,8 @@ class Blockchain(BlockchainInterface):
         )
         for block_record in block_records.values():
             self.add_block_record(block_record, low_buffer)
-        if low_buffer:
-            if fork_point > 0:
-                self._peak_height_low = fork_point
-            else:
-                self._peak_height_low = None
+        if low_buffer and self._peak_height_low is None:
+            self._peak_height_low = new_peak_low
 
     def clean_block_record(
         self,
@@ -675,6 +677,7 @@ class Blockchain(BlockchainInterface):
     def deinit_block_records_low(self) -> None:
         self.__heights_in_cache_low = {}
         self.__block_records_low = {}
+        self._peak_height_low = None
     
     async def clean_ancient_blocks(self) -> None:
         assert self._peak_height is not None
