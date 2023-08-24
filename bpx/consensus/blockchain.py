@@ -282,7 +282,7 @@ class Blockchain(BlockchainInterface):
                 if state_change_summary is not None:
                     if not low_buffer:
                         self.__height_map.rollback(state_change_summary.fork_height)
-                    else:
+                    else if self._peak_height_low is not None:
                         self.__height_map.rollback(state_change_summary.fork_height, self._peak_height_low)
                 for fetched_block_record in records:
                     self.__height_map.update_height(

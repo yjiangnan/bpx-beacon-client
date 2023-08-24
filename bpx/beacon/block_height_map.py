@@ -220,7 +220,7 @@ class BlockHeightMap:
         if limit_height is None:
             del self.__height_to_hash[(fork_height + 1) * 32 :]
         else:
-            for height in range(fork_height, limit_height):
+            for height in range(fork_height, limit_height + 1):
                 self.__set_hash(height, bytes32([0] * 32))
 
     def get_ses(self, height: uint32) -> SubEpochSummary:
