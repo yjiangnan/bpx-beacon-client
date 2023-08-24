@@ -222,6 +222,8 @@ class BlockHeightMap:
         else:
             for height in range(fork_height, limit_height + 1):
                 self.__set_hash(height, bytes32([0] * 32))
+                if self.get_hash(height + 1) == bytes32([0] * 32):
+                    break
 
     def get_ses(self, height: uint32) -> SubEpochSummary:
         return SubEpochSummary.from_bytes(self.__sub_epoch_summaries[height])
