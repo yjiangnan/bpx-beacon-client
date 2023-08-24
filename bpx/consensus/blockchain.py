@@ -202,6 +202,7 @@ class Blockchain(BlockchainInterface):
         fork_point_with_peak: Optional[uint32] = None,
         skip_diff_ssi: bool = False,
         low_buffer: bool = False,
+        limit_height: Optional[uint32] = None,
     ) -> Tuple[ReceiveBlockResult, Optional[Err], Optional[StateChangeSummary]]:
         """
         This method must be called under the blockchain lock
@@ -272,7 +273,7 @@ class Blockchain(BlockchainInterface):
                 # Perform the DB operations to update the state, and rollback if something goes wrong
                 await self.block_store.add_full_block(header_hash, block, block_record)
                 records, state_change_summary = await self._reconsider_peak(
-                    block_record, genesis, fork_point_with_peak, low_buffer
+                    block_record, genesis, fork_point_with_peak, low_buffer, limit_height
                 )
 
                 # Then update the memory cache. It is important that this is not cancelled and does not throw
@@ -282,8 +283,8 @@ class Blockchain(BlockchainInterface):
                 if state_change_summary is not None:
                     if not low_buffer:
                         self.__height_map.rollback(state_change_summary.fork_height)
-                    elif self._peak_height_low is not None:
-                        self.__height_map.rollback(state_change_summary.fork_height, self._peak_height_low)
+                    else:
+                        self.__height_map.rollback(state_change_summary.fork_height, limit_height)
                 for fetched_block_record in records:
                     self.__height_map.update_height(
                         fetched_block_record.height,
@@ -320,6 +321,7 @@ class Blockchain(BlockchainInterface):
         genesis: bool,
         fork_point_with_peak: Optional[uint32],
         low_buffer: bool = False,
+        limit_height: Optional[uint32] = None,
     ) -> Tuple[List[BlockRecord], Optional[StateChangeSummary]]:
         """
         When a new block is added, this is called, to check if the new block is the new peak of the chain.
@@ -383,7 +385,7 @@ class Blockchain(BlockchainInterface):
         if not low_buffer:
             await self.block_store.rollback(fork_height)
         else:
-            await self.block_store.rollback(fork_height, peak.height)
+            await self.block_store.rollback(fork_height, limit_height)
         await self.block_store.set_in_chain([(br.header_hash,) for br in records_to_add])
 
         # Changes the peak to be the new peak

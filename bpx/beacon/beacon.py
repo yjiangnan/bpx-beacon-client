@@ -962,6 +962,7 @@ class Beacon:
         summaries: List[SubEpochSummary],
         skip_diff_ssi: bool = False,
         low_buffer: bool = False,
+        limit_height: Optiona[uint32] = None,
     ) -> bool:
         buffer_size = 4
         self.log.info(f"Start syncing from fork point at {fork_point_height} up to {target_peak_sb_height}")
@@ -1028,6 +1029,7 @@ class Beacon:
                     summaries,
                     skip_diff_ssi,
                     low_buffer,
+                    limit_height,
                 )
                 if success is False:
                     if peer in peers_with_peak:
@@ -1252,6 +1254,7 @@ class Beacon:
                         summaries,
                         False,
                         True,
+                        gap[1],
                     )
                     if not success:
                         raise RuntimeError("Exception from fetch and validate task")
@@ -1282,6 +1285,7 @@ class Beacon:
         wp_summaries: Optional[List[SubEpochSummary]] = None,
         skip_diff_ssi: bool = False,
         low_buffer: bool = False,
+        limit_height: Optional[uint32] = None,
     ) -> Tuple[bool, Optional[StateChangeSummary]]:
         # Precondition: All blocks must be contiguous blocks, index i+1 must be the parent of index i
         # Returns a bool for success, as well as a StateChangeSummary if the peak was advanced
@@ -1325,6 +1329,7 @@ class Beacon:
                 None if advanced_peak else fork_point,
                 skip_diff_ssi,
                 low_buffer,
+                limit_height,
             )
 
             if result == ReceiveBlockResult.NEW_PEAK:
