@@ -976,6 +976,7 @@ class Beacon:
         async def fetch_block_batches(
             batch_queue: asyncio.Queue[Optional[Tuple[WSBpxConnection, List[FullBlock]]]]
         ) -> None:
+            nonlocal ret
             start_height, end_height = 0, 0
             new_peers_with_peak: List[WSBpxConnection] = peers_with_peak[:]
             try:
