@@ -224,7 +224,6 @@ class BlockHeightMap:
             end_idx = (limit_height + 1) * 32 # +1 to update limit_height inclusive
             bytes_count = end_idx - start_idx
             self.__height_to_hash[start_idx : end_idx] = bytes([0] * bytes_count)
-            self.__dirty += limit_height - fork_height
 
     def get_ses(self, height: uint32) -> SubEpochSummary:
         return SubEpochSummary.from_bytes(self.__sub_epoch_summaries[height])
