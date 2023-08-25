@@ -221,7 +221,7 @@ class BlockHeightMap:
             del self.__height_to_hash[(fork_height + 1) * 32 :]
         else:
             start_idx = (fork_height + 1) * 32 # +1 to not update fork_height
-            end_indx = (limit_height + 1) * 32 # +1 to update limit_height inclusive
+            end_idx = (limit_height + 1) * 32 # +1 to update limit_height inclusive
             bytes_count = end_idx - start_idx
             self.__height_to_hash[start_idx : end_idx] = bytes([0] * bytes_count)
 
