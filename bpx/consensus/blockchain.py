@@ -615,7 +615,8 @@ class Blockchain(BlockchainInterface):
         if self._peak_height is None:
             return None
         block_records = await self.block_store.get_block_records_in_range(
-            max(fork_point - self.constants.BLOCKS_CACHE_SIZE, uint32(0)), fork_point
+            max(fork_point - self.constants.BLOCKS_CACHE_SIZE, uint32(0)),
+            fork_point if new_peak_low is None else new_peak_low,
         )
         for block_record in block_records.values():
             self.add_block_record(block_record, low_buffer)
