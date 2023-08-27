@@ -1006,9 +1006,9 @@ class Beacon:
                         self.sync_store.peers_changed.clear()
             except Exception as e:
                 self.log.error(f"Exception fetching {start_height} to {end_height} from peer {e}")
+                ret = False
             finally:
                 # finished signal with None
-                ret = False
                 await batch_queue.put(None)
 
         async def validate_block_batches(
