@@ -1264,6 +1264,7 @@ class Beacon:
                         raise RuntimeError("Exception from fetch and validate task")
                     self.blockchain.deinit_block_records_low()
                     
+                    self.log.info(f"Gap {gap[0]} - {gap[1]} successfully filled")
                     break
                 
                 except asyncio.CancelledError:
