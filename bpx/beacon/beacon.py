@@ -1094,10 +1094,9 @@ class Beacon:
                 tmp_start_height = peak_height - self.constants.SUB_EPOCH_BLOCKS
                 self.log.info(f"Increased blocks count by 1 sub epoch: {tmp_start_height}")
             
-            print(fork_point_height)
             if fork_point_height > tmp_start_height:
                 start_height = fork_point_height
-                self.log.info(f"Updated sync height to current peak + 1: {tmp_start_height}")
+                self.log.info(f"Updated sync height to fork point: {start_height}")
             
             else:
                 wp2_height: uint32 = tmp_start_height - 1
