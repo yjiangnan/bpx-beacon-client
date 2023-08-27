@@ -1094,6 +1094,7 @@ class Beacon:
                 tmp_start_height = peak_height - self.constants.SUB_EPOCH_BLOCKS
                 self.log.info(f"Increased blocks count by 1 sub epoch: {tmp_start_height}")
             
+            print(fork_point_height)
             if fork_point_height > tmp_start_height:
                 start_height = fork_point_height
                 self.log.info(f"Updated sync height to current peak + 1: {tmp_start_height}")
@@ -1235,7 +1236,10 @@ class Beacon:
                         raise RuntimeError(f"Weight proof had the wrong height: {peer.peer_host}")
             
                     try:
-                        validated, fork_point, summaries, _ = await self.weight_proof_handler.validate_weight_proof(response.wp)
+                        validated, fork_point, summaries, _ = await self.weight_proof_handler.validate_weight_proof(
+                            response.wp,
+                            gap[1],
+                        )
                     except Exception as e:
                         await peer.close(600)
                         raise ValueError(f"Weight proof validation threw an error {e}")

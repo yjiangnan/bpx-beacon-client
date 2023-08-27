@@ -563,7 +563,8 @@ class WeightProofHandler:
 
     async def validate_weight_proof(
         self,
-        weight_proof: WeightProof
+        weight_proof: WeightProof,
+        limit_height: Optional[uint32] = None,
     ) -> Tuple[bool, uint32, List[SubEpochSummary], List[BlockRecord]]:
         assert self.blockchain is not None
         if len(weight_proof.sub_epochs) == 0:
@@ -577,7 +578,7 @@ class WeightProofHandler:
             log.error("weight proof failed sub epoch data validation")
             return False, uint32(0), [], []
 
-        fork_point, ses_fork_idx = self.get_fork_point(summaries)
+        fork_point, ses_fork_idx = self.get_fork_point(summaries, limit_height)
         # timing reference: 1 second
         # TODO: Consider implementing an async polling closer for the executor.
         with ProcessPoolExecutor(
@@ -605,11 +606,23 @@ class WeightProofHandler:
                 valid, block_records = await task
         return valid, fork_point, summaries, block_records
 
-    def get_fork_point(self, received_summaries: List[SubEpochSummary]) -> Tuple[uint32, int]:
+    def get_fork_point(
+        self,
+        received_summaries: List[SubEpochSummary],
+        limit_height: Optional[uint32] = None,
+    ) -> Tuple[uint32, int]:
         # returns the fork height and ses index
         # iterate through sub epoch summaries to find fork point
         fork_point_index = 0
-        ses_heights = self.blockchain.get_ses_heights()
+        ses_heights_all = self.blockchain.get_ses_heights()
+        if limit_height is None:
+            ses_heights: List[uint32] = ses_heights_all
+        else:
+            ses_heights: List[uint32] = []
+            for height in ses_heights_all:
+                if height > limit_height:
+                    break
+                ses_heights.append(height)
         for idx, summary_height in enumerate(ses_heights):
             log.debug(f"check summary {idx} height {summary_height}")
             local_ses = self.blockchain.get_ses(summary_height)
