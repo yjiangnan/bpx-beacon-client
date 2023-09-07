@@ -3,14 +3,14 @@ from __future__ import annotations
 import os
 import sys
 
-from setuptools import setup
+from setuptools import find_packages, setup
 
 dependencies = [
     "aiofiles==23.1.0",  # Async IO for files
     "anyio==3.6.2",
-    "blspy==1.0.16",  # Signature library
-    "chiavdf==1.0.8",  # timelord and vdf verification
-    "chiapos==1.0.11",  # proof of space
+    "blspy==2.0.2", # Signature library
+    "chiavdf==1.0.10",  # timelord and vdf verification
+    "chiapos==2.0.2",  # proof of space
     "aiohttp==3.8.4",  # HTTP server for beacon client rpc
     "aiosqlite==0.17.0",  # asyncio wrapper for sqlite, to store blocks
     "bitstring==4.0.1",  # Binary data management library
@@ -81,30 +81,7 @@ kwargs = dict(
         dev=dev_dependencies,
         upnp=upnp_dependencies,
     ),
-    packages=[
-        "build_scripts",
-        "bpx",
-        "bpx.cmds",
-        "bpx.consensus",
-        "bpx.daemon",
-        "bpx.beacon",
-        "bpx.timelord",
-        "bpx.farmer",
-        "bpx.harvester",
-        "bpx.introducer",
-        "bpx.plot_sync",
-        "bpx.plotters",
-        "bpx.plotting",
-        "bpx.protocols",
-        "bpx.rpc",
-        "bpx.seeder",
-        "bpx.server",
-        "bpx.types.blockchain_format",
-        "bpx.types",
-        "bpx.util",
-        "bpx.ssl",
-        "mozilla-ca",
-    ],
+    packages=find_packages(include=["build_scripts", "bpx", "bpx.*", "mozilla-ca"]),
     entry_points={
         "console_scripts": [
             "bpx = bpx.cmds.bpx:main",

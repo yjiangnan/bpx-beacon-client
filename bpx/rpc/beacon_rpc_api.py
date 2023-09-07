@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from bpx.consensus.block_record import BlockRecord
@@ -14,7 +14,6 @@ from bpx.types.unfinished_header_block import UnfinishedHeaderBlock
 from bpx.util.byte_types import hexstr_to_bytes
 from bpx.util.ints import uint32, uint64, uint128
 from bpx.util.log_exceptions import log_exceptions
-from bpx.util.math import make_monotonically_decreasing
 from bpx.util.ws_message import WsRpcMessage, create_payload_dict
 
 
@@ -87,11 +86,13 @@ class BeaconRpcApi:
                         "synced": False,
                         "sync_tip_height": 0,
                         "sync_progress_height": 0,
+                        "ec_synced": False,
                     },
                     "difficulty": 0,
                     "sub_slot_iters": 0,
                     "space": 0,
                     "node_id": node_id,
+                    "ec_conn": False,
                 },
             }
             return res
@@ -128,9 +129,12 @@ class BeaconRpcApi:
             header_hash = self.service.blockchain.height_to_hash(uint32(max(1, peak.height - 4608)))
             assert header_hash is not None
             older_block_hex = header_hash.hex()
-            space = await self.get_network_space(
-                {"newer_block_header_hash": newer_block_hex, "older_block_header_hash": older_block_hex}
-            )
+            try:
+                space = await self.get_network_space(
+                    {"newer_block_header_hash": newer_block_hex, "older_block_header_hash": older_block_hex}
+                )
+            except ValueError:
+                space = {"space": None}
         else:
             space = {"space": uint128(0)}
 
@@ -139,6 +143,9 @@ class BeaconRpcApi:
         else:
             is_connected = False
         synced = await self.service.synced() and is_connected
+        
+        ec_conn = self.service.execution_client.connected
+        ec_synced = not self.service.execution_client.syncing and ec_conn and synced
 
         assert space is not None
         response = {
@@ -150,11 +157,13 @@ class BeaconRpcApi:
                     "synced": synced,
                     "sync_tip_height": sync_tip_height,
                     "sync_progress_height": sync_progress_height,
+                    "ec_synced": ec_synced,
                 },
                 "difficulty": difficulty,
                 "sub_slot_iters": sub_slot_iters,
                 "space": space["space"],
                 "node_id": node_id,
+                "ec_conn": ec_conn,
             },
         }
         self.cached_blockchain_state = dict(response["blockchain_state"])

@@ -85,6 +85,7 @@ class ValidationError(Exception):
 class ConsensusError(Exception):
     def __init__(self, code: Err, errors: List[Any] = []):
         super().__init__(f"Error code: {code.name} {errors}")
+        self.code = code
         self.errors = errors
 
 
@@ -150,10 +151,6 @@ class KeychainMalformedResponse(KeychainException):
 class KeychainProxyConnectionFailure(KeychainException):
     def __init__(self) -> None:
         super().__init__("Failed to connect to keychain service")
-
-
-class KeychainLockTimeout(KeychainException):
-    pass
 
 
 class KeychainProxyConnectionTimeout(KeychainException):

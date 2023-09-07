@@ -24,6 +24,8 @@ async def print_blockchain_state(node_client: BeaconRpcClient, config: Dict[str,
     sub_slot_iters = blockchain_state["sub_slot_iters"]
     synced = blockchain_state["sync"]["synced"]
     sync_mode = blockchain_state["sync"]["sync_mode"]
+    ec_conn = blockchain_state["ec_conn"]
+    ec_synced = blockchain_state["sync"]["ec_synced"]
     num_blocks: int = 10
     network_name = config["selected_network"]
     genesis_challenge = config["farmer"]["network_overrides"]["constants"][network_name]["GENESIS_CHALLENGE"]
@@ -35,23 +37,30 @@ async def print_blockchain_state(node_client: BeaconRpcClient, config: Dict[str,
     print(f"Genesis Challenge: {genesis_challenge}")
 
     if synced:
-        print("Current Blockchain Status: Full Node Synced")
-        print("\nPeak: Hash:", peak.header_hash if peak is not None else "")
+        print("\nBeacon Client Status: Synced")
     elif peak is not None and sync_mode:
         sync_max_block = blockchain_state["sync"]["sync_tip_height"]
         sync_current_block = blockchain_state["sync"]["sync_progress_height"]
         print(
-            f"Current Blockchain Status: Syncing {sync_current_block}/{sync_max_block} "
+            f"\nBeacon Client Status: Syncing {sync_current_block}/{sync_max_block} "
             f"({sync_max_block - sync_current_block} behind)."
         )
-        print("Peak: Hash:", peak.header_hash if peak is not None else "")
     elif peak is not None:
-        print(f"Current Blockchain Status: Not Synced. Peak height: {peak.height}")
+        print(f"\nBeacon Client Status: Not Synced. Peak height: {peak.height}")
     else:
         print("\nSearching for an initial chain\n")
         print("You may be able to expedite with 'bpx peer beacon -a host:port' using a known node.\n")
 
     if peak is not None:
+        if not ec_conn:
+            print("Execution Client Status: Offline")
+        elif not ec_synced:
+            print("Execution Client Status: Syncing")
+        else:
+            print("Execution Client Status: Synced")
+
+        print(f"\nPeak: Height: {peak.height}\n      Hash: {peak.header_hash}")
+        
         if peak.is_transaction_block:
             peak_time = peak.timestamp
         else:
@@ -68,11 +77,13 @@ async def print_blockchain_state(node_client: BeaconRpcClient, config: Dict[str,
         print(
             "      Time:",
             f"{time.strftime('%a %b %d %Y %T %Z', peak_time_struct)}",
-            f"                 Height: {peak.height:>10}\n",
         )
 
-        print("Estimated network space: ", end="")
-        print(format_bytes(blockchain_state["space"]))
+        print("\nEstimated network space: ", end="")
+        if blockchain_state["space"] is not None:
+            print(format_bytes(blockchain_state["space"]))
+        else:
+            print("Unknown")
         print(f"Current difficulty: {difficulty}")
         print(f"Current VDF sub_slot_iters: {sub_slot_iters}")
         print("\n  Height: |   Hash:")

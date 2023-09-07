@@ -280,12 +280,3 @@ def process_config_start_method(
     log.info(f"Selected multiprocessing start method: {choice}")
 
     return processed_method
-
-
-def override_config(config: Dict[str, Any], config_overrides: Optional[Dict[str, Any]]):
-    new_config = copy.deepcopy(config)
-    if config_overrides is None:
-        return new_config
-    for k, v in config_overrides.items():
-        add_property(new_config, k, v)
-    return new_config

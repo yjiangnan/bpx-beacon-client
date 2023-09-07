@@ -53,10 +53,6 @@ class BeaconRpcClient(RpcClient):
         response = await self.fetch("get_unfinished_block_headers", {})
         return [UnfinishedHeaderBlock.from_json_dict(r) for r in response["headers"]]
 
-    async def get_all_block(self, start: uint32, end: uint32) -> List[FullBlock]:
-        response = await self.fetch("get_blocks", {"start": start, "end": end, "exclude_header_hash": True})
-        return [FullBlock.from_json_dict(r) for r in response["blocks"]]
-
     async def get_network_space(
         self, newer_block_header_hash: bytes32, older_block_header_hash: bytes32
     ) -> Optional[uint64]:

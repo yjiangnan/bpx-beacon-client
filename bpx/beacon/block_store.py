@@ -12,7 +12,7 @@ from bpx.consensus.block_record import BlockRecord
 from bpx.types.blockchain_format.sized_bytes import bytes32
 from bpx.types.full_block import FullBlock
 from bpx.types.weight_proof import SubEpochChallengeSegment, SubEpochSegments
-from bpx.util.db_wrapper import DbWrapper, execute_fetchone
+from bpx.util.db_wrapper import DbWrapper
 from bpx.util.errors import Err
 from bpx.util.ints import uint32
 from bpx.util.lru_cache import LRUCache
@@ -95,15 +95,20 @@ class BlockStore:
         ret: FullBlock = FullBlock.from_bytes(zstd.decompress(block_bytes))
         return ret
 
-    def maybe_decompress_blob(self, block_bytes: bytes) -> bytes:
-        ret: bytes = zstd.decompress(block_bytes)
-        return ret
-
-    async def rollback(self, height: int) -> None:
+    async def rollback(
+        self,
+        height: int,
+        limit_height: Optional[int] = None,
+    ) -> None:
         async with self.db_wrapper.writer_maybe_transaction() as conn:
-            await conn.execute(
-                "UPDATE full_blocks SET in_main_chain=0 WHERE height>? AND in_main_chain=1", (height,)
-            )
+            if limit_height is None:
+                await conn.execute(
+                    "UPDATE full_blocks SET in_main_chain=0 WHERE height>? AND in_main_chain=1", (height,)
+                )
+            else:
+                await conn.execute(
+                    "UPDATE full_blocks SET in_main_chain=0 WHERE height>? AND height<=? AND in_main_chain=1", (height,limit_height,)
+                )
 
     async def set_in_chain(self, header_hashes: List[Tuple[bytes32]]) -> None:
         async with self.db_wrapper.writer_maybe_transaction() as conn:
@@ -261,38 +266,6 @@ class BlockStore:
             ret.append(all_blocks[hh])
         return ret
 
-    async def get_block_bytes_by_hash(self, header_hashes: List[bytes32]) -> List[bytes]:
-        """
-        Returns a list of Full Blocks block blobs, ordered by the same order in which header_hashes are passed in.
-        Throws an exception if the blocks are not present
-        """
-
-        if len(header_hashes) == 0:
-            return []
-
-        # sqlite on python3.7 on windows has issues with large variable substitutions
-        assert len(header_hashes) < 901
-        header_hashes_db: Sequence[Union[bytes32, str]]
-        header_hashes_db = header_hashes
-        formatted_str = (
-            f'SELECT header_hash, block from full_blocks WHERE header_hash in ({"?," * (len(header_hashes_db) - 1)}?)'
-        )
-        all_blocks: Dict[bytes32, bytes] = {}
-        async with self.db_wrapper.reader_no_transaction() as conn:
-            async with conn.execute(formatted_str, header_hashes_db) as cursor:
-                for row in await cursor.fetchall():
-                    header_hash = self.maybe_from_hex(row[0])
-                    all_blocks[header_hash] = self.maybe_decompress_blob(row[1])
-
-        ret: List[bytes] = []
-        for hh in header_hashes:
-            block = all_blocks.get(hh)
-            if block is not None:
-                ret.append(block)
-            else:
-                raise ValueError(f"Header hash {hh} not in the blockchain")
-        return ret
-
     async def get_blocks_by_hash(self, header_hashes: List[bytes32]) -> List[FullBlock]:
         """
         Returns a list of Full Blocks blocks, ordered by the same order in which header_hashes are passed in.
@@ -355,27 +328,6 @@ class BlockStore:
                     ret[header_hash] = BlockRecord.from_bytes(row[1])
                     
         return ret
-
-    async def get_block_bytes_in_range(
-        self,
-        start: int,
-        stop: int,
-    ) -> List[bytes]:
-        """
-        Returns a list with all full blocks in range between start and stop
-        if present.
-        """
-
-        maybe_decompress_blob = self.maybe_decompress_blob
-        async with self.db_wrapper.reader_no_transaction() as conn:
-            async with conn.execute(
-                "SELECT block FROM full_blocks WHERE height >= ? AND height <= ? and in_main_chain=1",
-                (start, stop),
-            ) as cursor:
-                rows: List[sqlite3.Row] = list(await cursor.fetchall())
-                if len(rows) != (stop - start) + 1:
-                    raise ValueError(f"Some blocks in range {start}-{stop} were not found.")
-                return [maybe_decompress_blob(row[0]) for row in rows]
 
     async def get_peak(self) -> Optional[Tuple[bytes32, uint32]]:
             async with self.db_wrapper.reader_no_transaction() as conn:
@@ -467,3 +419,9 @@ class BlockStore:
 
         [count] = row
         return int(count)
+    
+    async def clean_ancient_blocks(self, height: int) -> None:
+        async with self.db_wrapper.writer_maybe_transaction() as conn:
+            await conn.execute(
+                "DELETE FROM full_blocks WHERE height<?", (height,)
+            )

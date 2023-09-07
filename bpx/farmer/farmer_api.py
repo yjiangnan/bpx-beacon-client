@@ -32,16 +32,6 @@ from bpx.util.api_decorators import api_request
 from bpx.util.ints import uint32, uint64
 
 
-def strip_old_entries(pairs: List[Tuple[float, Any]], before: float) -> List[Tuple[float, Any]]:
-    for index, [timestamp, points] in enumerate(pairs):
-        if timestamp >= before:
-            if index == 0:
-                return pairs
-            if index > 0:
-                return pairs[index:]
-    return []
-
-
 class FarmerAPI:
     farmer: Farmer
 

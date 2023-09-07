@@ -16,7 +16,6 @@ from bpx.protocols.beacon_protocol import RequestPeers, RespondPeers
 from bpx.protocols.introducer_protocol import RequestPeersIntroducer, RespondPeersIntroducer
 from bpx.protocols.protocol_message_types import ProtocolMessageTypes
 from bpx.server.address_manager import AddressManager, ExtendedPeerInfo
-from bpx.server.address_manager_sqlite_store import create_address_manager_from_db
 from bpx.server.address_manager_store import AddressManagerStore
 from bpx.server.outbound_message import Message, NodeType, make_msg
 from bpx.server.peer_store_resolver import PeerStoreResolver

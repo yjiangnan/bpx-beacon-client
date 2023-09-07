@@ -20,15 +20,6 @@ else:
 SQLITE_INT_MAX = 2**63 - 1
 
 
-async def execute_fetchone(
-    c: aiosqlite.Connection, sql: str, parameters: Iterable[Any] = None
-) -> Optional[sqlite3.Row]:
-    rows = await c.execute_fetchall(sql, parameters)
-    for row in rows:
-        return row
-    return None
-
-
 async def _create_connection(
     database: Union[str, Path],
     uri: bool = False,

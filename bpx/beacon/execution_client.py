@@ -69,6 +69,7 @@ class ExecutionClient:
     w3: Web3
     peak_txb_hash: Optional[bytes32]
     payload_id: Optional[str]
+    syncing: bool
 
     def __init__(
         self,
@@ -78,7 +79,9 @@ class ExecutionClient:
         self.w3 = None
         self.peak_txb_hash = None
         self.payload_id = None
-    
+        self.syncing = False
+        self.connected = False
+        
     
     async def exchange_transition_configuration_task(self):
         log.debug("Starting exchange transition configuration loop")
@@ -86,11 +89,16 @@ class ExecutionClient:
         while True:
             try:
                 self._ensure_web3_init()
-                self.w3.engine.exchange_transition_configuration_v1({
-                    "terminalTotalDifficulty": "0x0",
-                    "terminalBlockHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-                    "terminalBlockNumber": "0x0"
-                })
+                try:
+                    self.w3.engine.exchange_transition_configuration_v1({
+                        "terminalTotalDifficulty": "0x0",
+                        "terminalBlockHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                        "terminalBlockNumber": "0x0"
+                    })
+                except:
+                    self.connected = False
+                    raise
+                self.connected = True
                 log.info("Exchanged transition configuration with execution client")
             except Exception as e:
                 log.error(f"Exception in exchange transition configuration: {e}")
@@ -134,8 +142,13 @@ class ExecutionClient:
             "transactions": raw_transactions,
             "withdrawals": raw_withdrawals,
         }
-        
-        result = self.w3.engine.new_payload_v2(raw_payload)
+
+        try:
+            result = self.w3.engine.new_payload_v2(raw_payload)
+        except:
+            self.connected = False
+            raise
+        self.connected = True
         if result.validationError is not None:
             log.error(
                 f"Payload validation error: Eheight={payload.blockNumber}, Ehash={payload.blockHash}, "
@@ -205,8 +218,13 @@ class ExecutionClient:
                 log.warning("Coinbase is not set! Payload will not be built and farming is not possible.")
             else:
                 payload_attributes = self._create_payload_attributes(block, coinbase)
-        
-        result = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
+
+        try:
+            result = self.w3.engine.forkchoice_updated_v2(forkchoice_state, payload_attributes)
+        except:
+            self.connected = False
+            raise
+        self.connected = True
         
         self.peak_txb_hash = block.header_hash
         
@@ -226,6 +244,13 @@ class ExecutionClient:
         elif synced:
             log.warning("Payload building not started")
         
+        if result.payloadStatus.status == "VALID" and self.syncing:
+            self.syncing = False
+            log.info(f"Execution Client is now fully synced")
+        elif result.payloadStatus.status != "VALID" and not self.syncing:
+            self.syncing = True
+            log.info(f"Execution Client syncing started")
+        
         return result.payloadStatus.status
     
     
@@ -242,8 +267,13 @@ class ExecutionClient:
         
         if self.payload_id is None:
             raise RuntimeError("Execution payload was not built")
-        
-        raw_payload = self.w3.engine.get_payload_v2(self.payload_id).executionPayload
+
+        try:
+            raw_payload = self.w3.engine.get_payload_v2(self.payload_id).executionPayload
+        except:
+            self.connected = False
+            raise
+        self.connected = True
         
         transactions: List[bytes] = []
         for raw_transaction in raw_payload.transactions:

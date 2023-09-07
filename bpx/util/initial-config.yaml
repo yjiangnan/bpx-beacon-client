@@ -138,6 +138,20 @@ harvester:
     crt: "config/ssl/ca/bpx_ca.crt"
     key: "config/ssl/ca/bpx_ca.key"
 
+  # Compressed harvesting.
+  parallel_decompressor_count: 0
+  # If set to 0, `decompressor_thread_count` will default to half of nproc available on the machine.
+  # A non-zero number overrides this default.
+  decompressor_thread_count: 0
+  disable_cpu_affinity: False
+  # Ignore compressed plots with compression level greater than this.
+  max_compression_level_allowed: 7
+  use_gpu_harvesting: False
+  gpu_index: 0
+  enforce_gpu_index: False
+  # If no decompressor is available after `decompressor_timeout` seconds, abort the current operation.
+  decompressor_timeout: 20
+
 farmer:
   # The farmer server (if run) will run on this port
   port: 6204
@@ -353,6 +367,15 @@ beacon:
   # Optimistic import allows a beacon client to import, process, and consider a beacon block for its forkchoice head,
   # even though it has not validated its execution payload
   optimistic_import: True
+  # Sync mode:
+  # - fast (default) - starts fetching blocks from the relative recent one, after catching the head
+  #   of the chain head immediately behaves like a fully synced node, in the meantime downloading
+  #   the older blocks, keeps a full copy of the blockchain
+  # - full - fetches all blocks one by one, from the genesis to the head of the chain,
+  #   keeps a full copy of the blockchain
+  # - light - starts fetching blocks from the relative recent one to the head of the chain,
+  #   keeps only some recent blocks, periodically removing older ones
+  sync_mode: "fast"
 
 ui:
   # Which port to use to communicate with the beacon client

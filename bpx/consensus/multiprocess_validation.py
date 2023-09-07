@@ -17,7 +17,6 @@ from bpx.consensus.difficulty_adjustment import get_next_sub_slot_iters_and_diff
 from bpx.consensus.full_block_to_block_record import block_to_block_record
 from bpx.consensus.get_block_challenge import get_block_challenge
 from bpx.consensus.pot_iterations import calculate_iterations_quality, is_overflow_block
-from bpx.types.block_protocol import BlockInfo
 from bpx.types.blockchain_format.proof_of_space import verify_and_get_quality_string
 from bpx.types.blockchain_format.sized_bytes import bytes32
 from bpx.types.blockchain_format.sub_epoch_summary import SubEpochSummary
@@ -109,6 +108,7 @@ async def pre_validate_blocks_multiprocessing(
     pool: Executor,
     batch_size: int,
     wp_summaries: Optional[List[SubEpochSummary]] = None,
+    skip_diff_ssi: bool = False,
 ) -> List[PreValidationResult]:
     """
     This method must be called under the blockchain lock
@@ -161,9 +161,18 @@ async def pre_validate_blocks_multiprocessing(
             if prev_b is None:
                 prev_b = block_records.block_record(block.prev_header_hash)
 
-        sub_slot_iters, difficulty = get_next_sub_slot_iters_and_difficulty(
-            constants, len(block.finished_sub_slots) > 0, prev_b, block_records
-        )
+        if (
+            skip_diff_ssi
+            and len(block.finished_sub_slots) > 0
+            and block.finished_sub_slots[0].challenge_chain.new_sub_slot_iters is not None
+        ):
+            assert block.finished_sub_slots[0].challenge_chain.new_difficulty is not None  # They both change
+            sub_slot_iters = block.finished_sub_slots[0].challenge_chain.new_sub_slot_iters
+            difficulty = block.finished_sub_slots[0].challenge_chain.new_difficulty
+        else:
+            sub_slot_iters, difficulty = get_next_sub_slot_iters_and_difficulty(
+                constants, len(block.finished_sub_slots) > 0, prev_b, block_records
+            )
 
         overflow = is_overflow_block(constants, block.reward_chain_block.signage_point_index)
         challenge = get_block_challenge(constants, block, BlockCache(recent_blocks), prev_b is None, overflow, False)
@@ -195,6 +204,7 @@ async def pre_validate_blocks_multiprocessing(
                 required_iters,
                 block,
                 None,
+                sub_slot_iters,
             )
         except ValueError:
             return [PreValidationResult(uint16(Err.INVALID_SUB_EPOCH_SUMMARY.value), None)]

@@ -97,6 +97,14 @@ if os.path.exists(f"{ROOT}/bladebit/bladebit"):
         )
     ])
 
+if os.path.exists(f"{ROOT}/bladebit/bladebit_cuda"):
+    binaries.extend([
+        (
+            f"{ROOT}/bladebit/bladebit_cuda",
+            "bladebit"
+        )
+    ])
+
 if THIS_IS_WINDOWS:
     hiddenimports.extend(["win32timezone", "win32cred", "pywintypes", "win32ctypes.pywin32"])
 
@@ -134,7 +142,14 @@ if THIS_IS_WINDOWS:
             "bladebit"
         ),
     ]
-
+    
+    if os.path.exists(f"{ROOT}\\bladebit\\bladebit_cuda.exe"):
+        binaries.extend([
+            (
+                f"{ROOT}\\bladebit\\bladebit_cuda.exe",
+                "bladebit"
+            )
+        ])
 
 datas = []
 

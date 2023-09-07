@@ -7,7 +7,7 @@ import logging
 import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
+from datetime import datetime
 from secrets import token_bytes
 from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 
@@ -23,7 +23,6 @@ from bpx.protocols.protocol_message_types import ProtocolMessageTypes
 from bpx.server.outbound_message import Message, make_msg
 from bpx.server.server import BpxServer
 from bpx.server.ws_connection import WSBpxConnection
-from bpx.types.block_protocol import BlockInfo
 from bpx.types.blockchain_format.proof_of_space import verify_and_get_quality_string
 from bpx.types.blockchain_format.sized_bytes import bytes20, bytes32
 from bpx.types.blockchain_format.sub_epoch_summary import SubEpochSummary
@@ -113,6 +112,8 @@ class BeaconAPI:
 
     @api_request(reply_types=[ProtocolMessageTypes.respond_proof_of_weight])
     async def request_proof_of_weight(self, request: beacon_protocol.RequestProofOfWeight) -> Optional[Message]:
+        if self.beacon.sync_mode == "light":
+            return None
         if self.beacon.weight_proof_handler is None:
             return None
         if not self.beacon.blockchain.contains_block(request.tip):
@@ -242,7 +243,7 @@ class BeaconAPI:
         self, new_unfinished_block: beacon_protocol.NewUnfinishedBlock
     ) -> Optional[Message]:
         # Ignore if syncing
-        if self.beacon.sync_store.get_sync_mode():
+        if self.beacon.sync_store.get_sync_mode() or self.beacon.execution_client.syncing:
             return None
         block_hash = new_unfinished_block.unfinished_reward_hash
         if self.beacon.beacon_store.get_unfinished_block(block_hash) is not None:
@@ -303,7 +304,7 @@ class BeaconAPI:
         self, new_sp: beacon_protocol.NewSignagePointOrEndOfSubSlot, peer: WSBpxConnection
     ) -> Optional[Message]:
         # Ignore if syncing
-        if self.beacon.sync_store.get_sync_mode():
+        if self.beacon.sync_store.get_sync_mode() or self.beacon.execution_client.syncing:
             return None
         if (
             self.beacon.beacon_store.get_signage_point_by_index(

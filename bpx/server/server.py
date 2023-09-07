@@ -537,19 +537,6 @@ class BpxServer:
             if on_disconnect is not None:
                 on_disconnect(connection)
 
-    async def send_to_others(
-        self,
-        messages: List[Message],
-        node_type: NodeType,
-        origin_peer: WSBpxConnection,
-    ) -> None:
-        for node_id, connection in self.all_connections.items():
-            if node_id == origin_peer.peer_node_id:
-                continue
-            if connection.connection_type is node_type:
-                for message in messages:
-                    await connection.send_message(message)
-
     async def validate_broadcast_message_type(self, messages: List[Message], node_type: NodeType) -> None:
         for message in messages:
             if message_requires_reply(ProtocolMessageTypes(message.type)):
@@ -668,16 +655,3 @@ class BpxServer:
         if node_type == NodeType.TIMELORD:
             return inbound_count < cast(int, self.config["max_inbound_timelord"])
         return True
-
-    def is_trusted_peer(self, peer: WSBpxConnection, trusted_peers: Dict[str, Any]) -> bool:
-        if trusted_peers is None:
-            return False
-        if not self.config.get("testing", False) and peer.peer_host == "127.0.0.1":
-            return True
-        if peer.peer_node_id.hex() not in trusted_peers:
-            return False
-
-        return True
-
-    def set_capabilities(self, capabilities: List[Tuple[uint16, str]]) -> None:
-        self._local_capabilities_for_handshake = capabilities

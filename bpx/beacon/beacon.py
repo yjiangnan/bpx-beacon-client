@@ -33,7 +33,7 @@ from bpx.beacon.signage_point import SignagePoint
 from bpx.beacon.sync_store import SyncStore
 from bpx.beacon.weight_proof import WeightProofHandler
 from bpx.protocols import farmer_protocol, beacon_protocol, timelord_protocol
-from bpx.protocols.beacon_protocol import RequestBlocks, RespondBlock, RespondBlocks, RespondSignagePoint
+from bpx.protocols.beacon_protocol import RequestBlock, RequestBlocks, RespondBlock, RespondBlocks, RespondSignagePoint
 from bpx.protocols.protocol_message_types import ProtocolMessageTypes
 from bpx.rpc.rpc_server import StateChangedProtocol
 from bpx.server.node_discovery import BeaconPeers
@@ -49,11 +49,10 @@ from bpx.types.end_of_slot_bundle import EndOfSubSlotBundle
 from bpx.types.full_block import FullBlock
 from bpx.types.header_block import HeaderBlock
 from bpx.types.unfinished_block import UnfinishedBlock
-from bpx.util import cached_bls
 from bpx.util.check_fork_next_block import check_fork_next_block
 from bpx.util.config import process_config_start_method, lock_and_load_config, save_config
 from bpx.util.db_synchronous import db_synchronous_on
-from bpx.util.db_version import lookup_db_version, set_db_version_async
+from bpx.util.db_version import lookup_db_version
 from bpx.util.db_wrapper import DbWrapper, manage_connection
 from bpx.util.errors import ConsensusError, Err, ValidationError
 from bpx.util.ints import uint8, uint32, uint64, uint128
@@ -103,6 +102,10 @@ class Beacon:
     _maybe_blockchain_lock_high_priority: Optional[LockClient]
     _maybe_blockchain_lock_low_priority: Optional[LockClient]
     execution_client: ExecutionClient
+    sync_mode: str
+    _gapfiller_task: Optional[asyncio.Task[None]]
+    _gapfiller_queue: asyncio.Queue[Tuple[uint32, uint32]]
+    _gapfiller_curr: Optional[uint32]
 
     @property
     def server(self) -> BpxServer:
@@ -176,6 +179,9 @@ class Beacon:
         self._blockchain_lock_queue = None
         self._maybe_blockchain_lock_high_priority = None
         self._maybe_blockchain_lock_low_priority = None
+        self._gapfiller_task = None
+        self._gapfiller_queue = asyncio.Queue()
+        self._gapfiller_curr = None
 
     @property
     def block_store(self) -> BlockStore:
@@ -290,6 +296,7 @@ class Beacon:
             synchronous=db_sync,
         )
 
+        self.sync_mode = self.config.get("sync_mode", "fast")
         self._block_store = await BlockStore.create(self.db_wrapper)
         self.log.info("Initializing blockchain from disk")
         start_time = time.time()
@@ -369,6 +376,9 @@ class Beacon:
                         raise RuntimeError("Unexpected fork choice status.")
                 except Exception as e:
                     self.log.error(f"Exception in peak initialization: {e}")
+                
+            if self.sync_mode != "light":
+                await self.gapfiller_find_gaps(peak.height)
             
         if self.config["send_uncompact_interval"] != 0:
             sanitize_weight_proof_only = False
@@ -613,6 +623,9 @@ class Beacon:
         curr_peak_height = uint32(0) if peak is None else peak.height
         if peak is not None and peak.weight > request.weight:
             return None
+        
+        if self.sync_mode != "light" and self._gapfiller_task is None:
+            self._gapfiller_task = asyncio.create_task(self._gapfiller())
 
         if self.sync_store.get_sync_mode():
             # If peer connects while we are syncing, check if they have the block we are syncing towards
@@ -785,6 +798,7 @@ class Beacon:
         if self._blockchain_lock_queue is not None:
             self._blockchain_lock_queue.close()
         cancel_task_safe(task=self._sync_task, log=self.log)
+        cancel_task_safe(task=self._gapfiller_task, log=self.log)
 
     async def _await_closed(self) -> None:
         await self.db_wrapper.close()
@@ -795,6 +809,9 @@ class Beacon:
         if self._sync_task is not None:
             with contextlib.suppress(asyncio.CancelledError):
                 await self._sync_task
+        if self._gapfiller_task is not None:
+            with contextlib.suppress(asyncio.CancelledError):
+                await self._gapfiller_task
 
     async def _sync(self) -> None:
         """
@@ -907,7 +924,7 @@ class Beacon:
                     raise RuntimeError(f"current peak is heavier than Weight proof peek: {weight_proof_peer.peer_host}")
 
             try:
-                validated, fork_point, summaries = await self.weight_proof_handler.validate_weight_proof(response.wp)
+                validated, fork_point, summaries, _ = await self.weight_proof_handler.validate_weight_proof(response.wp)
             except Exception as e:
                 await weight_proof_peer.close(600)
                 raise ValueError(f"Weight proof validation threw an error {e}")
@@ -922,7 +939,11 @@ class Beacon:
             # Ensures that the fork point does not change
             async with self._blockchain_lock_high_priority:
                 await self.blockchain.warmup(fork_point)
-                await self.sync_from_fork_point(fork_point, target_peak.height, target_peak.header_hash, summaries)
+                if self.sync_mode == "full":
+                    await self._long_sync_full(fork_point, target_peak.height, target_peak.header_hash, summaries)
+                else:
+                    await self._long_sync_light(fork_point, target_peak.height, target_peak.header_hash, summaries)
+                    
         except asyncio.CancelledError:
             self.log.warning("Syncing failed, CancelledError")
         except Exception as e:
@@ -939,7 +960,10 @@ class Beacon:
         target_peak_sb_height: uint32,
         peak_hash: bytes32,
         summaries: List[SubEpochSummary],
-    ) -> None:
+        skip_diff_ssi: bool = False,
+        low_buffer: bool = False,
+        limit_height: Optiona[uint32] = None,
+    ) -> bool:
         buffer_size = 4
         self.log.info(f"Start syncing from fork point at {fork_point_height} up to {target_peak_sb_height}")
         peers_with_peak: List[WSBpxConnection] = self.get_peers_with_peak(peak_hash)
@@ -947,10 +971,12 @@ class Beacon:
             self.blockchain, fork_point_height, peers_with_peak, node_next_block_check
         )
         batch_size = self.constants.MAX_BLOCK_COUNT_PER_REQUESTS
+        ret: bool = True
 
         async def fetch_block_batches(
             batch_queue: asyncio.Queue[Optional[Tuple[WSBpxConnection, List[FullBlock]]]]
         ) -> None:
+            nonlocal ret
             start_height, end_height = 0, 0
             new_peers_with_peak: List[WSBpxConnection] = peers_with_peak[:]
             try:
@@ -972,6 +998,7 @@ class Beacon:
                             break
                     if fetched is False:
                         self.log.error(f"failed fetching {start_height} to {end_height} from peers")
+                        ret = False
                         await batch_queue.put(None)
                         return
                     if self.sync_store.peers_changed.is_set():
@@ -979,6 +1006,7 @@ class Beacon:
                         self.sync_store.peers_changed.clear()
             except Exception as e:
                 self.log.error(f"Exception fetching {start_height} to {end_height} from peer {e}")
+                ret = False
             finally:
                 # finished signal with None
                 await batch_queue.put(None)
@@ -996,7 +1024,13 @@ class Beacon:
                 start_height = blocks[0].height
                 end_height = blocks[-1].height
                 success, state_change_summary = await self.add_block_batch(
-                    blocks, peer, None if advanced_peak else uint32(fork_point_height), summaries
+                    blocks,
+                    peer,
+                    None if advanced_peak else uint32(fork_point_height),
+                    summaries,
+                    skip_diff_ssi,
+                    low_buffer,
+                    limit_height,
                 )
                 if success is False:
                     if peer in peers_with_peak:
@@ -1004,11 +1038,11 @@ class Beacon:
                     await peer.close(600)
                     raise ValueError(f"Failed to validate block batch {start_height} to {end_height}")
                 self.log.info(f"Added blocks {start_height} to {end_height}")
-                peak: Optional[BlockRecord] = self.blockchain.get_peak()
+                peak: Optional[BlockRecord] = self.blockchain.get_peak(low_buffer)
                 if state_change_summary is not None:
                     advanced_peak = True
                     assert peak is not None
-                self.blockchain.clean_block_record(end_height - self.constants.BLOCKS_CACHE_SIZE)
+                self.blockchain.clean_block_record(end_height - self.constants.BLOCKS_CACHE_SIZE, low_buffer)
 
         batch_queue_input: asyncio.Queue[Optional[Tuple[WSBpxConnection, List[FullBlock]]]] = asyncio.Queue(
             maxsize=buffer_size
@@ -1018,10 +1052,229 @@ class Beacon:
         try:
             await asyncio.gather(fetch_task, validate_task)
         except Exception as e:
+            ret = False
             assert validate_task.done()
             fetch_task.cancel()  # no need to cancel validate_task, if we end up here validate_task is already done
-            self.log.error(f"sync from fork point failed err: {e}")
+            self.log.error(f"sync from fork point failed err: {e} {traceback.format_exc()}")
+        
+        return ret
+    
+    async def _long_sync_full(
+        self,
+        fork_point_height: uint32,
+        target_peak_sb_height: uint32,
+        peak_hash: bytes32,
+        summaries: List[SubEpochSummary],
+    ) -> None:
+        self.log.info(f"Start full syncing up to {target_peak_sb_height}")
+        await self.sync_from_fork_point(fork_point_height, target_peak_sb_height, peak_hash, summaries)
+    
+    async def _long_sync_light(
+        self,
+        fork_point_height: uint32,
+        peak_height: uint32,
+        peak_hash: bytes32,
+        summaries: List[SubEpochSummary],
+    ) -> None:
+        self.log.info(f"Start {self.sync_mode} syncing up to {peak_height}")
+        
+        height_in_next_epoch = (
+            peak_height + 2 * self.constants.MAX_SUB_SLOT_BLOCKS + self.constants.MIN_BLOCKS_PER_CHALLENGE_BLOCK + 5
+        )
+        height_epoch_surpass: uint32 = uint32(height_in_next_epoch - (height_in_next_epoch % self.constants.EPOCH_BLOCKS))
+        
+        self.log.info(f"Height in next epoch: {height_in_next_epoch}")
+        self.log.info(f"Height epoch surpass: {height_epoch_surpass}")
+    
+        if height_epoch_surpass > 0:
+            tmp_start_height: uint32 = height_epoch_surpass - self.constants.MAX_SUB_SLOT_BLOCKS - 1
+            self.log.info(f"Considered start height: {tmp_start_height}")
+            
+            if peak_height - tmp_start_height < self.constants.SUB_EPOCH_BLOCKS:
+                tmp_start_height = peak_height - self.constants.SUB_EPOCH_BLOCKS
+                self.log.info(f"Increased blocks count by 1 sub epoch: {tmp_start_height}")
+            
+            if fork_point_height > tmp_start_height:
+                start_height = fork_point_height
+                self.log.info(f"Updated sync height to fork point: {start_height}")
+            
+            else:
+                wp2_height: uint32 = tmp_start_height - 1
+                self.log.info(f"Second weight proof height: {wp2_height}")
+                
+                if wp2_height < self.constants.WEIGHT_PROOF_RECENT_BLOCKS:
+                    start_height = fork_point_height
+                    self.log.info("Chain too short for weight proof, using fallback start height: {start_height}")
+                    
+                else:
+                    start_height = tmp_start_height
+                    
+                    peers_with_peak: List[WSBpxConnection] = self.get_peers_with_peak(peak_hash)
+                    peer: WSBpxConnection = random.choice(peers_with_peak)
+                    
+                    self.log.info(f"Requesting block {wp2_height} from peer {peer.peer_host}")
+                    response = await peer.call_api(
+                        BeaconAPI.request_block, beacon_protocol.RequestBlock(wp2_height)
+                    )
+                    if response is None or not isinstance(response, beacon_protocol.RespondBlock):
+                        await peer.close(600)
+                        raise ValueError(f"Could not fetch block at height {wp2_height}")
+                    wp2_hash: bytes32 = response.block.header_hash
+                    
+                    self.log.info(f"Requesting weight proof from peer {peer.peer_host} up to height {wp2_height}")
+                    wp_timeout = 360
+                    if "weight_proof_timeout" in self.config:
+                        wp_timeout = self.config["weight_proof_timeout"]
+                    self.log.debug(f"weight proof timeout is {wp_timeout} sec")
+                    request = beacon_protocol.RequestProofOfWeight(wp2_height, wp2_hash)
+                    response = await peer.call_api(
+                        BeaconAPI.request_proof_of_weight, request, timeout=wp_timeout
+                    )
+            
+                    if response is None or not isinstance(response, beacon_protocol.RespondProofOfWeight):
+                        await peer.close(600)
+                        raise RuntimeError(f"Weight proof did not arrive in time from peer: {peer.peer_host}")
+                    if response.wp.recent_chain_data[-1].reward_chain_block.height != wp2_height:
+                        await peer.close(600)
+                        raise RuntimeError(f"Weight proof had the wrong height: {peer.peer_host}")
+            
+                    try:
+                        validated, _, _, block_records = await self.weight_proof_handler.validate_weight_proof(response.wp)
+                    except Exception as e:
+                        await peer.close(600)
+                        raise ValueError(f"Weight proof validation threw an error {e}")
+                    if not validated:
+                        await peer.close(600)
+                        raise ValueError("Weight proof validation failed")
+                    
+                    self.log.info(f"Adding {len(block_records)} block records to the cache")
+                    for record in block_records:
+                        self.blockchain.add_block_record(record)
+            
+        self.log.info(f"Start height: {start_height}")
+        
+        try:
+            await self.sync_from_fork_point(
+                start_height,
+                peak_height,
+                peak_hash,
+                summaries,
+                True,
+            )
+        except:
+            raise
+        finally:
+            if self.sync_mode != "light":
+                new_peak = self.blockchain.get_peak()
+                if new_peak is not None:
+                    await self.gapfiller_find_gaps(new_peak.height)
+    
+    async def gapfiller_find_gaps(self, end_height: uint32) -> None:
+      start_height: uint32 = 0
+      if self._gapfiller_curr is not None:
+        start_height = self._gapfiller_curr + 1
+        
+      self.log.info(f"Finding the blockchain gaps from block {start_height} up to {end_height}")
+      
+      range_start: Optional[uint32] = None
+      for i in range(start_height, end_height):
+          hash = self.blockchain.height_to_hash(i)
+          if hash == bytes32([0] * 32) and range_start is None:
+              range_start = i
+          elif hash != bytes32([0] * 32) and range_start is not None:
+              await self._gapfiller_queue.put([range_start, i - 1])
+              self._gapfiller_curr = i
+              self.log.warning(f"Blockchain gap found: {range_start} - {i-1}")
+              range_start = None
+      
+      self._gapfiller_curr = end_height
+    
+    async def _gapfiller(self) -> None:
+        self.log.info("Gapfiller task started")
+        
+        while True:
+            try:
+                gap: Tuple[uint32, uint32] = await self._gapfiller_queue.get()
+            except asyncio.CancelledError:
+                self.log.info("Gapfiller task stopped")
+                return
 
+            while True:
+                try:
+                    self.log.info(f"Filling the gap {gap[0]} - {gap[1]}")
+                    
+                    target_peak = self.sync_store.get_heaviest_peak()
+                    if target_peak is None:
+                        self.log.warning("Gapfiller: waiting for peak")
+                        await asyncio.sleep(30)
+                        continue
+                    
+                    peers_with_peak: List[WSBpxConnection] = self.get_peers_with_peak(target_peak.header_hash)
+                    if len(peers_with_peak) == 0:
+                        self.log.warning("Gapfiller: waiting for peers with peak")
+                        await asyncio.sleep(30)
+                        continue
+                    self.log.info(f"Total of {len(peers_with_peak)} peers with peak {target_peak.height}")
+                    
+                    peer: WSBpxConnection = random.choice(peers_with_peak)
+                    self.log.info(f"Requesting weight proof from peer {peer.peer_host} up to height {target_peak.height}")
+                    wp_timeout = 360
+                    if "weight_proof_timeout" in self.config:
+                        wp_timeout = self.config["weight_proof_timeout"]
+                    self.log.debug(f"weight proof timeout is {wp_timeout} sec")
+                    request = beacon_protocol.RequestProofOfWeight(target_peak.height, target_peak.header_hash)
+                    response = await peer.call_api(
+                        BeaconAPI.request_proof_of_weight, request, timeout=wp_timeout
+                    )
+            
+                    if response is None or not isinstance(response, beacon_protocol.RespondProofOfWeight):
+                        await peer.close(600)
+                        raise RuntimeError(f"Weight proof did not arrive in time from peer: {peer.peer_host}")
+                    if response.wp.recent_chain_data[-1].reward_chain_block.height != target_peak.height:
+                        await peer.close(600)
+                        raise RuntimeError(f"Weight proof had the wrong height: {peer.peer_host}")
+            
+                    try:
+                        validated, fork_point, summaries, _ = await self.weight_proof_handler.validate_weight_proof(
+                            response.wp,
+                            gap[1],
+                        )
+                    except Exception as e:
+                        await peer.close(600)
+                        raise ValueError(f"Weight proof validation threw an error {e}")
+                    if not validated:
+                        await peer.close(600)
+                        raise ValueError("Weight proof validation failed")
+                    
+                    await self.blockchain.warmup(
+                        fork_point,
+                        True,
+                        None if gap[0] == 0 else gap[0] - 1,
+                    )
+                    success = await self.sync_from_fork_point(
+                        fork_point,
+                        gap[1],
+                        target_peak.header_hash,
+                        summaries,
+                        False,
+                        True,
+                        gap[1],
+                    )
+                    if not success:
+                        raise RuntimeError("Exception from fetch and validate task")
+                    self.blockchain.deinit_block_records_low()
+                    
+                    self.log.info(f"Gap {gap[0]} - {gap[1]} successfully filled")
+                    break
+                
+                except asyncio.CancelledError:
+                    self.log.warning("Gapfilling failed, CancelledError")
+                    return
+                except Exception as e:
+                    tb = traceback.format_exc()
+                    self.log.error(f"Error with gapfilling: {type(e)}{tb}")
+                    await asyncio.sleep(30)
+        
     def get_peers_with_peak(self, peak_hash: bytes32) -> List[WSBpxConnection]:
         peer_ids: Set[bytes32] = self.sync_store.get_peers_that_have_peak([peak_hash])
         if len(peer_ids) == 0:
@@ -1035,6 +1288,9 @@ class Beacon:
         peer: WSBpxConnection,
         fork_point: Optional[uint32],
         wp_summaries: Optional[List[SubEpochSummary]] = None,
+        skip_diff_ssi: bool = False,
+        low_buffer: bool = False,
+        limit_height: Optional[uint32] = None,
     ) -> Tuple[bool, Optional[StateChangeSummary]]:
         # Precondition: All blocks must be contiguous blocks, index i+1 must be the parent of index i
         # Returns a bool for success, as well as a StateChangeSummary if the peak was advanced
@@ -1049,7 +1305,7 @@ class Beacon:
 
         pre_validate_start = time.monotonic()
         pre_validation_results: List[PreValidationResult] = await self.blockchain.pre_validate_blocks_multiprocessing(
-            blocks_to_validate, wp_summaries=wp_summaries
+            blocks_to_validate, wp_summaries=wp_summaries, skip_diff_ssi=skip_diff_ssi
         )
         pre_validate_end = time.monotonic()
         pre_validate_time = pre_validate_end - pre_validate_start
@@ -1073,7 +1329,12 @@ class Beacon:
             state_change_summary: Optional[StateChangeSummary]
             advanced_peak = agg_state_change_summary is not None
             result, error, state_change_summary = await self.blockchain.receive_block(
-                block, pre_validation_results[i], None if advanced_peak else fork_point
+                block,
+                pre_validation_results[i],
+                None if advanced_peak else fork_point,
+                skip_diff_ssi,
+                low_buffer,
+                limit_height,
             )
 
             if result == ReceiveBlockResult.NEW_PEAK:
@@ -1130,7 +1391,8 @@ class Beacon:
                 await self.peak_post_processing_2(peak_fb, None, state_change_summary, ppp_result)
 
         if peak is not None and self.weight_proof_handler is not None:
-            await self.weight_proof_handler.get_proof_of_weight(peak.header_hash)
+            if self.sync_mode != "light":
+                await self.weight_proof_handler.get_proof_of_weight(peak.header_hash)
             self._state_changed("block")
 
     async def signage_point_post_processing(
@@ -1223,6 +1485,8 @@ class Beacon:
 
         if not self.sync_store.get_sync_mode():
             self.blockchain.clean_block_records()
+            if self.sync_mode == "light" and record.height % 100 == 0:
+                await self.blockchain.clean_ancient_blocks()
 
         fork_block: Optional[BlockRecord] = None
         if state_change_summary.fork_height != block.height - 1 and block.height != 0:

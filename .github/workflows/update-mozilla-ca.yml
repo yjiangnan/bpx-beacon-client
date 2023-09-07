@@ -1,0 +1,40 @@
+name:  Update Mozilla cert.pem every week
+
+on:
+  schedule:
+    - cron: "0 0 1 * *"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: write
+  actions: write
+
+concurrency:
+  # SHA is added to the end if on `main` to let all main workflows run
+  group: ${{ github.ref }}-${{ github.workflow }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  build_wheels:
+    name: Update Mozilla cert.pem
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Update Mozilla cert.pem
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          cd mozilla-ca
+          curl --cacert cacert.pem --remote-name https://curl.se/ca/cacert.pem
+          git status
+          DATE="$(date)"
+          export DATE
+          ( git commit cacert.pem -m "cacert.pem updated $DATE" && git push origin main ) || true
+          git status

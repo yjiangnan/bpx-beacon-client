@@ -97,12 +97,7 @@ class BlockHeightMap:
 
         # allocate memory for height to hash map
         # this may also truncate it, if thie file on disk had an invalid size
-        new_size = (height + 1) * 32
-        size = len(self.__height_to_hash)
-        if size > new_size:
-            del self.__height_to_hash[new_size:]
-        else:
-            self.__height_to_hash += bytearray([0] * (new_size - size))
+        self._resize_buffer(height, True)
 
         # if the peak hash is already in the height-to-hash map, we don't need
         # to load anything more from the DB
@@ -122,7 +117,7 @@ class BlockHeightMap:
     def update_height(self, height: uint32, header_hash: bytes32, ses: Optional[SubEpochSummary]) -> None:
         # we're only updating the last hash. If we've reorged, we already rolled
         # back, making this the new peak
-        assert height * 32 <= len(self.__height_to_hash)
+        self._resize_buffer(height, False)
         self.__set_hash(height, header_hash)
         if ses is not None:
             self.__sub_epoch_summaries[height] = bytes(ses)
@@ -140,6 +135,14 @@ class BlockHeightMap:
 
         await write_file_async(self.__height_to_hash_filename, map_buf)
         await write_file_async(self.__ses_filename, ses_buf)
+    
+    def _resize_buffer(self, height: uint32, can_truncate: bool) -> None:
+        new_size = (height + 1) * 32
+        size = len(self.__height_to_hash)
+        if size < new_size:
+            self.__height_to_hash += bytearray([0] * (new_size - size))
+        elif can_truncate and new_size < size:
+            del self.__height_to_hash[new_size:]
 
     # load height-to-hash map entries from the DB starting at height back in
     # time until we hit a match in the existing map, at which point we can
@@ -164,9 +167,7 @@ class BlockHeightMap:
 
             while height > window_end:
                 if prev_hash not in ordered:
-                    raise ValueError(
-                        f"block with header hash is missing from your blockchain database: {prev_hash.hex()}"
-                    )
+                    return
                 entry = ordered[prev_hash]
                 assert height == entry[0] + 1
                 height = entry[0]
@@ -199,16 +200,30 @@ class BlockHeightMap:
     def contains_height(self, height: uint32) -> bool:
         return height * 32 < len(self.__height_to_hash)
 
-    def rollback(self, fork_height: int) -> None:
+    def rollback(
+        self,
+        fork_height: int,
+        limit_height: Optional[int] = None,
+    ) -> None:
         # fork height may be -1, in which case all blocks are different and we
         # should clear all sub epoch summaries
         heights_to_delete = []
         for ses_included_height in self.__sub_epoch_summaries.keys():
+            if limit_height is not None and ses_included_height > limit_height:
+                continue
             if ses_included_height > fork_height:
                 heights_to_delete.append(ses_included_height)
+        
         for height in heights_to_delete:
             del self.__sub_epoch_summaries[height]
-        del self.__height_to_hash[(fork_height + 1) * 32 :]
+        
+        if limit_height is None:
+            del self.__height_to_hash[(fork_height + 1) * 32 :]
+        else:
+            start_idx = (fork_height + 1) * 32 # +1 to not update fork_height
+            end_idx = (limit_height + 1) * 32 # +1 to update limit_height inclusive
+            bytes_count = end_idx - start_idx
+            self.__height_to_hash[start_idx : end_idx] = bytes([0] * bytes_count)
 
     def get_ses(self, height: uint32) -> SubEpochSummary:
         return SubEpochSummary.from_bytes(self.__sub_epoch_summaries[height])
