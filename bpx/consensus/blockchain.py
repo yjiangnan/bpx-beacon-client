@@ -262,6 +262,7 @@ class Blockchain(BlockchainInterface):
             block,
             block.height,
             block_record,
+            low_buffer,
         )
         if error_code is not None:
             return ReceiveBlockResult.INVALID_BLOCK, error_code, None
