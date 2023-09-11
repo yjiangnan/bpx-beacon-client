@@ -5,6 +5,7 @@ import json
 import logging
 import time
 import traceback
+import contextlib
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -73,6 +74,7 @@ class Farmer:
         self.plot_sync_receivers: Dict[bytes32, Receiver] = {}
 
         self.cache_clear_task: Optional[asyncio.Task[None]] = None
+        self.refresh_keys_task: Optional[asyncio.Task[None]] = None
         self.constants = consensus_constants
         self._shut_down = False
         self.server: Any = None
@@ -136,6 +138,7 @@ class Farmer:
             while not self._shut_down:
                 if await self.setup_keys():
                     self.cache_clear_task = asyncio.create_task(self._periodically_clear_cache_and_refresh_task())
+                    self.refresh_keys_task = asyncio.create_task(self._refresh_keys())
                     log.debug("start_task: initialized")
                     self.started = True
                     return
@@ -144,11 +147,15 @@ class Farmer:
         asyncio.create_task(start_task())
 
     def _close(self) -> None:
+        cancel_task_safe(task=self.refresh_keys_task, log=log)
         self._shut_down = True
 
     async def _await_closed(self, shutting_down: bool = True) -> None:
         if self.cache_clear_task is not None:
             await self.cache_clear_task
+        if self.refresh_keys_task is not None:
+            with contextlib.suppress(asyncio.CancelledError):
+                await self.refresh_keys_task
         if shutting_down and self.keychain_proxy is not None:
             proxy = self.keychain_proxy
             self.keychain_proxy = None
@@ -269,3 +276,11 @@ class Farmer:
                 log.error(f"_periodically_clear_cache_and_refresh_task failed: {traceback.format_exc()}")
 
             await asyncio.sleep(1)
+    
+    async def __refresh_keys(self) -> None:
+        try:
+            while True:
+                await asyncio.sleep(30)
+                await self.setup_keys()
+        except asyncio.CancelledError:
+            pass
