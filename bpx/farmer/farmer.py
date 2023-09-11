@@ -277,7 +277,7 @@ class Farmer:
 
             await asyncio.sleep(1)
     
-    async def __refresh_keys(self) -> None:
+    async def _refresh_keys(self) -> None:
         try:
             while True:
                 await asyncio.sleep(30)
