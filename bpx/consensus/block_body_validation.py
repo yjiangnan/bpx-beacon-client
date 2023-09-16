@@ -51,7 +51,7 @@ async def validate_block_body(
         assert block_record is not None
         optimistic_import = execution_client.beacon.config.get("optimistic_import", True)
         
-        status = await execution_client.forkchoice_update(block_record, low_buffer)
+        status = await execution_client.forkchoice_update(block_record)
         if status == "INVALID" or status == "INVALID_BLOCK_HASH":
             return Err.PAYLOAD_INVALIDATED
         elif status == "SYNCING" or status == "ACCEPTED":
