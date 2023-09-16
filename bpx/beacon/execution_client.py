@@ -166,13 +166,10 @@ class ExecutionClient:
     async def forkchoice_update(
         self,
         block: BlockRecord,
-        low_buffer: bool = False,
     ) -> None:
         log.info("Fork choice update")
-
-        build_payload = not low_buffer and self.beacon.sync_store.get_sync_mode() is False
-        if build_payload:
-            self.payload_id = None
+        
+        self.payload_id = None
         
         self._ensure_web3_init()
         
@@ -213,8 +210,9 @@ class ExecutionClient:
             "finalizedBlockHash": "0x" + final_ehash.hex(),
         }
         payload_attributes = None
-       
-        if build_payload:
+        
+        synced = self.beacon.sync_store.get_sync_mode() is False
+        if synced:
             coinbase = self.beacon.config["coinbase"]
             if bytes20.from_hexstr(coinbase) == COINBASE_NULL:
                 log.warning("Coinbase is not set! Payload will not be built and farming is not possible.")
@@ -243,7 +241,7 @@ class ExecutionClient:
         if result.payloadId is not None:
             self.payload_id = result.payloadId
             log.info(f"Payload building started: payload_id={self.payload_id}")
-        elif build_payload:
+        elif synced:
             log.warning("Payload building not started")
         
         if result.payloadStatus.status == "VALID" and self.syncing:
