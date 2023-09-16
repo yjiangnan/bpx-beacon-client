@@ -73,6 +73,7 @@ class Err(Enum):
     
     PAYLOAD_INVALIDATED = 53
     PAYLOAD_NOT_VALIDATED = 54
+    PAYLOAD_SIDECHAIN = 55
 
 
 class ValidationError(Exception):

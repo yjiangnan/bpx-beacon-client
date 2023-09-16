@@ -42,10 +42,12 @@ async def validate_block_body(
     elif status == "SYNCING" or status == "ACCEPTED":
         if isinstance(block, UnfinishedBlock):
             return Err.PAYLOAD_NOT_VALIDATED
+        if low_buffer and status == "ACCEPTED":
+            return Err.PAYLOAD_SIDECHAIN
     elif status != "VALID":
         return Err.UNKNOWN
     
-    if isinstance(block, FullBlock):
+    if not low_buffer and isinstance(block, FullBlock):
         assert block_record is not None
         optimistic_import = execution_client.beacon.config.get("optimistic_import", True)
         
