@@ -170,7 +170,8 @@ class ExecutionClient:
     ) -> None:
         log.info("Fork choice update")
 
-        if not low_buffer:
+        build_payload = not low_buffer and self.beacon.sync_store.get_sync_mode() is False
+        if build_payload:
             self.payload_id = None
         
         self._ensure_web3_init()
@@ -212,8 +213,7 @@ class ExecutionClient:
             "finalizedBlockHash": "0x" + final_ehash.hex(),
         }
         payload_attributes = None
-
-        build_payload = not low_buffer and self.beacon.sync_store.get_sync_mode() is False
+       
         if build_payload:
             coinbase = self.beacon.config["coinbase"]
             if bytes20.from_hexstr(coinbase) == COINBASE_NULL:
