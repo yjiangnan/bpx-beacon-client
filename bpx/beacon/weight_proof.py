@@ -166,7 +166,7 @@ class WeightProofHandler:
             log.debug(f"sub_epochs: {len(sub_epoch_data)}")
             return WeightProof(sub_epoch_data, sub_epoch_segments, recent_chain)
         except:
-            log.error("insufficient ancient chain data to build weight proof")
+            log.warning("insufficient ancient chain data to build weight proof")
             return None
 
     def get_seed_for_proof(self, summary_heights: List[uint32], tip_height) -> bytes32:
@@ -230,17 +230,20 @@ class WeightProofHandler:
 
     async def create_prev_sub_epoch_segments(self) -> None:
         log.debug("create prev sub_epoch_segments")
-        heights = self.blockchain.get_ses_heights()
-        if len(heights) < 3:
-            return None
-        count = len(heights) - 2
-        ses_sub_block = self.blockchain.height_to_block_record(heights[-2])
-        prev_ses_sub_block = self.blockchain.height_to_block_record(heights[-3])
-        assert prev_ses_sub_block.sub_epoch_summary_included is not None
-        segments = await self.__create_sub_epoch_segments(ses_sub_block, prev_ses_sub_block, uint32(count))
-        assert segments is not None
-        await self.blockchain.persist_sub_epoch_challenge_segments(ses_sub_block.header_hash, segments)
-        log.debug("sub_epoch_segments done")
+        try:
+            heights = self.blockchain.get_ses_heights()
+            if len(heights) < 3:
+                return None
+            count = len(heights) - 2
+            ses_sub_block = self.blockchain.height_to_block_record(heights[-2])
+            prev_ses_sub_block = self.blockchain.height_to_block_record(heights[-3])
+            assert prev_ses_sub_block.sub_epoch_summary_included is not None
+            segments = await self.__create_sub_epoch_segments(ses_sub_block, prev_ses_sub_block, uint32(count))
+            assert segments is not None
+            await self.blockchain.persist_sub_epoch_challenge_segments(ses_sub_block.header_hash, segments)
+            log.debug("sub_epoch_segments done")
+        except:
+            log.warning("insufficient ancient chain data to create prev sub epoch segments")
         return None
 
     async def create_sub_epoch_segments(self) -> None:

@@ -262,6 +262,7 @@ class Blockchain(BlockchainInterface):
             block,
             block.height,
             block_record,
+            low_buffer,
         )
         if error_code is not None:
             return ReceiveBlockResult.INVALID_BLOCK, error_code, None
@@ -368,8 +369,9 @@ class Blockchain(BlockchainInterface):
         while fork_height < 0 or curr != self.height_to_hash(uint32(fork_height)):
             fetched_full_block: Optional[FullBlock] = await self.block_store.get_full_block(curr)
             fetched_block_record: Optional[BlockRecord] = await self.block_store.get_block_record(curr)
-            assert fetched_full_block is not None
-            assert fetched_block_record is not None
+            if fetched_full_block is None or fetched_block_record is None:
+                # Doing a light sync reorg, starting at light sync start height
+                break
             blocks_to_add.append((fetched_full_block, fetched_block_record))
             if fetched_full_block.height == 0:
                 # Doing a full reorg, starting at height 0
